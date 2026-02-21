@@ -1,32 +1,36 @@
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Brain, Heart, Edit3, Sparkles, MessageCircle, AlertTriangle, Phone, ShieldCheck, 
-  CheckSquare, Music, Star, ChevronRight, Activity, Zap, Moon, X, Stethoscope, 
-  Search, Shield, Gift, Smile
+import {
+    AlertTriangle,
+    CheckSquare,
+    ChevronRight,
+    Edit3,
+    Heart,
+    Phone,
+    Search, Shield,
+    ShieldCheck,
+    Sparkles,
+    Star,
+    Stethoscope,
+    X
 } from 'lucide-react';
-import { EPDS_QUESTIONS, HELPLINES, STABILIZATION_TASKS, COLORS } from '../constants';
-import { UserProfile } from '../types';
-import { translations } from '../translations';
+import React, { useState } from 'react';
+import { COLORS, EPDS_QUESTIONS, HELPLINES, STABILIZATION_TASKS } from '../constants';
 import { getTriageAnalysis } from '../services/aiService';
+import { translations } from '../translations';
 
-interface MentalProps {
-  profile: UserProfile;
-}
-
-const MentalWellness: React.FC<MentalProps> = ({ profile }) => {
+const MentalWellness = ({ profile }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
   const [showCheckin, setShowCheckin] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [answers, setAnswers] = useState([]);
   const [showTriage, setShowTriage] = useState(false);
   const [triageLoading, setTriageLoading] = useState(false);
   const [triageResult, setTriageResult] = useState("");
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   
   // Ritual logic
-  const [checkedRituals, setCheckedRituals] = useState<Record<number, boolean>>({});
+  const [checkedRituals, setCheckedRituals] = useState({});
   const [showReward, setShowReward] = useState(false);
 
   const theme = COLORS[profile.accent] || COLORS.PINK;
@@ -36,7 +40,7 @@ const MentalWellness: React.FC<MentalProps> = ({ profile }) => {
     ? ['High Fever', 'Heavy Bleeding', 'Severe Breast Pain', 'Extreme Sadness', 'Leg Swelling', 'Vision Blurriness']
     : ['Severe Nausea', 'Early Contractions', 'Headache', 'Reduced Movement', 'Spotting', 'Dizziness'];
 
-  const handleAnswer = (index: number) => {
+  const handleAnswer = (index) => {
     const newAnswers = [...answers, index];
     if (currentQuestion < EPDS_QUESTIONS.length - 1 && isPostpartum) {
       setCurrentQuestion(prev => prev + 1);
@@ -57,7 +61,7 @@ const MentalWellness: React.FC<MentalProps> = ({ profile }) => {
     setTriageLoading(false);
   };
 
-  const toggleRitual = (idx: number) => {
+  const toggleRitual = (idx) => {
     const isNewCheck = !checkedRituals[idx];
     setCheckedRituals(p => ({ ...p, [idx]: isNewCheck }));
     if (isNewCheck) {
@@ -207,9 +211,9 @@ const MentalWellness: React.FC<MentalProps> = ({ profile }) => {
   );
 };
 
-const MentalAction = ({ icon, title, subtitle, onClick, theme }: any) => (
+const MentalAction = ({ icon, title, subtitle, onClick, theme }) => (
   <button onClick={onClick} className="flex flex-col items-center p-10 bg-white/50 backdrop-blur-xl border border-white/40 rounded-[3rem] hover:border-white shadow-sm hover:shadow-2xl transition-all duration-500 text-center group active:scale-[0.98]">
-    <div className="p-6 bg-slate-50 rounded-[1.75rem] mb-6 group-hover:bg-white group-hover:scale-110 transition-all shadow-inner border border-transparent group-hover:border-slate-100">{React.cloneElement(icon as React.ReactElement, { size: 32, strokeWidth: 2.5 } as any)}</div>
+    <div className="p-6 bg-slate-50 rounded-[1.75rem] mb-6 group-hover:bg-white group-hover:scale-110 transition-all shadow-inner border border-transparent group-hover:border-slate-100">{React.cloneElement(icon, { size: 32, strokeWidth: 2.5 })}</div>
     <span className="font-bold text-slate-900 text-xl mb-1.5 tracking-tight leading-none">{title}</span>
     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{subtitle}</span>
   </button>

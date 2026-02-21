@@ -1,9 +1,14 @@
-
-import { UserProfile } from "../types";
-
 // Offline deterministic logic for triage analysis and daily inspiration.
 
-const TRIAGE_RULES: Record<string, { assessment: string; action: string; selfCare: string }> = {
+/**
+ * @typedef {Object} UserProfile
+ * @property {string} maternityStage
+ */
+
+/**
+ * @type {Record<string, { assessment: string; action: string; selfCare: string }>}
+ */
+const TRIAGE_RULES = {
   "High Fever": {
     assessment: "A high fever in the postpartum period can indicate an infection such as mastitis, endometritis, or a urinary tract infection.",
     action: "Consult your doctor immediately or go to the ER if fever is very high (>100.4°F/38°C).",
@@ -79,7 +84,10 @@ const INSPIRATION_QUOTES = [
   "This too shall pass. Embrace the precious moments."
 ];
 
-const INSPIRATION_BY_MOOD: Record<number, string[]> = {
+/**
+ * @type {Record<number, string[]>}
+ */
+const INSPIRATION_BY_MOOD = {
   1: ["It's okay to not be okay. Breathe.", "This hard moment will pass.", "You are stronger than you know."],
   2: ["Be gentle with yourself today.", "One step at a time is enough.", "Sending you strength and peace."],
   3: ["Your best is always enough.", "Take a moment for yourself.", "You are doing a great job."],
@@ -92,8 +100,12 @@ const INSPIRATION_BY_MOOD: Record<number, string[]> = {
   10: ["Perfect harmony. enjoy!", "Top of the world!", "You are a rockstar!"]
 };
 
-
-export const getTriageAnalysis = async (symptoms: string[], profile: UserProfile) => {
+/**
+ * @param {string[]} symptoms
+ * @param {UserProfile} profile
+ * @returns {Promise<string>}
+ */
+export const getTriageAnalysis = async (symptoms, profile) => {
   // Mock delay to simulate "analysis"
   await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -120,7 +132,11 @@ export const getTriageAnalysis = async (symptoms: string[], profile: UserProfile
   return responseText;
 };
 
-export const getDailyInspiration = async (mood: number) => {
+/**
+ * @param {number} mood
+ * @returns {Promise<string>}
+ */
+export const getDailyInspiration = async (mood) => {
   await new Promise(resolve => setTimeout(resolve, 500));
 
   const moodLevel = Math.max(1, Math.min(10, Math.round(mood))); // Ensure 1-10

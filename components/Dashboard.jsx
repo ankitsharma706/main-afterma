@@ -1,25 +1,33 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Droplet, Moon, Pill, TrendingUp, AlertCircle, 
-  CheckCircle2, Plus, Calendar as CalIcon, Activity,
-  Leaf, Bell, X, Zap, ArrowRight, Star, Play, Camera, ShieldCheck
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import {
+    Activity,
+    ArrowRight,
+    Download,
+    Droplet,
+    Leaf,
+    Moon, Pill,
+    Play,
+    Plus,
+    ShieldCheck,
+    Zap
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Line
+import { useEffect, useMemo, useState } from 'react';
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    Line,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis, YAxis
 } from 'recharts';
-import { UserProfile, HealthLog } from '../types';
+import { COLORS, NUTRITION_GUIDE, RECOVERY_DATABASE, SLOGAN } from '../constants';
 import { getDailyInspiration } from '../services/aiService';
-import { NUTRITION_GUIDE, RECOVERY_DATABASE, COLORS, SLOGAN } from '../constants';
 import { translations } from '../translations';
 
-interface DashboardProps {
-  profile: UserProfile;
-  logs: HealthLog[];
-  onAddLog: () => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ profile, logs, onAddLog }) => {
+const Dashboard = ({ profile, logs, onAddLog }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
   const [inspiration, setInspiration] = useState(t.dashboard.inspiration);
@@ -49,6 +57,64 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, logs, onAddLog }) => {
       .filter(a => profile.journeySettings.pace === 'moderate' || a.intensityScale <= 5)
       .find(a => a.phase === profile.currentPhase && !profile.completedActivities.includes(a.id));
   }, [profile.currentPhase, profile.completedActivities, profile.journeySettings.pace, profile.deliveryType]);
+
+  const generateJourneyPDF = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text('AfterMa Care Journey Report', 14, 22);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Generated for: ${profile.name || 'Guest'}`, 14, 32);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 38);
+    
+    // Profile Summary
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Maternal Profile', 14, 50);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Phase: ${profile.currentPhase || 'N/A'} | Stage: ${profile.maternityStage || 'N/A'}`, 14, 58);
+    doc.text(`Delivery: ${profile.deliveryType || 'N/A'} | Routine: ${profile.journeySettings?.pace || 'Standard'}`, 14, 66);
+    doc.text(`Streak: ${profile.streakCount} Days`, 14, 74);
+
+    // Logs Table
+    const tableData = [...logs].reverse().map(log => [
+      new Date(log.timestamp).toLocaleDateString(),
+      new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      `${log.moodLevel}/10`,
+      `${log.painLevel}/10`,
+      `${log.sleepHours} hrs`,
+      `${log.waterIntake}/10 glasses`,
+      log.medicationsTaken ? 'Yes' : 'No'
+    ]);
+
+    if (tableData.length > 0) {
+      autoTable(doc, {
+        startY: 85,
+        headStyles: { fillColor: [244, 63, 94] }, // rose-500
+        head: [['Date', 'Time', 'Mood', 'Pain', 'Sleep', 'Hydration', 'Meds']],
+        body: tableData,
+      });
+    } else {
+      doc.text('No health logs recorded yet.', 14, 90);
+    }
+    
+    // Activities History
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 105;
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Recovery Progress', 14, finalY);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    const completedCount = profile.completedActivities ? profile.completedActivities.length : 0;
+    doc.text(`Completed Healing Activities: ${completedCount}`, 14, finalY + 8);
+    
+    doc.save('AfterMa_Journey_Report.pdf');
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 lg:space-y-12 animate-in fade-in duration-500 relative pb-20">
@@ -81,10 +147,14 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, logs, onAddLog }) => {
               </div>
             </div>
           </div>
-          
-          <button onClick={onAddLog} className="bg-white/95 backdrop-blur-md px-10 py-5 rounded-full font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 shrink-0 text-slate-900 text-sm lg:text-base border border-white">
-            <Plus size={20} strokeWidth={3} /> {t.dashboard.logMoment}
-          </button>
+          <div className="flex flex-col lg:flex-row items-center gap-3">
+            <button onClick={generateJourneyPDF} className="bg-white/20 backdrop-blur-md px-6 py-5 rounded-full font-bold shadow-lg hover:bg-white/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full lg:w-auto text-white text-sm border border-white/30">
+              <Download size={20} /> Report
+            </button>
+            <button onClick={onAddLog} className="bg-white/95 backdrop-blur-md px-10 py-5 rounded-full font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shrink-0 text-slate-900 text-sm lg:text-base border border-white">
+              <Plus size={20} strokeWidth={3} /> {t.dashboard.logMoment}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -148,7 +218,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, logs, onAddLog }) => {
   );
 };
 
-const StatCard = ({ icon, label, value, unit = "", color }: any) => (
+const StatCard = ({ icon, label, value, unit = "", color }) => (
   <div className={`p-8 lg:p-10 rounded-[2.5rem] shadow-sm border border-white/60 flex flex-col justify-between hover:translate-y-[-6px] transition-all duration-500 cursor-default group ${color} backdrop-blur-sm`}>
     <div className="flex items-center gap-4 text-slate-500 font-bold mb-8"><div className="p-3 bg-white/80 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">{icon}</div><span className="text-[10px] uppercase tracking-[0.2em] line-clamp-1 opacity-60">{label}</span></div>
     <div className="flex items-baseline gap-2"><span className="text-3xl lg:text-5xl font-bold text-slate-900 tracking-tighter">{value}</span>{unit && <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest">{unit}</span>}</div>

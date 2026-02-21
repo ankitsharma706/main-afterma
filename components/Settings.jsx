@@ -1,36 +1,43 @@
 
-import React, { useState, useRef } from 'react';
-import { UserProfile, ThemeAccent, Language, MaternityStage } from '../types';
-import { 
-  User, Palette, Lock, Eye, Check, Bell, Activity, Users, 
-  Clock, Shield, Globe, Monitor, ChevronRight, ToggleLeft, 
-  ToggleRight, CheckCircle2, Heart, Clipboard, AlertCircle
+import React, { useState } from 'react';
+
+import {
+  AlertCircle,
+  Bell,
+  Check,
+  Clipboard,
+  Clock,
+  Eye,
+  Globe,
+  Lock,
+  Monitor,
+  Palette,
+  Shield,
+  ToggleLeft,
+  ToggleRight,
+  User,
+  Users
 } from 'lucide-react';
 import { COLORS } from '../constants';
 import { translations } from '../translations';
 
-interface SettingsProps {
-  profile: UserProfile;
-  setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
-}
-
-const Settings: React.FC<SettingsProps> = ({ profile, setProfile }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'journey' | 'custom' | 'notifications' | 'privacy'>('profile');
+const Settings = ({ profile, setProfile }) => {
+  const [activeTab, setActiveTab] = useState('profile');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [localCommitment, setLocalCommitment] = useState(15);
 
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
 
-  const updateProfile = (fields: Partial<UserProfile>) => {
+  const updateProfile = (fields) => {
     setProfile(prev => ({ ...prev, ...fields }));
   };
 
-  const updateCaregiver = (fields: Partial<UserProfile['caregiver']>) => {
+  const updateCaregiver = (fields) => {
     setProfile(prev => ({ ...prev, caregiver: { ...prev.caregiver, ...fields } }));
   };
 
-  const updateCaregiverPermissions = (fields: Partial<UserProfile['caregiver']['permissions']>) => {
+  const updateCaregiverPermissions = (fields) => {
     setProfile(prev => ({ 
       ...prev, 
       caregiver: { 
@@ -40,7 +47,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile }) => {
     }));
   };
 
-  const updateNotifications = (fields: Partial<UserProfile['notifications']>) => {
+  const updateNotifications = (fields) => {
     setProfile(prev => ({ ...prev, notifications: { ...prev.notifications, ...fields } }));
   };
 
@@ -121,7 +128,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile }) => {
                     <select 
                       className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white appearance-none cursor-pointer"
                       value={profile.maternityStage}
-                      onChange={e => updateProfile({ maternityStage: e.target.value as MaternityStage })}
+                      onChange={e => updateProfile({ maternityStage: e.target.value })}
                     >
                       <option value="TTC">{t.settings.stages.ttc}</option>
                       <option value="Pregnant-T1">{t.settings.stages.t1}</option>
@@ -137,7 +144,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile }) => {
                       <select 
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white appearance-none cursor-pointer"
                         value={profile.deliveryType}
-                        onChange={e => updateProfile({ deliveryType: e.target.value as any })}
+                        onChange={e => updateProfile({ deliveryType: e.target.value })}
                       >
                         <option value="normal">Vaginal Delivery</option>
                         <option value="c-section">C-Section Recovery</option>
@@ -200,12 +207,12 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile }) => {
                         key={accent} 
                         onClick={() => {
                           setIsTransitioning(true);
-                          updateProfile({ accent: accent as ThemeAccent });
+                          updateProfile({ accent });
                           setTimeout(() => setIsTransitioning(false), 800);
                         }}
                         className={`group flex flex-col items-center gap-4 transition-all ${profile.accent === accent ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}
                       >
-                        <div className="w-16 h-16 rounded-[1.75rem] shadow-lg border-4 border-white transition-all group-hover:rotate-12" style={{ backgroundColor: (COLORS as any)[accent].primary }} />
+                        <div className="w-16 h-16 rounded-[1.75rem] shadow-lg border-4 border-white transition-all group-hover:rotate-12" style={{ backgroundColor: COLORS[accent].primary }} />
                         <span className="text-[9px] font-bold uppercase tracking-widest">{accent}</span>
                       </button>
                     ))}
@@ -326,21 +333,21 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile }) => {
   );
 };
 
-const TabBtn = ({ icon, label, active, onClick, theme }: any) => (
+const TabBtn = ({ icon, label, active, onClick, theme }) => (
   <button onClick={onClick} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl font-bold text-sm transition-all duration-300 relative overflow-hidden active:scale-[0.97] group ${active ? 'bg-white shadow-md border border-slate-50 text-slate-900 scale-[1.05]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}>
-    <div className={`shrink-0 transition-all duration-500 group-hover:scale-110 ${active ? 'text-white p-2 rounded-lg shadow-sm' : 'text-slate-300'}`} style={{ backgroundColor: active ? theme.primary : '' }}>{React.cloneElement(icon as React.ReactElement, { size: active ? 16 : 20 } as any)}</div>
+    <div className={`shrink-0 transition-all duration-500 group-hover:scale-110 ${active ? 'text-white p-2 rounded-lg shadow-sm' : 'text-slate-300'}`} style={{ backgroundColor: active ? theme.primary : '' }}>{React.cloneElement(icon, { size: active ? 16 : 20 })}</div>
     <span className="tracking-tight">{label}</span>
   </button>
 );
 
-const Field = ({ label, value, onChange, type = "text" }: any) => (
+const Field = ({ label, value, onChange, type = "text" }) => (
   <div className="space-y-3">
     <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2">{label}</label>
     <input type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white" />
   </div>
 );
 
-const ToggleField = ({ label, sub, active, onToggle }: any) => (
+const ToggleField = ({ label, sub, active, onToggle }) => (
   <div className="flex items-center justify-between p-6 bg-slate-50 rounded-[1.75rem] border border-slate-100 transition-all hover:bg-white group">
      <div className="space-y-1">
         <h4 className="text-sm font-bold text-slate-900 tracking-tight">{label}</h4>
@@ -352,7 +359,7 @@ const ToggleField = ({ label, sub, active, onToggle }: any) => (
   </div>
 );
 
-const PermissionItem = ({ label, active, onToggle }: any) => (
+const PermissionItem = ({ label, active, onToggle }) => (
    <button onClick={onToggle} className="w-full flex items-center justify-between p-5 bg-white rounded-2xl border border-slate-100 hover:shadow-sm transition-all group active:scale-[0.98]">
       <span className={`text-sm font-bold transition-all ${active ? 'text-slate-900' : 'text-slate-300'}`}>{label}</span>
       <div className={`p-1.5 rounded-lg border transition-all ${active ? 'bg-emerald-50 border-emerald-100 text-emerald-600 shadow-inner' : 'bg-slate-50 border-slate-100 text-slate-200'}`}>

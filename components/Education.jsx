@@ -1,13 +1,9 @@
 
-import React from 'react';
-import { Book, PlayCircle, HeartPulse, ShieldCheck, Video, FileText, ExternalLink, ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, Book, ExternalLink, FileText, HeartPulse, PlayCircle, ShieldCheck, Star } from 'lucide-react';
 import { GOVT_SCHEMES } from '../constants';
-import { UserProfile } from '../types';
 import { translations } from '../translations';
 
-interface EducationProps { profile: UserProfile; }
-
-const Education: React.FC<EducationProps> = ({ profile }) => {
+const Education = ({ profile }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
 
@@ -104,7 +100,7 @@ const Education: React.FC<EducationProps> = ({ profile }) => {
   );
 };
 
-const QuickLink = ({ icon, label }: any) => (
+const QuickLink = ({ icon, label }) => (
   <div className="bg-white p-6 lg:p-8 rounded-[2.5rem] text-center shadow-md border border-gray-50 hover:border-pink-200 hover:shadow-xl transition-all cursor-pointer group">
     <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform">{icon}</div>
     <span className="font-black text-xs lg:text-sm text-gray-800 uppercase tracking-wider">{label}</span>

@@ -1,29 +1,36 @@
 
-import React, { useState, useMemo } from 'react';
-import { RecoveryActivity, UserProfile, RecoveryPhase, PeriodLog } from '../types';
-import { 
-  CheckCircle, Play, Target, Pause, RotateCcw, Clock, Zap, ChevronRight,
-  TrendingUp, Heart, Award, Calendar, FileText, Droplet, Smile, Edit,
-  ShieldCheck, BarChart3, Activity, ArrowRight, Plus, Info, Download, 
-  Moon, Gauge, Ruler, Layers, Sparkles
+import React, { useEffect, useMemo, useState } from 'react';
+
+import {
+    Activity,
+    Award,
+    BarChart3,
+    CheckCircle,
+    Clock,
+    Download,
+    Droplet,
+    FileText,
+    Gauge,
+    Heart,
+    Moon,
+    Play,
+    Plus,
+    Ruler,
+    ShieldCheck,
+    Smile,
+    Sparkles,
+    Target
 } from 'lucide-react';
-import { PHASES, COLORS, RECOVERY_DATABASE } from '../constants';
+import { COLORS } from '../constants';
 import { translations } from '../translations';
 
-interface PhysicalProps {
-  profile: UserProfile;
-  setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
-  activities: RecoveryActivity[];
-  onToggleActivity: (id: string) => void;
-}
-
-const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activities, onToggleActivity }) => {
+const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
-  const [activeSubTab, setActiveSubTab] = useState<'Journey' | 'Cycle' | 'Report'>('Journey');
-  const [sessionActive, setSessionActive] = useState<RecoveryActivity | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState('Journey');
+  const [sessionActive, setSessionActive] = useState(null);
   
-  const [periodForm, setPeriodForm] = useState<Partial<PeriodLog>>({
+  const [periodForm, setPeriodForm] = useState({
     date: new Date().toISOString().split('T')[0],
     flow: 'Medium',
     symptoms: [],
@@ -33,6 +40,15 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
 
   const isPostpartum = profile.maternityStage === 'Postpartum';
   const theme = COLORS[profile.accent] || COLORS.PINK;
+
+  const [isTagSticky, setIsTagSticky] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsTagSticky(window.scrollY > 150);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fully functional mode logic based on user stage
   const phaseInfo = useMemo(() => {
@@ -62,10 +78,10 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
   }, [profile.maternityStage, t]);
 
   const handlePeriodLog = () => {
-    const newLog: PeriodLog = {
+    const newLog = {
       id: Date.now().toString(),
       date: periodForm.date || new Date().toISOString().split('T')[0],
-      flow: (periodForm.flow as any) || 'None',
+      flow: periodForm.flow || 'None',
       symptoms: periodForm.symptoms || [],
       mood: periodForm.mood || 'Balanced',
       notes: periodForm.notes || ''
@@ -74,7 +90,7 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
     alert("Health metrics updated. Your data is encrypted and safe.");
   };
 
-  const toggleSymptom = (s: string) => {
+  const toggleSymptom = (s) => {
     setPeriodForm(prev => {
       const current = prev.symptoms || [];
       const updated = current.includes(s) ? current.filter(x => x !== s) : [...current, s];
@@ -82,7 +98,53 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
     });
   };
 
-  const progress = activities.length > 0 ? (profile.completedActivities.length / activities.length) * 100 : 0;
+  const generatePhysicalRecoveryPDF = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Physical Recovery Summary', 14, 22);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Generated for: ${profile.name || 'Guest'}`, 14, 32);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 38);
+    
+    // Recovery Phase Info
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Vitals & Status', 14, 50);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Overall Progress: ${Math.round(progress)}%`, 14, 58);
+    doc.text(`Maternity Stage: ${profile.maternityStage || 'N/A'}`, 14, 66);
+    
+    // Readiness Indices
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Readiness Indices', 14, 80);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`- Tissue Restoration: 82%`, 14, 88);
+    doc.text(`- Pelvic Resilience: ${Math.round(progress)}%`, 14, 94);
+    doc.text(`- Core Alignment: 65%`, 14, 100);
+
+    // Behavioral Patterns
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Behavioral Patterns', 14, 114);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`- Hydration Adherence: 95%`, 14, 122);
+    doc.text(`- Rest Efficiency: 78%`, 14, 128);
+    doc.text(`- Log Consistency: 88%`, 14, 134);
+    
+    doc.save('Physical_Recovery_Report.pdf');
+  };
+
+  const completedActivities = profile.completedActivities || [];
+  const progress = activities.length > 0 ? (completedActivities.length / activities.length) * 100 : 0;
 
   return (
     <div className="space-y-10 animate-in max-w-6xl mx-auto pb-32">
@@ -105,7 +167,7 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
                    </div>
                    <div className="space-y-1">
                      <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">{phaseInfo.title}</h2>
-                     <div className="text-[9px] font-bold uppercase text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100 mt-2 inline-block tracking-widest shadow-inner">
+                     <div className={`text-[9px] font-bold uppercase text-slate-400 px-2.5 py-1 rounded-md border mt-2 inline-block tracking-widest shadow-inner transition-all duration-300 z-50 ${isTagSticky ? 'fixed top-[120px] lg:top-[140px] left-1/2 -translate-x-1/2 shadow-md backdrop-blur-md bg-white/90 border-slate-200' : 'bg-slate-50 border-slate-100'}`}>
                        {phaseInfo.sub}
                      </div>
                    </div>
@@ -126,7 +188,7 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
                  <Award size={32} style={{ color: theme.primary }} strokeWidth={2.5} />
                </div>
                <div className="space-y-1">
-                 <div className="text-5xl font-bold text-slate-900 tracking-tighter tabular-nums">{profile.completedActivities.length * 10}</div>
+                 <div className="text-5xl font-bold text-slate-900 tracking-tighter tabular-nums">{completedActivities.length * 10}</div>
                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-80">Care Tokens</p>
                </div>
             </div>
@@ -134,7 +196,7 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
              {activities.length > 0 ? activities.map(act => (
-               <ActivityCard key={act.id} act={act} theme={theme} isDone={profile.completedActivities.includes(act.id)} onClick={() => setSessionActive(act)} />
+               <ActivityCard key={act.id} act={act} theme={theme} isDone={completedActivities.includes(act.id)} onClick={() => setSessionActive(act)} />
              )) : (
                <div className="col-span-full py-20 text-center space-y-4 bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-100">
                   <p className="text-slate-400 font-medium italic">No specific tasks found for this stage yet.</p>
@@ -217,7 +279,7 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
                     Health Summary Report
                   </h2>
                 </div>
-                <button className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-xl">
+                <button onClick={generatePhysicalRecoveryPDF} className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all active:scale-95">
                    <Download size={16} /> Structured PDF Report
                 </button>
               </div>
@@ -264,7 +326,7 @@ const PhysicalRecovery: React.FC<PhysicalProps> = ({ profile, setProfile, activi
   );
 };
 
-const MetricCard = ({ label, value, sub, icon, trend }: any) => (
+const MetricCard = ({ label, value, sub, icon, trend }) => (
   <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all group">
      <div className="flex justify-between items-start mb-4">
         <div className="p-2.5 bg-slate-50 rounded-xl text-slate-300 group-hover:text-slate-900 transition-colors shadow-inner">{icon}</div>
@@ -278,11 +340,11 @@ const MetricCard = ({ label, value, sub, icon, trend }: any) => (
   </div>
 );
 
-const SubTabBtn = ({ active, onClick, icon, label, theme }: any) => (
+const SubTabBtn = ({ active, onClick, icon, label, theme }) => (
   <button onClick={onClick} className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2.5 active:scale-95 ${active ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}>{React.cloneElement(icon, { className: active ? 'text-white' : '' })}{label}</button>
 );
 
-const ReportProgressBar = ({ label, value, color }: any) => (
+const ReportProgressBar = ({ label, value, color }) => (
   <div className="space-y-2.5">
      <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">
         <span>{label}</span>
@@ -294,7 +356,7 @@ const ReportProgressBar = ({ label, value, color }: any) => (
   </div>
 );
 
-const ActivityCard = ({ act, theme, isDone, onClick }: any) => (
+const ActivityCard = ({ act, theme, isDone, onClick }) => (
   <div onClick={onClick} className={`p-6 rounded-[2.5rem] bg-white border transition-all duration-400 cursor-pointer flex items-start gap-6 hover:translate-y-[-4px] hover:shadow-lg ${isDone ? 'border-emerald-100 bg-emerald-50/5' : 'border-slate-50 shadow-sm'}`}>
     <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center ${isDone ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-50 text-slate-300'}`} style={{ color: !isDone ? theme.primary : '' }}>{isDone ? <CheckCircle size={28} /> : <Play size={28} />}</div>
     <div className="flex-1 space-y-2">

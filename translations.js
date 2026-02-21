@@ -1,4 +1,4 @@
-export const translations: any = {
+export const translations = {
   english: {
     common: {
       signIn: "Sign In",

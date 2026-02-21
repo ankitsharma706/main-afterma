@@ -1,6 +1,4 @@
 
-import { RecoveryActivity, RecoveryPhase, StoreItem } from './types';
-
 export const COLORS = {
   PINK: { primary: '#EC4899', bg: '#FFF5F7', border: '#F9A8D4', text: '#831843', ring: 'ring-pink-200', light: '#FFF5F7' },
   GREEN: { primary: '#10B981', bg: '#F0FDF4', border: '#A7F3D0', text: '#064E3B', ring: 'ring-emerald-200', light: '#F0FDF4' },
@@ -17,12 +15,12 @@ export const HELPLINES = {
   emergency: "112"
 };
 
-export const PHASES: RecoveryPhase[] = [
+export const PHASES = [
   'Pre-conception', 'Trimester 1', 'Trimester 2', 'Trimester 3', 
   'Month 1', 'Month 2', 'Month 3', 'Month 4+'
 ];
 
-export const RECOVERY_DATABASE: RecoveryActivity[] = [
+export const RECOVERY_DATABASE = [
   // Nurture Phase (Prenatal)
   { id: 't1-1', phase: 'Trimester 1', category: 'Prenatal Care', title: 'Nausea Management', description: 'Gentle hydration and dry ginger tracking to soothe morning sickness.', duration: 5, frequency: 'Daily', points: 15, intensityScale: 1 },
   { id: 't1-2', phase: 'Trimester 1', category: 'Prenatal Care', title: 'Pelvic Floor Intro', description: 'Visualizing engagement and diaphragmatic breathing for stability.', duration: 8, frequency: 'Daily', points: 20, intensityScale: 2 },
@@ -62,7 +60,7 @@ export const EPDS_QUESTIONS = [
   { id: 5, question: "I have felt scared or panicky for no very good reason", options: ["Yes, quite a lot", "Yes, sometimes", "No, not much", "No, not at all"] }
 ];
 
-export const STORE_ITEMS: StoreItem[] = [
+export const STORE_ITEMS = [
   // Recovery (6)
   { id: 'p1', name: 'Organic Nipple Balm', brand: 'Mamaearth', category: 'Recovery', price: 450, image: 'https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&q=80&w=400', description: 'Soothes and protects sensitive skin.', rating: 4.8 },
   { id: 'p2', name: 'Cotton Belly Wrap', brand: 'FirstCry', category: 'Recovery', price: 1200, image: 'https://images.unsplash.com/photo-1596464716127-f2a82984de30?auto=format&fit=crop&q=80&w=400', description: 'Comfortable support for postpartum core.', rating: 4.9 },

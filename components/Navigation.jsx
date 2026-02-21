@@ -1,22 +1,25 @@
 
-import React from 'react';
-import { 
-  Home, Activity, Heart, Users, BookOpen, 
-  Settings, LogOut, UserCheck, Star, X, ShoppingBag
+import {
+    Activity,
+    BookOpen,
+    Heart,
+    Home,
+    LogOut,
+    Settings,
+    ShoppingBag,
+    Star,
+    UserCheck,
+    Users,
+    X
 } from 'lucide-react';
-import { AppView, UserProfile } from '../types';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { COLORS, SLOGAN } from '../constants';
 import { translations } from '../translations';
 
-interface NavigationProps {
-  currentView: AppView;
-  setView: (view: AppView) => void;
-  profile: UserProfile;
-  logout: () => void;
-  onClose?: () => void;
-}
-
-const Navigation: React.FC<NavigationProps> = ({ currentView, setView, profile, logout, onClose }) => {
+const Navigation = ({ profile, logout, onClose }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
@@ -28,7 +31,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView, profile, 
     { id: 'care-connect', label: t.nav.care, icon: Users, private: true },
     { id: 'momkart', label: t.nav.momkart, icon: ShoppingBag, private: true },
     { id: 'education', label: t.nav.education, icon: BookOpen, private: false },
-    { id: 'profile', label: t.nav.settings, icon: Settings, private: true },
+    { id: 'settings', label: t.nav.settings, icon: Settings, private: true },
     { id: 'membership', label: t.nav.membership, icon: Star, private: true },
   ];
 
@@ -60,14 +63,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView, profile, 
       <nav className="flex-1 px-4 space-y-2 overflow-y-auto scrollbar-hide">
         {navItems.map((item) => {
           if (item.private && !profile.authenticated) return null;
-          const isActive = currentView === item.id;
+          const isActive = location.pathname === `/${item.id}` || (location.pathname === '/' && item.id === 'dashboard');
           const Icon = item.icon;
 
           return (
             <button
               key={item.id}
               onClick={() => {
-                setView(item.id as AppView);
+                navigate(`/${item.id}`);
                 if (onClose) onClose();
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
