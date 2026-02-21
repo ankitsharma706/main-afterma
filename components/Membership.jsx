@@ -1,15 +1,7 @@
+import { Activity, Check, Crown, Heart, ShieldCheck, Star, Zap } from 'lucide-react';
+import { COLORS, PRICING } from '../constants';
 
-import React from 'react';
-import { UserProfile } from '../types';
-import { Check, ShieldCheck, Zap, Heart, Star, Activity, Crown } from 'lucide-react';
-import { PRICING, COLORS } from '../constants';
-
-interface MembershipProps {
-  profile: UserProfile;
-  setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
-}
-
-const Membership: React.FC<MembershipProps> = ({ profile, setProfile }) => {
+const Membership = ({ profile, setProfile }) => {
   const isPlus = profile.membershipPlan === 'plus';
   // Fix: Property 'pink' does not exist on type COLORS, changed to 'PINK'
   const theme = COLORS[profile.accent] || COLORS.PINK;
@@ -103,7 +95,7 @@ const Membership: React.FC<MembershipProps> = ({ profile, setProfile }) => {
   );
 };
 
-const Benefit = ({ icon, label, inverted }: any) => (
+const Benefit = ({ icon, label, inverted }) => (
   <div className="flex items-center gap-3">
     <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${inverted ? 'bg-black/5' : 'bg-slate-50'}`}>
       {icon}
