@@ -3,9 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import { Bell, Menu, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import CareConnect from './components/CareConnect';
+import DarkModeToggle from './components/DarkModeToggle';
 import Dashboard from './components/Dashboard';
 import Education from './components/Education';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import Membership from './components/Membership';
 import MentalWellness from './components/MentalWellness';
 import Navigation from './components/Navigation';
@@ -20,7 +23,6 @@ import { useAuth } from './context/AuthContext';
 import Cart from './pages/Cart';
 import Payment from './pages/Payment';
 import SignIn from './pages/SignIn';
-import { translations } from './translations';
 
 const App = () => {
   const navigate = useNavigate();
@@ -83,15 +85,13 @@ const App = () => {
     };
   });
 
-  const lang = profile.journeySettings.language || 'english';
-  const t = translations[lang];
-
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
     localStorage.setItem('afterma_profile_v4', JSON.stringify(profile));
-    document.documentElement.lang = lang === 'hindi' ? 'hi' : 'en';
-  }, [profile, lang]);
+    document.documentElement.lang = i18n.language || 'en';
+  }, [profile, i18n.language]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -166,7 +166,10 @@ const App = () => {
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
+    <div className={`min-h-screen flex transition-colors duration-500 font-sans bg-[var(--theme-bg)] dark:bg-[#0B0A14] dark:bg-grid-white dark:text-gray-200 relative overflow-hidden`} style={{ '--theme-bg': theme.bg }}>
+      <div className="hidden dark:block absolute top-[10%] left-[5%] w-[800px] h-[800px] glow-orb-primary rounded-full mix-blend-screen opacity-70 pointer-events-none"></div>
+      <div className="hidden dark:block absolute bottom-[10%] right-[0%] w-[600px] h-[600px] glow-orb-secondary rounded-full mix-blend-screen opacity-60 pointer-events-none"></div>
+
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[55] lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
@@ -176,23 +179,25 @@ const App = () => {
       </div>
       
       <main className="flex-1 lg:ml-64 min-h-screen relative flex flex-col">
-        <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between border-b border-gray-100 shadow-sm transition-all duration-300">
+        <header className="h-16 lg:h-20 bg-white/95 dark:bg-[#0B0A14]/80 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.05] shadow-sm transition-all duration-300">
           <div className="flex items-center gap-3 lg:gap-6 flex-1 max-w-2xl">
             <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 lg:hidden text-gray-500 hover:bg-gray-100 rounded-lg"><Menu size={20} /></button>
             <div className="relative w-full hidden sm:block">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
                 <Search className={`${profile.incognito ? 'text-purple-500' : 'text-gray-400'}`} size={16} />
               </div>
-              <input type="text" placeholder={profile.incognito ? "GHOST Mode Active..." : t.common.searchPlaceholder} className={`w-full border rounded-full py-2 pl-10 pr-20 focus:outline-none focus:ring-2 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 border-purple-200 focus:ring-purple-100' : 'bg-white border-slate-200 focus:ring-pink-100 shadow-sm'}`} />
-              <button onClick={() => setProfile(p => ({...p, incognito: !p.incognito}))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
+              <input type="text" placeholder={profile.incognito ? "GHOST Mode Active..." : t('common.searchPlaceholder')} className={`w-full border rounded-full py-2 pl-10 pr-20 focus:outline-none focus:ring-2 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 dark:bg-purple-900/40 border-purple-200 dark:border-purple-800/50 focus:ring-purple-100 dark:focus:ring-purple-900 dark:text-purple-200' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-pink-100 dark:focus:ring-pink-900 shadow-sm dark:text-white dark:placeholder-slate-400'}`} />
+              <button onClick={() => setProfile(p => ({...p, incognito: !p.incognito}))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-600'}`}>GHOST</button>
             </div>
           </div>
 
           <div className="flex items-center gap-3 lg:gap-5 ml-4">
-            <button onClick={handleSOSClick} className="px-4 py-1.5 bg-[#EF4444] text-white rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-red-100">{t.common.sos}</button>
+            <LanguageSwitcher />
+            <DarkModeToggle />
+            <button onClick={handleSOSClick} className="px-4 py-1.5 bg-[#EF4444] text-white rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-red-100">{t('common.sos')}</button>
             {user || profile.authenticated ? (
               <div className="flex items-center gap-2 lg:gap-4">
-                <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-gray-500 hover:bg-gray-50 rounded-full relative transition-colors">
+                <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-full relative transition-colors">
                   <Bell size={20} />
                   {notifications.length > 0 && <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-white`} style={{ backgroundColor: theme.primary }}></span>}
                 </button>
@@ -201,7 +206,7 @@ const App = () => {
                 </button>
               </div>
             ) : (
-              <button onClick={() => navigate('/signin')} style={{ backgroundColor: theme.primary }} className="text-white px-5 py-2 rounded-full font-bold text-xs shadow-md hover:opacity-90 transition-all">{t.common.signIn}</button>
+              <button onClick={() => navigate('/signin')} style={{ backgroundColor: theme.primary }} className="text-white px-5 py-2 rounded-full font-bold text-xs shadow-md hover:opacity-90 transition-all">{t('common.signIn')}</button>
             )}
           </div>
         </header>
@@ -216,7 +221,7 @@ const App = () => {
                   onLegacyLogin={(provider) => {
                     const name = provider === 'email' ? 'Aditi Sharma' : 'User';
                     setProfile(prev => ({ ...prev, name, authenticated: true, lastLoginDate: new Date().toISOString().split('T')[0] }));
-                    addNotification(`${t.common.welcome}`, `Welcome back to your care journey.`);
+                    addNotification(`${t('common.welcome')}`, `Welcome back to your care journey.`);
                   }} 
                 />
               } />
