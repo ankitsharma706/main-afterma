@@ -1,14 +1,7 @@
 
-import React from 'react';
-import { Bell, X, Trash2, Calendar, Pill, Activity } from 'lucide-react';
+import { Bell, Trash2, X } from 'lucide-react';
 
-interface NotificationPanelProps {
-  notifications: any[];
-  onClose: () => void;
-  onClear: () => void;
-}
-
-const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, onClose, onClear }) => {
+const NotificationPanel = ({ notifications, onClose, onClear }) => {
   return (
     <div className="fixed top-0 right-0 w-96 h-screen bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
       <div className="p-8 flex items-center justify-between border-b border-gray-100 bg-pink-50/50">

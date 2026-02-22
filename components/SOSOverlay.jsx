@@ -1,19 +1,14 @@
 
-import React, { useState } from 'react';
-import { UserProfile } from '../types';
-import { ShieldAlert, Phone, User, X, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+
+import { AlertTriangle, Phone, ShieldAlert, User, X } from 'lucide-react';
 import { HELPLINES } from '../constants';
 
-interface SOSProps {
-  profile: UserProfile;
-  onClose: () => void;
-}
-
-const SOSOverlay: React.FC<SOSProps> = ({ profile, onClose }) => {
+const SOSOverlay = ({ profile, onClose }) => {
   const [confirmed, setConfirmed] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-red-600 flex items-center justify-center p-8 animate-in zoom-in duration-300">
+    <div className="fixed inset-0 z-100 bg-red-600 flex items-center justify-center p-8 animate-in zoom-in duration-300">
       <div className="max-w-2xl w-full bg-white rounded-[3rem] p-12 shadow-2xl space-y-10 relative">
         <button onClick={onClose} className="absolute top-8 right-8 text-gray-400 hover:text-gray-600"><X size={32} /></button>
         
@@ -37,7 +32,7 @@ const SOSOverlay: React.FC<SOSProps> = ({ profile, onClose }) => {
           </div>
         ) : (
           <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
-             <div className="p-8 bg-red-50 rounded-[2rem] border border-red-100 flex items-center gap-6">
+             <div className="p-8 bg-red-50 rounded-4xl border border-red-100 flex items-center gap-6">
                 <AlertTriangle className="text-red-600 shrink-0" size={32} />
                 <div>
                    <h4 className="font-bold text-red-900">Emergency Alert Active</h4>
@@ -46,12 +41,12 @@ const SOSOverlay: React.FC<SOSProps> = ({ profile, onClose }) => {
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <a href={`tel:${HELPLINES.emergency}`} className="p-8 rounded-[2rem] border-2 border-gray-100 flex flex-col items-center gap-3 group hover:border-red-500 transition-all">
+                <a href={`tel:${HELPLINES.emergency}`} className="p-8 rounded-4xl border-2 border-gray-100 flex flex-col items-center gap-3 group hover:border-red-500 transition-all">
                    <Phone className="text-red-500 group-hover:scale-110 transition-transform" size={32} />
                    <span className="text-2xl font-black">Call {HELPLINES.emergency}</span>
                    <span className="text-[10px] font-bold text-gray-400 uppercase">Emergency Police/Ambulance</span>
                 </a>
-                <a href={`tel:${HELPLINES.india.number}`} className="p-8 rounded-[2rem] border-2 border-gray-100 flex flex-col items-center gap-3 group hover:border-red-500 transition-all">
+                <a href={`tel:${HELPLINES.india.number}`} className="p-8 rounded-4xl border-2 border-gray-100 flex flex-col items-center gap-3 group hover:border-red-500 transition-all">
                    <User className="text-red-500 group-hover:scale-110 transition-transform" size={32} />
                    <span className="text-2xl font-black">{HELPLINES.india.number}</span>
                    <span className="text-[10px] font-bold text-gray-400 uppercase">{HELPLINES.india.name}</span>

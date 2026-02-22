@@ -1,19 +1,26 @@
-import React, { useState } from 'react';
-import { UserProfile, Appointment, CommunityCircle } from '../types';
-import { 
-  Users, Calendar, Heart, Stethoscope, Phone, ShieldCheck, Landmark, Globe, Star, Info, ChevronRight, MessageCircle, X, RotateCcw, ExternalLink, Zap, Shield, TrendingUp, Clock, CheckCircle2, Lock
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import {
+    Calendar,
+    CheckCircle2,
+    Clock,
+    Download,
+    ExternalLink,
+    Heart,
+    Info,
+    MessageCircle,
+    Phone,
+    RotateCcw,
+    ShieldCheck,
+    Star,
+    Stethoscope,
+    TrendingUp,
+    Users,
+    X
 } from 'lucide-react';
-import { COLORS, HELPLINES, NGO_DATA, EXPERT_DATA } from '../constants';
+import { useEffect, useState } from 'react';
+import { COLORS, EXPERT_DATA, HELPLINES, NGO_DATA } from '../constants';
 import { translations } from '../translations';
-
-interface CareConnectProps {
-  profile: UserProfile;
-  appointments: Appointment[];
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
-  circles: CommunityCircle[];
-  setCircles: React.Dispatch<React.SetStateAction<CommunityCircle[]>>;
-  addNotification: (title: string, text: string) => void;
-}
 
 const INSURANCE_PLANS = [
   { bank: 'SBI', logo: 'S', plan: 'Janani Raksha Health Cover', range: '₹5L - ₹10L', highlights: ['Full Hospitalization', 'Mental Health Support', 'In-Home Nursing'], approval: '88%', processing: '5 Days', count: '12k+', eligibility: 'Moms 18+', theme: 'BLUE' },
@@ -22,16 +29,25 @@ const INSURANCE_PLANS = [
   { bank: 'Axis Bank', logo: 'A', plan: 'AfterMa Wellness Plan', range: '₹5L - ₹20L', highlights: ['Priority Triage Assist', 'Holistic Wellness Rider', 'Emergency Red Flag Cover'], approval: '85%', processing: '6 Days', count: '10k+', eligibility: 'Moms 25+', theme: 'PURPLE' },
 ];
 
-const CareConnect: React.FC<CareConnectProps> = ({ 
+const CareConnect = ({ 
   profile, appointments, setAppointments, circles, setCircles, addNotification 
 }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
-  const [activeSubTab, setActiveSubTab] = useState<'Community' | 'Experts' | 'NGOs' | 'Insurance' | 'MyBookings'>('Community');
-  const [expertFilter, setExpertFilter] = useState<'Physiotherapy' | 'OB-GYN' | 'Lactation'>('Physiotherapy');
+  const [activeSubTab, setActiveSubTab] = useState('Community');
+  const [expertFilter, setExpertFilter] = useState('Physiotherapy');
   const theme = COLORS[profile.accent] || COLORS.PINK;
 
-  const handleRSVP = (id: string) => {
+  const [isTagSticky, setIsTagSticky] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsTagSticky(window.scrollY > 150);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleRSVP = (id) => {
     setCircles(prev => prev.map(c => {
       if (c.id === id) {
         if (!c.isJoined) addNotification("Circle Joined", `Welcome to the ${c.name} sisterhood.`);
@@ -41,8 +57,8 @@ const CareConnect: React.FC<CareConnectProps> = ({
     }));
   };
 
-  const handleBook = (name: string, type: Appointment['type'], price: string) => {
-    const newAppt: Appointment = {
+  const handleBook = (name, type, price) => {
+    const newAppt = {
       id: Date.now().toString(),
       specialistName: name,
       type,
@@ -56,7 +72,7 @@ const CareConnect: React.FC<CareConnectProps> = ({
     setActiveSubTab('MyBookings');
   };
 
-  const cancelAppointment = (id: string) => {
+  const cancelAppointment = (id) => {
     const confirm = window.confirm("Are you sure you want to cancel this healing session?");
     if (confirm) {
       setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'Cancelled' } : a));
@@ -64,12 +80,68 @@ const CareConnect: React.FC<CareConnectProps> = ({
     }
   };
 
-  const rescheduleAppointment = (id: string) => {
+  const rescheduleAppointment = (id) => {
     const newDate = prompt("Enter new preferred date (YYYY-MM-DD):", "2024-05-15");
     if (newDate) {
       setAppointments(prev => prev.map(a => a.id === id ? { ...a, date: newDate, status: 'Rescheduled' } : a));
       addNotification("Session Rescheduled", `Your session has been moved to ${newDate}.`);
     }
+  };
+
+  const generateHealthSummaryPDF = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text('AfterMa Health Summary', 14, 22);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Generated for: ${profile.name || 'Guest'} (${profile.role})`, 14, 32);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 38);
+    
+    // Recovery Phase Info
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Current Maternal Phase', 14, 50);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Stage: ${profile.maternityStage || 'Unknown'} | Routine: ${profile.journeySettings?.pace || 'Standard'} | Type: ${profile.deliveryType || 'Unknown'}`, 14, 58);
+
+    // Bookings Table
+    const tableData = appointments.map(app => [
+      app.date,
+      app.time,
+      app.specialistName,
+      app.type,
+      app.status
+    ]);
+
+    if (tableData.length > 0) {
+      autoTable(doc, {
+        startY: 70,
+        headStyles: { fillColor: [16, 185, 129] }, // emerald-500
+        head: [['Date', 'Time', 'Specialist', 'Care Type', 'Status']],
+        body: tableData,
+      });
+    } else {
+      doc.text('No upcoming or previous clinical sessions logged.', 14, 75);
+    }
+    
+    // Circles Summary
+    const joinedCircles = circles.filter(c => c.isJoined).map(c => c.name).join(', ');
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 90;
+    
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Community Support', 14, finalY);
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(joinedCircles ? `Active Sisterhoods: ${joinedCircles}` : 'Not currently enrolled in community groups.', 14, finalY + 8);
+    
+    doc.save('AfterMa_Health_Summary.pdf');
+    addNotification("Report Downloaded", "Your Care Connect summary has been saved as a PDF.");
   };
 
   const filteredExperts = EXPERT_DATA.filter(e => e.category === expertFilter);
@@ -79,7 +151,7 @@ const CareConnect: React.FC<CareConnectProps> = ({
       {/* Anchored Header */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-10 bg-white p-12 lg:p-16 rounded-[2.5rem] border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.01)] relative overflow-hidden group">
         <div className="relative z-10 space-y-6 max-w-2xl text-center md:text-left">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border border-emerald-100/50">Verified Clinical Support</div>
+          <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border transition-all duration-300 z-50 ${isTagSticky ? 'fixed top-[80px] lg:top-[100px] left-1/2 -translate-x-1/2 shadow-md backdrop-blur-md bg-white/90 text-emerald-600 border-emerald-200' : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'}`}>Verified Clinical Support</div>
           <h2 className="text-4xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight">{t.care.title}</h2>
           <p className="text-base lg:text-xl text-slate-400 font-medium italic opacity-85 leading-relaxed">"{t.care.subtitle}"</p>
         </div>
@@ -142,7 +214,7 @@ const CareConnect: React.FC<CareConnectProps> = ({
                 {['Physiotherapy', 'OB-GYN', 'Lactation'].map((cat) => (
                    <button 
                     key={cat}
-                    onClick={() => setExpertFilter(cat as any)}
+                    onClick={() => setExpertFilter(cat)}
                     className={`px-8 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all ${expertFilter === cat ? 'bg-white shadow-md text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
                    >
                      {cat}
@@ -224,7 +296,7 @@ const CareConnect: React.FC<CareConnectProps> = ({
         {activeSubTab === 'Insurance' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 animate-in fade-in duration-500">
              {INSURANCE_PLANS.map((plan, idx) => {
-               const pTheme = (COLORS as any)[plan.theme] || theme;
+               const pTheme = COLORS[plan.theme] || theme;
                return (
                  <div key={plan.bank} className="bg-white p-10 lg:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col group relative overflow-hidden h-full">
                     <div className="flex items-start justify-between gap-6 mb-10">
@@ -271,7 +343,19 @@ const CareConnect: React.FC<CareConnectProps> = ({
         )}
 
         {activeSubTab === 'MyBookings' && (
-          <div className="animate-in fade-in duration-500">
+          <div className="animate-in fade-in duration-500 space-y-8">
+            <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+               <div className="space-y-1">
+                 <h3 className="text-xl font-bold text-slate-900 tracking-tight">Clinical Record</h3>
+                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{appointments.length} Sessions</p>
+               </div>
+               <button 
+                onClick={generateHealthSummaryPDF}
+                className="flex items-center gap-2.5 px-6 py-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl font-bold text-[11px] uppercase tracking-widest transition-colors shadow-sm"
+               >
+                 <Download size={16} /> Download Health Summary
+               </button>
+            </div>
             {appointments.length === 0 ? (
               <div className="bg-slate-50 p-20 rounded-[2.5rem] border-2 border-dashed border-slate-100 flex flex-col items-center text-center space-y-6">
                  <div className="p-10 bg-white rounded-full shadow-sm text-slate-100"><Calendar size={64} /></div>
@@ -321,7 +405,7 @@ const CareConnect: React.FC<CareConnectProps> = ({
   );
 };
 
-const MetricBox = ({ icon, val, label }: any) => (
+const MetricBox = ({ icon, val, label }) => (
   <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center text-center space-y-1 shadow-inner">
      <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-50 mb-0.5">{icon}</div>
      <span className="text-xs font-bold text-slate-800 tracking-tight">{val}</span>
@@ -329,7 +413,7 @@ const MetricBox = ({ icon, val, label }: any) => (
   </div>
 );
 
-const NavButton = ({ label, active, onClick, theme, icon }: any) => (
+const NavButton = ({ label, active, onClick, theme, icon }) => (
   <button 
     onClick={onClick}
     className={`shrink-0 flex items-center gap-2.5 px-6 py-2.5 rounded-full font-bold text-[10px] transition-all border active:scale-[0.97] uppercase ${
