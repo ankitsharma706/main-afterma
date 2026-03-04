@@ -1,23 +1,24 @@
 
 import {
-  Activity,
-  Baby,
-  BarChart3,
-  Calculator,
-  CheckCircle2,
-  Clock,
-  Download,
-  Droplet,
-  Edit3,
-  Frown,
-  Gauge,
-  Laugh,
-  Lock,
-  Moon,
-  Play,
-  Smile,
-  Target,
-  X
+    Activity,
+    Baby,
+    BarChart3,
+    Calculator,
+    CheckCircle2,
+    Clock,
+    Download,
+    Droplet,
+    Edit3,
+    Frown,
+    Gauge,
+    Laugh,
+    Lock,
+    Moon,
+    Play,
+    Smile,
+    Sparkles,
+    Target,
+    X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { COLORS } from '../constants';
@@ -30,6 +31,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [sessionSettings, setSessionSettings] = useState({ intensity: 'Light', environment: 'Alone' });
   const timerRef = useRef(null);
   
   const [showTTCLogic, setShowTTCLogic] = useState(false);
@@ -418,27 +420,103 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
       )}
 
       {selectedActivity && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
-           <div className="max-w-2xl w-full text-center space-y-12">
-              <div className="space-y-4">
-                 <span className="px-4 py-1.5 bg-white/10 text-white rounded-full font-bold text-[10px] uppercase tracking-widest border border-white/10">Active Session</span>
-                 <h3 className="text-4xl lg:text-6xl font-bold text-white tracking-tight">{selectedActivity.title}</h3>
-                 <p className="text-white/60 font-medium italic text-lg">{selectedActivity.description}</p>
+        <div className="fixed inset-0 z-[150] bg-slate-900/95 backdrop-blur-2xl flex items-center justify-center p-4 lg:p-8 animate-in fade-in duration-300">
+           <div className="max-w-6xl w-full bg-[#1b2533] rounded-[3.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col md:flex-row h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300 border border-white/5 mx-auto">
+              
+              {/* LEFT PANE: TIMER & MAIN INFO */}
+              <div className="flex-1 p-8 lg:p-14 flex flex-col items-center justify-center text-center relative gap-10">
+                 <button onClick={() => { setIsTimerRunning(false); setSelectedActivity(null); }} className="absolute top-8 left-8 text-slate-400 hover:text-white transition-colors"><X size={24} /></button>
+                 
+                 <div className="space-y-4">
+                    <span className="px-4 py-1.5 bg-slate-800 shadow-sm text-slate-100 rounded-full font-black text-[10px] uppercase tracking-widest inline-block mb-2 border border-transparent">Active Session</span>
+                    <h3 className="text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">{selectedActivity.title}</h3>
+                    <p className="text-slate-300 font-medium italic text-base lg:text-lg">{selectedActivity.description}</p>
+                 </div>
+                 
+                 <div className="relative h-64 w-64 lg:h-80 lg:w-80 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 border-[6px] border-slate-700/50 rounded-full" />
+                    <div className="text-6xl lg:text-8xl font-black text-white tracking-tighter tabular-nums z-10">
+                       {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
+                    </div>
+                 </div>
+                 
+                 <div className="flex flex-col sm:flex-row items-center gap-6 w-full max-w-md justify-center mt-2">
+                    <button onClick={() => setIsTimerRunning(!isTimerRunning)} className="h-16 w-16 bg-white shrink-0 text-slate-900 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                       {isTimerRunning ? <Lock size={28} /> : <Play size={28} className="ml-1" />}
+                    </button>
+                    <button onClick={handleCompleteActivity} className="flex-1 w-full sm:w-auto py-5 bg-[#00D084] text-white rounded-full font-bold text-sm uppercase tracking-widest shadow-2xl hover:brightness-110 active:scale-95 transition-all">
+                       Complete Session
+                    </button>
+                 </div>
+                 <button onClick={() => { setIsTimerRunning(false); setSelectedActivity(null); }} className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors mt-2">
+                    Cancel Session
+                 </button>
               </div>
-              <div className="relative h-64 w-64 lg:h-80 lg:w-80 mx-auto flex items-center justify-center">
-                 <div className="absolute inset-0 border-8 border-white/5 rounded-full" />
-                 <div className="text-6xl lg:text-8xl font-black text-white tracking-tighter tabular-nums">
-                    {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
+
+              {/* RIGHT PANE: SETTINGS */}
+              <div className="w-full md:w-[400px] lg:w-[450px] bg-[#222c3c] border-l border-white/5 p-8 lg:p-12 flex flex-col overflow-y-auto shrink-0">
+                 <div className="space-y-2 mb-10">
+                    <h4 className="text-2xl font-bold text-white tracking-tight">Session Settings</h4>
+                    <p className="text-sm text-slate-400 font-medium">Customize your recovery rhythm.</p>
+                 </div>
+
+                 <div className="space-y-10">
+                    <div className="space-y-4">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Intensity</label>
+                       <div className="grid grid-cols-3 gap-3">
+                          {['Light', 'Moderate', 'Strong'].map(i => (
+                            <button 
+                               key={i} 
+                               onClick={() => setSessionSettings(prev => ({...prev, intensity: i}))}
+                               className={`py-3 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border ${sessionSettings.intensity === i ? 'bg-white text-slate-900 border-white' : 'bg-transparent text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'}`}
+                            >
+                               {i}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                       <div className="flex justify-between items-center ml-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</label>
+                          <span className="text-xs font-bold text-white">{selectedActivity.duration}m</span>
+                       </div>
+                       <input type="range" className="w-full accent-white h-1 bg-slate-700 rounded-full appearance-none cursor-not-allowed" disabled value={selectedActivity.duration} min="1" max="60" />
+                    </div>
+
+                    <div className="space-y-4 border-t border-slate-700/50 pt-8 mt-2">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Support Environment</label>
+                       <div className="grid grid-cols-2 gap-3">
+                          {['Alone', 'With Partner', 'With Friend', 'With Family', 'With Support Worker', 'In a Group'].map(env => (
+                             <button
+                               key={env}
+                               onClick={() => setSessionSettings(prev => ({...prev, environment: env}))}
+                               className={`py-3 px-2 rounded-[1rem] font-bold text-[9px] uppercase tracking-wider transition-all border whitespace-nowrap overflow-hidden text-ellipsis ${sessionSettings.environment === env ? 'bg-white text-slate-900 border-white' : 'bg-transparent text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'}`}
+                             >
+                               {env}
+                             </button>
+                          ))}
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="mt-10 p-6 rounded-3xl bg-slate-800/50 border border-slate-700/50 space-y-4">
+                    <div className="flex items-center gap-2 text-[#eab308] font-bold text-[10px] uppercase tracking-widest">
+                       <Sparkles size={14} /> Recommendation
+                    </div>
+                    <p className="text-sm text-slate-300 font-medium leading-relaxed">
+                       Based on your environment ({sessionSettings.environment}), a <span className="text-white font-bold">{sessionSettings.intensity} intensity</span> is recommended.
+                    </p>
+                    <p className="text-[10px] text-slate-500 italic leading-relaxed">Listen to your body's whispers before they become shouts. Stay aware of your breath.</p>
+                 </div>
+
+                 <div className="mt-auto pt-10 border-t border-slate-700/50">
+                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed text-center">
+                       DISCLAIMER: ALL SUGGESTIONS ARE GUIDANCE ONLY AND NOT MEDICAL ADVICE. CONSULT YOUR OB-GYN FOR CLINICAL CLEARANCE.
+                    </p>
                  </div>
               </div>
-              <div className="flex gap-6 justify-center">
-                 <button onClick={() => setIsTimerRunning(!isTimerRunning)} className="h-20 w-20 bg-white text-slate-900 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all">
-                    {isTimerRunning ? <Lock size={32} /> : <Play size={32} className="ml-1" />}
-                 </button>
-                 <button onClick={handleCompleteActivity} className="px-10 py-5 bg-emerald-500 text-white rounded-full font-bold text-sm uppercase tracking-[0.2em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                    Complete Session
-                 </button>
-              </div>
+
            </div>
         </div>
       )}

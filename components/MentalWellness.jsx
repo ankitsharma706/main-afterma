@@ -4,35 +4,111 @@ import {
     CheckSquare,
     ChevronRight,
     Edit3,
+    Film,
+    Headphones,
     Heart,
     Image as ImageIcon,
+    Maximize2,
     Mic,
+    Music,
     Paperclip,
-    Phone, Send,
+    Pause,
+    Phone,
+    Play,
+    Send,
     ShieldCheck,
+    SkipBack,
+    SkipForward,
     Sparkles,
     Star,
     Stethoscope,
     User,
+    Volume2,
     X
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { COLORS, EPDS_QUESTIONS, HELPLINES, STABILIZATION_TASKS } from '../constants';
-import { getTriageAnalysis } from '../services/geminiService';
+import { getStructuredAIResponse } from '../services/geminiService';
 import { translations } from '../translations';
 
-const MentalWellness = ({ profile, messages, setMessages }) => {
+const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
   const [showCheckin, setShowCheckin] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [showTriage, setShowTriage] = useState(false);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [playingMedia, setPlayingMedia] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
   const [checkedRituals, setCheckedRituals] = useState({});
   const [showReward, setShowReward] = useState(false);
+
+  // Real Audio Player State
+  const audioRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [volume, setVolume] = useState(1);
+
+  // Handle Play/Pause
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  // Setup audio state when a new song is picked
+  useEffect(() => {
+    if (playingMedia && playingMedia.type === 'audio' && audioRef.current) {
+      audioRef.current.src = playingMedia.src;
+      audioRef.current.load();
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.log('Audio autoplay blocked:', e));
+      }
+    }
+  }, [playingMedia]);
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    const current = audioRef.current.currentTime;
+    const dur = audioRef.current.duration;
+    setCurrentTime(current);
+    if (dur > 0) {
+      setAudioProgress((current / dur) * 100);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setAudioDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleProgressClick = (e) => {
+    if (!progressBarRef.current || !audioRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    const newTime = pct * audioDuration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const formatTime = (timeInSeconds) => {
+    if (!timeInSeconds || isNaN(timeInSeconds)) return "0:00";
+    const m = Math.floor(timeInSeconds / 60);
+    const s = Math.floor(timeInSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isPostpartum = profile.maternityStage === 'Postpartum';
@@ -52,11 +128,24 @@ const MentalWellness = ({ profile, messages, setMessages }) => {
     setInput("");
     setIsTyping(true);
     try {
-      const response = await getTriageAnalysis([text], profile);
-      const aiMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: response, timestamp: Date.now() };
+      const response = await getStructuredAIResponse(text, profile);
+      // Build rich message object with full structured data
+      const aiMsg = { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        content: response.message || 'I am here to support you.',
+        triage: response.triage,
+        bullets: response.bullets || [],
+        warnings: response.warnings || [],
+        quickReplies: response.quick_replies || [],
+        uiFlags: response.ui_flags || {},
+        timestamp: Date.now() 
+      };
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
       console.error("AI Triage Error:", error);
+      const errMsg = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'I had trouble connecting. If this is urgent, please call 112.', triage: 'mild', bullets: [], warnings: [], quickReplies: [], uiFlags: {}, timestamp: Date.now() };
+      setMessages(prev => [...prev, errMsg]);
     } finally {
       setIsTyping(false);
     }
@@ -114,8 +203,8 @@ const MentalWellness = ({ profile, messages, setMessages }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <MentalAction icon={<Heart className="text-rose-400" />} title={isPostpartum ? "EPDS Screening" : "Bonding Check-in"} subtitle="Guided Reflection" onClick={() => setShowCheckin(true)} />
             <MentalAction icon={<Stethoscope className="text-emerald-400" />} title="AI Triage" subtitle="Clinical Logic" onClick={() => setShowTriage(true)} />
-            <MentalAction icon={<Sparkles className="text-amber-400" />} title="Grounding Loops" subtitle="Safe Audio" onClick={() => {}} />
-            <MentalAction icon={<Edit3 className="text-indigo-400" />} title="Safe Journal" subtitle="Private Space" onClick={() => {}} />
+            <MentalAction icon={<Sparkles className="text-amber-400" />} title="Grounding Loops" subtitle="Safe Audio" onClick={() => setShowMediaLibrary(true)} />
+            <MentalAction icon={<Edit3 className="text-indigo-400" />} title="Safe Journal" subtitle="Private Space" onClick={onOpenJournal} />
           </div>
 
           {showTriage && (
@@ -145,8 +234,72 @@ const MentalWellness = ({ profile, messages, setMessages }) => {
                           <div className={`h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center shadow-sm border ${msg.role === 'user' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-emerald-500'}`}>
                              {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
                           </div>
-                          <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-medium ${msg.role === 'user' ? 'bg-slate-900 text-white rounded-tr-none shadow-xl' : 'bg-slate-50 text-slate-700 rounded-tl-none border border-slate-100'}`}>
-                             {msg.content}
+                          <div className="space-y-3 flex-1">
+                            {/* Emergency Banner */}
+                            {msg.uiFlags?.show_emergency_banner && (
+                              <div className="px-5 py-3 bg-rose-500 text-white rounded-2xl flex items-center gap-3 shadow-lg animate-pulse">
+                                <Phone size={16} fill="white" />
+                                <span className="font-bold text-sm">EMERGENCY — Call 112 now</span>
+                              </div>
+                            )}
+                            {/* Triage Badge */}
+                            {msg.role === 'assistant' && msg.triage && (
+                              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
+                                msg.triage === 'emergency' ? 'bg-rose-50 text-rose-600 border-rose-200'
+                                : msg.triage === 'moderate' ? 'bg-amber-50 text-amber-600 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                              }`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                  msg.triage === 'emergency' ? 'bg-rose-500 animate-pulse'
+                                  : msg.triage === 'moderate' ? 'bg-amber-500'
+                                  : 'bg-emerald-500'
+                                }`} />
+                                {msg.triage}
+                              </div>
+                            )}
+                            {/* Main Content */}
+                            <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-medium ${
+                              msg.role === 'user' 
+                                ? 'bg-slate-900 text-white rounded-tr-none shadow-xl' 
+                                : 'bg-slate-50 text-slate-700 rounded-tl-none border border-slate-100'
+                            }`}>
+                               {msg.content}
+                            </div>
+                            {/* Bullets */}
+                            {msg.role === 'assistant' && msg.bullets?.length > 0 && (
+                              <div className="p-5 bg-white border border-slate-100 rounded-2xl space-y-2 shadow-sm">
+                                {msg.bullets.map((b, i) => (
+                                  <div key={i} className="flex items-start gap-3 text-sm text-slate-600">
+                                    <div className="w-5 h-5 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-black">{i+1}</div>
+                                    <span className="font-medium leading-relaxed">{b}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Warnings */}
+                            {msg.role === 'assistant' && msg.warnings?.length > 0 && (
+                              <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl space-y-2">
+                                {msg.warnings.map((w, i) => (
+                                  <div key={i} className="flex items-start gap-3 text-xs text-amber-700 font-medium">
+                                    <span>⚠️</span><span>{w}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Quick Replies */}
+                            {msg.role === 'assistant' && msg.quickReplies?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {msg.quickReplies.map((qr, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => handleSendMessage(qr)}
+                                    className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all"
+                                  >
+                                    {qr}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                        </div>
                     </div>
@@ -175,6 +328,192 @@ const MentalWellness = ({ profile, messages, setMessages }) => {
                      <button onClick={() => handleSendMessage(input)} disabled={!input.trim() || isTyping} className="absolute right-3 top-1/2 -translate-y-1/2 h-12 w-12 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-20"><Send size={18} /></button>
                   </div>
                </div>
+            </div>
+          )}
+
+          {showMediaLibrary && (
+            <div className="fixed inset-0 z-[140] bg-white/95 backdrop-blur-2xl flex flex-col animate-in slide-in-from-bottom duration-700 overflow-hidden">
+               <div className="h-20 border-b border-slate-100 flex items-center justify-between px-8 lg:px-12 shrink-0">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><Music size={20} /></div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 leading-none">Grounding Library</h3>
+                      <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mt-1">Curated OTT Experience</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowMediaLibrary(false)} className="p-2 text-slate-300 hover:text-slate-900 transition-colors"><X size={24} /></button>
+               </div>
+               
+                <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-20">
+                   <div className="space-y-8">
+                      <div className="flex items-center gap-4">
+                         <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shadow-inner"><Headphones size={24} /></div>
+                         <div className="space-y-0.5">
+                           <h4 className="text-2xl font-black text-slate-900 tracking-tight">Audio Sanctuaries</h4>
+                           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Healing Frequencies</p>
+                         </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                         {[
+                           { type: 'audio', title: "Ocean Breath", duration: "12m", mood: "Calm", src: "/music/arabnights.mp3", img: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&q=80&w=400" },
+                      { type: 'audio', title: "Forest Whisper", duration: "15m", mood: "Grounded", src: "/music/batenkaitos.mp3", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400" },
+                      { type: 'audio', title: "Morning Dew", duration: "8m", mood: "Fresh", src: "/music/hidingunder.mp3", img: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&q=80&w=400" }
+                           ,{ type: 'audio', title: "Night Terros", duration: "12m", mood: "Calm", src: "/music/nightterrors.mp3", img: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&q=80&w=400" },
+                      { type: 'audio', title: "Trance party", duration: "15m", mood: "Grounded", src: "/music/tranceparty.mp3", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400" },
+                      { type: 'audio', title: "party popup", duration: "8m", mood: "Fresh", src: "/music/hidingunder.mp3", img: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&q=80&w=400" }
+                         ].map((item, i) => (
+                           <div key={i} onClick={() => { setPlayingMedia(item); setIsPlaying(true); }} className="group cursor-pointer bg-white p-6 rounded-[2.5rem] border border-slate-100 hover:shadow-xl transition-all space-y-4">
+                              <div className="aspect-square rounded-[2rem] overflow-hidden relative shadow-inner bg-slate-50 flex items-center justify-center">
+                                 <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80" />
+                                 <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-16 h-16 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                                       <Headphones size={24} className="text-amber-600" />
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="flex justify-between items-center px-2">
+                                 <div>
+                                   <h5 className="font-bold text-slate-900">{item.title}</h5>
+                                   <p className="text-[10px] text-amber-500 font-bold uppercase tracking-widest">{item.mood} • {item.duration}</p>
+                                 </div>
+                                 <button className="p-3 bg-amber-50 text-amber-600 rounded-2xl group-hover:bg-amber-600 group-hover:text-white transition-all"><Play size={16} fill="currentColor" /></button>
+                              </div>
+                           </div>
+                         ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-8">
+                      <div className="flex items-center gap-4">
+                         <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl shadow-inner"><Film size={24} /></div>
+                         <div className="space-y-0.5">
+                           <h4 className="text-2xl font-black text-slate-900 tracking-tight">Cinematic Comfort</h4>
+                           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Visual Grounding</p>
+                         </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                         {[
+                      { type: 'movie', title: "Nature's Rhythm", duration: "45m", mood: "Peaceful", img: "https://images.unsplash.com/photo-1501854140801-50d01674aa3e?auto=format&fit=crop&q=80&w=400", src: "/music/batenkaitos.mp3", },
+                           { type: 'movie', title: "Starlit Journey", duration: "60m", mood: "Dreamy", img: "https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&q=80&w=400" },
+                           { type: 'movie', title: "Mountain Echo", duration: "30m", mood: "Majestic", img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=400" }
+                         ].map((item, i) => (
+                           <div key={i} onClick={() => { setPlayingMedia(item); setIsPlaying(true); }} className="group cursor-pointer space-y-4">
+                              <div className="aspect-[16/9] rounded-[2.5rem] overflow-hidden relative shadow-2xl border-4 border-white">
+                                 <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                                 <div className="absolute top-4 left-4 px-3 py-1 bg-indigo-500/90 backdrop-blur-md rounded-full text-[8px] font-bold uppercase tracking-widest text-white border border-white/20">Movie</div>
+                                 <div className="absolute bottom-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[8px] font-bold uppercase tracking-widest text-slate-900">{item.duration}</div>
+                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/30">
+                                       <Play size={40} className="text-white fill-white" />
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="flex justify-between items-center px-4">
+                                 <div>
+                                   <h5 className="font-bold text-slate-900 text-lg">{item.title}</h5>
+                                   <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest">{item.mood}</p>
+                                 </div>
+                              </div>
+                           </div>
+                         ))}
+                      </div>
+                    </div>
+
+                    {/* Media Player Overlay */}
+                    {playingMedia && (
+                       <div className="fixed inset-0 z-[160] bg-slate-950 flex flex-col items-center justify-center animate-in fade-in duration-500">
+                          <button onClick={() => { setPlayingMedia(null); setIsPlaying(false); }} className="absolute top-10 right-10 p-4 text-white/40 hover:text-white transition-colors"><X size={32} /></button>
+                          
+                          {/* Hidden actual HTML5 Audio Element */}
+                          {playingMedia.type === 'audio' && (
+                            <audio 
+                              ref={audioRef}
+                              onTimeUpdate={handleTimeUpdate}
+                              onLoadedMetadata={handleLoadedMetadata}
+                              onEnded={() => setIsPlaying(false)}
+                            />
+                          )}
+
+                          <div className="max-w-4xl w-full px-8 space-y-12">
+                             <div className={`aspect-video rounded-[3rem] overflow-hidden relative shadow-2xl border border-white/10 ${playingMedia.type === 'audio' ? 'bg-gradient-to-br from-amber-900/40 to-slate-900' : ''}`}>
+                                {playingMedia.type === 'movie' ? (
+                                   <img src={playingMedia.img} alt={playingMedia.title} className="w-full h-full object-cover opacity-60" />
+                                ) : (
+                                   <div className="absolute inset-0 flex items-center justify-center">
+                                      <div className="relative">
+                                         <div className={`w-64 h-64 bg-amber-500/20 rounded-full absolute inset-0 transition-opacity duration-1000 ${isPlaying ? 'animate-ping opacity-100' : 'opacity-0'}`} />
+                                         <div className={`w-64 h-64 bg-amber-500/30 rounded-full relative flex items-center justify-center transition-transform duration-[3000ms] ${isPlaying ? 'scale-110' : 'scale-100'}`}>
+                                            <Headphones size={80} className="text-amber-400" />
+                                         </div>
+                                      </div>
+                                   </div>
+                                )}
+                                <div className="absolute bottom-10 left-10 right-10 space-y-6">
+                                   <div className="space-y-2">
+                                      <span className="text-[10px] font-bold text-amber-400 uppercase tracking-[0.3em]">{playingMedia.type === 'audio' ? 'Now Listening' : 'Now Watching'}</span>
+                                      <h3 className="text-4xl font-black text-white tracking-tight">{playingMedia.title}</h3>
+                                   </div>
+                                   
+                                   {playingMedia.type === 'audio' && (
+                                     <>
+                                       {/* Progress Timeline Scrubber */}
+                                       <div 
+                                         ref={progressBarRef}
+                                         onClick={handleProgressClick}
+                                         className="h-2 w-full bg-white/10 rounded-full group cursor-pointer relative"
+                                       >
+                                          <div 
+                                            className="h-full bg-amber-500 rounded-full transition-all group-hover:bg-amber-400" 
+                                            style={{ width: `${audioProgress}%` }}
+                                          />
+                                       </div>
+                                       {/* Time display */}
+                                       <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                          <span>{formatTime(currentTime)}</span>
+                                          <span>{formatTime(audioDuration) !== "0:00" ? formatTime(audioDuration) : playingMedia.duration}</span>
+                                       </div>
+                                     </>
+                                   )}
+                                </div>
+                             </div>
+
+                             <div className="flex flex-col items-center gap-10">
+                                <div className="flex items-center gap-12">
+                                   <button className="p-4 text-white/40 hover:text-white transition-all hover:scale-110"><SkipBack size={32} /></button>
+                                   <button 
+                                      onClick={playingMedia.type === 'audio' ? togglePlay : () => setIsPlaying(!isPlaying)}
+                                      className="w-24 h-24 bg-white text-slate-950 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all"
+                                   >
+                                      {isPlaying ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" className="ml-2" />}
+                                   </button>
+                                   <button className="p-4 text-white/40 hover:text-white transition-all hover:scale-110"><SkipForward size={32} /></button>
+                                </div>
+
+                                <div className="flex items-center gap-8 text-white/40">
+                                   <button className="hover:text-white transition-colors">
+                                     {volume > 0 ? <Volume2 size={24} /> : <X size={24} />}
+                                   </button>
+                                   <input 
+                                     type="range"
+                                     min="0"
+                                     max="1"
+                                     step="0.05"
+                                     value={volume}
+                                     onChange={(e) => {
+                                        const v = parseFloat(e.target.value);
+                                        setVolume(v);
+                                        if (audioRef.current) audioRef.current.volume = v;
+                                     }}
+                                     className="w-32 h-1 accent-amber-500 bg-white/10 rounded-full cursor-pointer"
+                                   />
+                                   <button className="hover:text-white transition-colors"><Maximize2 size={24} /></button>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    )}
+                </div>
             </div>
           )}
 

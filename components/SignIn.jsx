@@ -1,6 +1,7 @@
 
-import { ArrowLeft, Eye, EyeOff, Heart, Mail, Phone, ShieldCheck, Stethoscope, X } from 'lucide-react';
-import React, { useState } from 'react';
+import { ArrowLeft, Eye, EyeOff, Heart, Loader2, Mail, Phone, ShieldCheck, Stethoscope, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { authAPI } from '../services/api.js';
 
 /* ─── SVG Brand Icons ─────────────────────────────────────── */
 const GoogleIcon = () => (
@@ -22,13 +23,35 @@ const AppleIcon = () => (
 const EmailForm = ({ onBack, onLogin, mode, role }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [step, setStep] = useState('form');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLogin(role);
+    setError('');
+    setLoading(true);
+    try {
+      let user;
+      if (mode === 'signup') {
+        // register() saves token and returns user directly
+        user = await authAPI.register({ email, password, confirmPassword, full_name: name, role: role === 'expert' ? 'doctor' : 'user' });
+        // If register doesn't return user (some setups), login manually
+        if (!user) user = await authAPI.login({ email, password });
+      } else {
+        // login() saves token and returns user directly
+        user = await authAPI.login({ email, password });
+      }
+      // Fallback: fetch user profile if not returned
+      if (!user) user = await authAPI.getMe();
+      onLogin(role, user);
+    } catch (err) {
+      setError(err?.message || 'Authentication failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,12 +66,18 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
         </h3>
         <p className="text-sm text-slate-400">Use your email to {mode === 'signup' ? 'get started' : 'sign in'}</p>
       </div>
+      {error && (
+        <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-xs font-medium rounded-xl">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-3">
         {mode === 'signup' && (
           <input
             type="text" autoFocus value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Full Name"
+            required
             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
           />
         )}
@@ -56,6 +85,7 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
           type="email" value={email}
           onChange={e => setEmail(e.target.value)}
           placeholder="Email address"
+          required
           autoFocus={mode !== 'signup'}
           className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
         />
@@ -63,20 +93,35 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
           <input
             type={showPw ? 'text' : 'password'} value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
+            required
             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all pr-12 text-sm"
           />
           <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
             {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
+        {mode === 'signup' && (
+          <input
+            type="password" value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            placeholder="Confirm Password"
+            required
+            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
+          />
+        )}
         {mode === 'signin' && (
           <div className="text-right">
             <span className="text-xs text-pink-500 font-semibold cursor-pointer hover:text-pink-700">Forgot password?</span>
           </div>
         )}
-        <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200">
-          {mode === 'signup' ? 'Create Account' : 'Sign In'}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200 disabled:opacity-70 flex items-center justify-center gap-2"
+        >
+          {loading && <Loader2 size={16} className="animate-spin" />}
+          {loading ? 'Please wait...' : (mode === 'signup' ? 'Create Account' : 'Sign In')}
         </button>
       </form>
     </div>
@@ -88,14 +133,44 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [step, setStep] = useState('phone');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const inputsRef = React.useRef([]);
+
+  const handleSendOtp = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await authAPI.sendOtp({ phone: `+91${phone}` });
+      setStep('otp');
+    } catch (err) {
+      setError(err?.message || 'Failed to send OTP. Check your number.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join('');
+    setError('');
+    setLoading(true);
+    try {
+      // verifyOtp returns user and saves token
+      const user = await authAPI.verifyOtp({ phone: `+91${phone}`, code, role: role === 'expert' ? 'doctor' : 'user' });
+      onLogin(role, user);
+    } catch (err) {
+      setError(err?.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOtpChange = (val, idx) => {
     const newOtp = [...otp];
     newOtp[idx] = val.replace(/\D/, '').slice(-1);
     setOtp(newOtp);
     if (val && idx < 5) inputsRef.current[idx + 1]?.focus();
-    if (newOtp.every(d => d !== '')) onLogin(role);
+    if (newOtp.every(d => d !== '')) handleVerifyOtp();
   };
 
   return (
@@ -112,18 +187,32 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
           {step === 'phone' ? "We'll send you a 6-digit code" : `Sent to +91 ${phone}`}
         </p>
       </div>
+      {error && (
+        <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-xs font-medium rounded-xl">
+          {error}
+        </div>
+      )}
       {step === 'phone' ? (
         <div className="space-y-3">
           <div className="flex gap-3">
             <div className="flex items-center px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-bold text-sm shrink-0">+91</div>
             <input
-              type="tel" autoFocus value={phone} onChange={e => setPhone(e.target.value.replace(/\D/, '').slice(0, 10))}
+              type="tel" autoFocus value={phone} onChange={e => {
+                const digitsOnly = e.target.value.replace(/\D/g, '');
+                const finalPhone = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+                setPhone(finalPhone);
+              }}
               placeholder="Phone number"
               className="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
             />
           </div>
-          <button onClick={() => setStep('otp')} className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200">
-            Send OTP
+          <button
+            onClick={handleSendOtp}
+            disabled={loading || phone.length < 10}
+            className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200 disabled:opacity-70 flex items-center justify-center gap-2"
+          >
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {loading ? 'Sending...' : 'Send OTP'}
           </button>
         </div>
       ) : (
@@ -139,8 +228,13 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
               />
             ))}
           </div>
-          <button onClick={() => onLogin(role)} className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200">
-            Verify & Continue
+          <button
+            onClick={handleVerifyOtp}
+            disabled={loading || otp.some(d => !d)}
+            className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200 disabled:opacity-70 flex items-center justify-center gap-2"
+          >
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {loading ? 'Verifying...' : 'Verify & Continue'}
           </button>
         </div>
       )}
@@ -151,15 +245,71 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
 /* ─── Main SignIn Component ─────────────────────────────── */
 const SignIn = ({ onLogin, onClose }) => {
   const [view, setView] = useState('main');
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
-  const [role, setRole] = useState('mother'); // 'mother' | 'expert'
+  const [mode, setMode] = useState('signin');
+  const [role, setRole] = useState('mother');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
 
-  const ProviderBtn = ({ icon, label, onClick }) => (
+  // Load Google GSI script and initialize Google Auth on mount/view change
+  useEffect(() => {
+    const initGoogle = () => {
+      const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+      if (!CLIENT_ID || !window.google?.accounts?.id) return;
+
+      window.google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: async (response) => {
+          setGoogleLoading(true);
+          setGoogleError('');
+          try {
+            const user = await authAPI.loginWithGoogle(response.credential);
+            const userData = user || await authAPI.getMe();
+            onLogin(role, userData);
+          } catch (err) {
+            setGoogleError(err?.message || 'Google sign-in failed. Please try Email or Phone.');
+          } finally {
+            setGoogleLoading(false);
+          }
+        },
+      });
+
+      // Render the hidden official Google button over our custom button to robustly capture clicks
+      const btnWrapper = document.getElementById('google-btn-wrapper');
+      if (btnWrapper) {
+        window.google.accounts.id.renderButton(btnWrapper, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          width: btnWrapper.offsetWidth || 300,
+        });
+      }
+    };
+
+    if (view === 'main') {
+      if (!document.getElementById('google-gsi-script')) {
+        const script = document.createElement('script');
+        script.id = 'google-gsi-script';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = initGoogle;
+        document.head.appendChild(script);
+      } else {
+        // Yield to let DOM element render before attaching the button
+        setTimeout(initGoogle, 100);
+      }
+    }
+  }, [view, role, onLogin]);
+
+  const ProviderBtn = ({ icon, label, onClick, loading: btnLoading, className = '' }) => (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white font-semibold text-slate-700 text-sm transition-all active:scale-[0.98] hover:shadow-md hover:bg-slate-50 border border-slate-200"
+      disabled={btnLoading}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white font-semibold text-slate-700 text-sm transition-all active:scale-[0.98] hover:shadow-md hover:bg-slate-50 border border-slate-200 disabled:opacity-60 ${className}`}
     >
-      <span className="w-5 h-5 flex items-center justify-center shrink-0">{icon}</span>
+      <span className="w-5 h-5 flex items-center justify-center shrink-0">
+        {btnLoading ? <Loader2 size={18} className="animate-spin text-pink-500" /> : icon}
+      </span>
       {label}
     </button>
   );
@@ -285,8 +435,37 @@ const SignIn = ({ onLogin, onClose }) => {
 
               {/* OAuth */}
               <div className="space-y-2.5">
-                <ProviderBtn icon={<GoogleIcon />} label="Continue with Google" onClick={() => onLogin(role)} />
-                <ProviderBtn icon={<AppleIcon />} label="Continue with Apple" onClick={() => onLogin(role)} />
+                {googleError && (
+                  <div className="px-4 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-medium rounded-xl">
+                    {googleError}
+                  </div>
+                )}
+                
+                <div className="relative w-full rounded-xl overflow-hidden group">
+                  <ProviderBtn
+                    icon={<GoogleIcon />}
+                    label="Continue with Google"
+                    onClick={() => {
+                        if (!window.google?.accounts?.id) {
+                          setGoogleError('Google Sign-In is still loading. Please try again in a moment.');
+                        }
+                    }}
+                    loading={googleLoading}
+                    className="group-hover:shadow-md group-hover:bg-slate-50"
+                  />
+                  {/* Invisible official Google Sign In button captures click properly */}
+                  <div 
+                    id="google-btn-wrapper" 
+                    className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer opacity-[0.01]"
+                    style={{ transform: 'scale(1.1)' }}
+                  ></div>
+                </div>
+
+                <ProviderBtn
+                  icon={<AppleIcon />}
+                  label="Continue with Apple"
+                  onClick={() => alert('Apple Sign-In coming soon. Please use Email or Phone.')}
+                />
               </div>
 
               {/* Doctor/Mother toggle CTA */}

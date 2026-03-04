@@ -2,6 +2,7 @@
 import {
     Activity,
     ArrowRight,
+    BarChart2,
     Calendar as CalIcon,
     Droplet,
     Leaf,
@@ -12,6 +13,7 @@ import {
     Zap
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Area,
     AreaChart,
@@ -25,7 +27,8 @@ import { COLORS, NUTRITION_GUIDE, RECOVERY_DATABASE, SLOGAN } from '../constants
 import { getDailyInspiration } from '../services/geminiService';
 import { translations } from '../translations';
 
-const Dashboard = ({ profile, logs, onAddLog }) => {
+const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
+  const navigate = useNavigate();
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
   const [inspiration, setInspiration] = useState(t.dashboard.inspiration);
@@ -123,9 +126,14 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
             </div>
           </div>
           
-          <button onClick={onAddLog} className="bg-white/95 backdrop-blur-md px-10 py-5 rounded-full font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 shrink-0 text-slate-900 text-sm lg:text-base border border-white">
-            <Plus size={20} strokeWidth={3} /> {t.dashboard.logMoment}
-          </button>
+          <div className="flex flex-col gap-3 shrink-0 mt-6 lg:mt-0 w-full lg:w-auto">
+             <button onClick={onAddLog} className="bg-white/95 backdrop-blur-md px-8 py-4 rounded-[2rem] font-bold shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 text-slate-900 text-sm lg:text-base border border-white w-full">
+               <Plus size={20} strokeWidth={3} /> {t.dashboard.logMoment}
+             </button>
+             <button onClick={onOpenHistory} className="bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] font-bold shadow-sm hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 text-white text-sm lg:text-base border border-white/20 w-full hover:-translate-y-1">
+               <BarChart2 size={18} strokeWidth={2.5} /> Records History
+             </button>
+          </div>
         </div>
       </div>
 
@@ -206,7 +214,11 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
                 <p className="text-sm lg:text-base text-slate-400 font-medium line-clamp-1">{nextActivity.description}</p>
               </div>
           </div>
-          <button className="w-full md:w-auto px-10 py-5 rounded-3xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 text-white" style={{ backgroundColor: theme.primary, background: `linear-gradient(135deg, ${theme.primary}, ${theme.text}dd)` }}>
+          <button 
+            onClick={() => navigate('/carejourney')}
+            className="w-full md:w-auto px-10 py-5 rounded-3xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 text-white" 
+            style={{ backgroundColor: theme.primary, background: `linear-gradient(135deg, ${theme.primary}, ${theme.text}dd)` }}
+          >
             {t.dashboard.startSoftly} <ArrowRight size={20} />
           </button>
         </div>

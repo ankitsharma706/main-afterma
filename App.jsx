@@ -12,22 +12,31 @@ import ExpertAnalytics from './components/ExpertAnalytics';
 import ExpertDashboard from './components/ExpertDashboard';
 import ExpertSettings from './components/ExpertSettings';
 import HealthLogModal from './components/HealthLogModal';
+import Journal from './components/Journal';
 import Membership from './components/Membership';
 import MentalWellness from './components/MentalWellness';
 import Navigation from './components/Navigation';
 import NotificationPanel from './components/NotificationPanel';
 import Payment from './components/Payment';
+import RecordsHistoryModal from './components/RecordsHistoryModal';
+import SafeRecipes from './components/SafeRecipes';
 import Settings from './components/Settings';
 import SignIn from './components/SignIn';
 import SOSOverlay from './components/SOSOverlay';
 import MomKart from './components/Store';
+import SurveyCommunityData from './components/SurveyCommunityData';
 import { COLORS, RECOVERY_DATABASE } from './constants';
+import { authAPI } from './services/api';
 import { translations } from './translations';
 
 const App = () => {
   const [profile, setProfile] = useState(() => {
-    const saved = localStorage.getItem('afterma_profile_v4');
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem('afterma_profile_v4');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse profile from localStorage", e);
+    }
     return {
       name: "Guest",
       age: 28,
@@ -65,7 +74,8 @@ const App = () => {
         careConnectUpdates: true,
         sosConfirmations: true
       },
-      periodLogs: []
+      periodLogs: [],
+      journalEntries: []
     };
   });
 
@@ -80,11 +90,15 @@ const App = () => {
   };
 
   const [showSOS, setShowSOS] = useState(false);
+  const [sosConfirming, setSosConfirming] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showJournal, setShowJournal] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const lastClickRef = useRef(0);
+  const sosTimerRef = useRef(null);
   
   const [appointments, setAppointments] = useState([]);
   const [circles, setCircles] = useState([
@@ -111,6 +125,13 @@ const App = () => {
     setIsMobileMenuOpen(false);
   }, [currentView]);
 
+  // Cleanup SOS timer on unmount
+  useEffect(() => {
+    return () => {
+      if (sosTimerRef.current) clearTimeout(sosTimerRef.current);
+    };
+  }, []);
+
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isExpert = profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified';
 
@@ -118,25 +139,35 @@ const App = () => {
     setNotifications(prev => [{ id: Date.now().toString(), title, text, time: 'Just now' }, ...prev]);
   };
 
-  const handleLogin = (role = 'mother') => {
+  const handleLogin = (role = 'mother', userData = null) => {
+    // Merge backend data if it exists
+    const userName = userData?.full_name || (role === 'expert' ? "Dr. Expert" : "Mother");
+    // If the user chose "Sign in as Doctor", always honour that selection.
+    // The backend returns role:'user' by default, which must not override the chosen doctor role.
+    const userRole = role === 'expert' ? 'expert' : (userData?.role || role);
+
     setProfile(prev => ({ 
       ...prev, 
-      name: role === 'expert' ? "Dr. Ananya Iyer" : "Aditi Sharma", 
+      ...userData,  // merge all backend fields
+      name: userName, 
       authenticated: true, 
-      role: role,
-      verification: role === 'expert' ? { status: 'verified', roleRequested: 'expert' } : prev.verification,
+      role: userRole,
+      verification: userRole === 'expert' ? { status: 'verified', roleRequested: 'expert' } : prev.verification,
       lastLoginDate: new Date().toISOString().split('T')[0] 
     }));
-    if (role === 'expert') {
+    
+    if (userRole === 'expert') {
       setView('expert-dashboard');
     } else {
       setView('dashboard');
     }
-    addNotification(`${t.common.welcome} ${role === 'expert' ? "Dr. Ananya" : "Aditi"}`, `Welcome back to your care journey.`);
+    
+    addNotification(`${t.common.welcome} ${userName.split(' ')[0]}`, `Welcome back to your care journey.`);
   };
 
   const logout = () => {
-    setProfile(prev => ({ ...prev, authenticated: false }));
+    authAPI.logout(); // clear tokens
+    setProfile(prev => ({ ...prev, authenticated: false, name: "Guest" }));
     setView('education');
   };
 
@@ -155,7 +186,23 @@ const App = () => {
     });
   };
 
-  const triggerSOS = () => setShowSOS(true);
+  const triggerSOS = () => {
+    setShowSOS(true);
+    setSosConfirming(false);
+    if (sosTimerRef.current) clearTimeout(sosTimerRef.current);
+  };
+
+  // Improved SOS - double-tap with visual confirm state (from v3)
+  const handleSOSClick = () => {
+    if (!sosConfirming) {
+      setSosConfirming(true);
+      sosTimerRef.current = setTimeout(() => {
+        setSosConfirming(false);
+      }, 2000);
+    } else {
+      triggerSOS();
+    }
+  };
 
   const addToCart = (item) => {
     setCart(prev => {
@@ -170,16 +217,6 @@ const App = () => {
 
   const updateQuantity = (id, delta) => {
     setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i));
-  };
-
-
-  const handleSOSClick = () => {
-    const currentTime = Date.now();
-    const timeSinceLastClick = currentTime - lastClickRef.current;
-    if (timeSinceLastClick < 300) {
-      triggerSOS();
-    }
-    lastClickRef.current = currentTime;
   };
 
   const handleSaveLog = (newLog) => {
@@ -229,7 +266,7 @@ const App = () => {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[55] lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      <div className={`fixed inset-y-0 left-0 w-64 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out z-[60] lg:z-50 h-screen`}>
+      <div className={`fixed inset-y-0 left-0 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out z-[60] lg:z-50 h-screen`}>
         <Navigation currentView={currentView} setView={setView} profile={profile} logout={logout} onClose={() => setIsMobileMenuOpen(false)} />
       </div>
       
@@ -256,7 +293,18 @@ const App = () => {
           </div>
 
           <div className="flex items-center gap-3 lg:gap-5 ml-4">
-            <button onClick={handleSOSClick} className="px-4 py-1.5 bg-[#EF4444] text-white rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-red-100">{t.common.sos}</button>
+            {/* Improved SOS with confirm state (from v3) */}
+            <div className="relative group">
+              <button 
+                onClick={handleSOSClick} 
+                className={`px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg ${sosConfirming ? 'bg-amber-500 text-black animate-pulse' : 'bg-[#eab308] text-black shadow-amber-200'}`}
+              >
+                {sosConfirming ? 'Tap again to confirm SOS' : 'Double tap for SOS'}
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-slate-900 text-white text-[8px] font-bold uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
+                Your safety matters. Double tap to activate.
+              </div>
+            </div>
             {profile.authenticated ? (
               <div className="flex items-center gap-2 lg:gap-4">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-gray-500 hover:bg-gray-50 rounded-full relative transition-colors">
@@ -279,7 +327,7 @@ const App = () => {
           </div>
         </header>
 
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-hidden">
           <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
             {/* Expert Views */}
             {isExpert && currentView === 'expert-dashboard' && <ExpertDashboard profile={profile} />}
@@ -289,10 +337,12 @@ const App = () => {
             {/* Mother Views - Restricted for Experts */}
             {!isExpert && (
               <>
-                {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => setShowLogModal(true)} />}
+                {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => setShowLogModal(true)} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />}
                 {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
-                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessages} setMessages={setTriageMessages} />}
+                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessages} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
                 {currentView === 'education' && <Education profile={profile} />}
+                {currentView === 'recipes' && <SafeRecipes profile={profile} />}
+                {currentView === 'community-wisdom' && <SurveyCommunityData profile={profile} />}
                 {currentView === 'momkart' && profile.authenticated && (
                   <MomKart
                     profile={profile}
@@ -335,6 +385,8 @@ const App = () => {
       </main>
       {showSOS && <SOSOverlay profile={profile} onClose={() => setShowSOS(false)} />}
       {showLogModal && <HealthLogModal profile={profile} onClose={() => setShowLogModal(false)} onSave={handleSaveLog} />}
+      {showHistoryModal && <RecordsHistoryModal profile={profile} logs={logs} onClose={() => setShowHistoryModal(false)} />}
+      {showJournal && <Journal profile={profile} setProfile={setProfile} onClose={() => setShowJournal(false)} />}
       {(currentView === 'signin' || currentView === 'singin') && (
         <SignIn onLogin={handleLogin} onClose={() => setView('education')} />
       )}

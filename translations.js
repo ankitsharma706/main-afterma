@@ -18,7 +18,8 @@ export const translations = {
       momkart: "MomKart",
       education: "Learning Center",
       settings: "Settings",
-      membership: "AfterMa Plus"
+      membership: "AfterMa Plus",
+      recipes: "Safe Recipes"
     },
     dashboard: {
       inspiration: "Wishing you a gentle day...",
@@ -30,6 +31,7 @@ export const translations = {
       healingPulse: "Healing Pulse",
       healingPulseSub: "Your recovery trend over the last 7 days",
       warmNutrition: "Warm Nutrition",
+      recipes: "Explore Safe Recipes",
       recipes: "Explore Safe Recipes",
       stats: {
         hydration: "Hydration",
@@ -71,6 +73,10 @@ export const translations = {
       experts: {
         book: "Book Session"
       }
+    },
+    recipes: {
+      title: "Safe Recipes",
+      subtitle: "Nourishing your body with clinical and traditional wisdom."
     },
     education: {
       title: "Learning Center",
@@ -141,7 +147,8 @@ export const translations = {
       momkart: "मॉमकार्ट",
       education: "लर्निंग सेंटर",
       settings: "सेटिंग्स",
-      membership: "आफ्टरमा प्लस"
+      membership: "आफ्टरमा प्लस",
+      recipes: "सुरक्षित रेसिपी"
     },
     dashboard: {
       inspiration: "आज हम आपकी सुखद यात्रा की कामना करते हैं...",
@@ -158,6 +165,25 @@ export const translations = {
         rest: "आराम",
         selfcare: "स्वयं की देखभाल",
         kegel: "जेंटल कोर"
+      }
+    },
+    care: {
+      title: "केयर कनेक्ट",
+      subtitle: "प्रमाणित मातृ विशेषज्ञता और पीयर सपोर्ट का आपका सेतु।",
+      helpline: "आपातकालीन हेल्पलाइन",
+      tabs: {
+        community: "सिस्टर्स सर्कल्स",
+        experts: "विशेषज्ञ",
+        ngo: "एनजीओ सहायता",
+        insurance: "बीमा योजनाएं",
+        sessions: "मेरे सत्र"
+      },
+      community: {
+        sistersJoined: "सिस्टर्स जुड़ीं",
+        joinSisters: "सिस्टर सर्कल में शामिल हों"
+      },
+      experts: {
+        book: "सत्र बुक करें"
       }
     },
     physical: {

@@ -7,12 +7,12 @@ const SOSOverlay = ({ profile, onClose }) => {
   const [confirmed, setConfirmed] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-red-600 flex items-center justify-center p-8 animate-in zoom-in duration-300">
+    <div className="fixed inset-0 z-[100] bg-yellow-500 flex items-center justify-center p-8 animate-in zoom-in duration-300">
       <div className="max-w-2xl w-full bg-white rounded-[3rem] p-12 shadow-2xl space-y-10 relative">
         <button onClick={onClose} className="absolute top-8 right-8 text-gray-400 hover:text-gray-600"><X size={32} /></button>
         
         <div className="text-center space-y-4">
-           <div className="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+           <div className="w-24 h-24 bg-red-100 text-red-00 rounded-full flex items-center justify-center mx-auto mb-6">
               <ShieldAlert size={48} />
            </div>
            <h2 className="text-4xl font-black text-gray-900 leading-tight">SOS Help System</h2>
@@ -23,7 +23,7 @@ const SOSOverlay = ({ profile, onClose }) => {
           <div className="space-y-6">
              <button 
                 onClick={() => setConfirmed(true)}
-                className="w-full py-6 bg-red-600 text-white rounded-full text-xl font-black shadow-xl shadow-red-200 hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full py-6 bg-yellow-500 text-white rounded-full text-xl font-black shadow-xl shadow-red-200 hover:scale-[1.02] active:scale-95 transition-all"
              >
                 YES, I NEED HELP NOW
              </button>
