@@ -23,7 +23,7 @@ const SOSOverlay = ({ profile, onClose }) => {
           <div className="space-y-6">
              <button 
                 onClick={() => setConfirmed(true)}
-                className="w-full py-6 bg-yellow-500 text-white rounded-full text-xl font-black shadow-xl shadow-red-200 hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full py-6 bg-yellow-500 text-white rounded-full text-xl font-black shadow-xl shadow-yellow-200 hover:scale-[1.02] active:scale-95 transition-all"
              >
                 YES, I NEED HELP NOW
              </button>

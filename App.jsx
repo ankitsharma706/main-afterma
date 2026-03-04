@@ -388,7 +388,7 @@ const App = () => {
       {showHistoryModal && <RecordsHistoryModal profile={profile} logs={logs} onClose={() => setShowHistoryModal(false)} />}
       {showJournal && <Journal profile={profile} setProfile={setProfile} onClose={() => setShowJournal(false)} />}
       {(currentView === 'signin' || currentView === 'singin') && (
-        <SignIn onLogin={handleLogin} onClose={() => setView('education')} />
+        <SignIn profile={profile} onLogin={handleLogin} onClose={() => setView('education')} />
       )}
     </div>
   );

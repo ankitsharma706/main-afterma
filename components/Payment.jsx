@@ -129,12 +129,12 @@ const Payment = ({ profile, cart, orderSummary, onGoBack, onSuccess }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <input
                     type="text" maxLength={5} value={cardExpiry}
-                    onChange={e => { const v = e.target.value.replace(/\D/g,''); setCardExpiry(v.length > 2 ? v.slice(0,2)+'/'+v.slice(2) : v); }}
+                    onChange={e => { const v = e.target.value.replace(/\D/g, ''); setCardExpiry(v.length > 2 ? v.slice(0, 2) + '/' + v.slice(2) : v); }}
                     placeholder="MM / YY"
                     className="px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
                   />
                   <input
-                    type="password" maxLength={4} value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g,''))}
+                    type="password" maxLength={4} value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, ''))}
                     placeholder="CVV"
                     className="px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
                   />

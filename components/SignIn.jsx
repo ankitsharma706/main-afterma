@@ -1,6 +1,7 @@
 
 import { ArrowLeft, Eye, EyeOff, Heart, Loader2, Mail, Phone, ShieldCheck, Stethoscope, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { COLORS } from '../constants';
 import { authAPI } from '../services/api.js';
 
 /* ─── SVG Brand Icons ─────────────────────────────────────── */
@@ -20,7 +21,7 @@ const AppleIcon = () => (
 );
 
 /* ─── Email Sub-form ─────────────────────────────────────── */
-const EmailForm = ({ onBack, onLogin, mode, role }) => {
+const EmailForm = ({ onBack, onLogin, mode, role, theme }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -78,7 +79,7 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
             onChange={e => setName(e.target.value)}
             placeholder="Full Name"
             required
-            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
+            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm"
           />
         )}
         <input
@@ -87,7 +88,7 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
           placeholder="Email address"
           required
           autoFocus={mode !== 'signup'}
-          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
+          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm"
         />
         <div className="relative">
           <input
@@ -95,7 +96,7 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
             onChange={e => setPassword(e.target.value)}
             placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
             required
-            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all pr-12 text-sm"
+            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all pr-12 text-sm"
           />
           <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
             {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -107,12 +108,12 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
             onChange={e => setConfirmPassword(e.target.value)}
             placeholder="Confirm Password"
             required
-            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
+            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm"
           />
         )}
         {mode === 'signin' && (
           <div className="text-right">
-            <span className="text-xs text-pink-500 font-semibold cursor-pointer hover:text-pink-700">Forgot password?</span>
+            <span className="text-xs font-semibold cursor-pointer hover:brightness-90 transition-all" style={{ color: theme.primary }}>Forgot password?</span>
           </div>
         )}
         <button
@@ -129,7 +130,7 @@ const EmailForm = ({ onBack, onLogin, mode, role }) => {
 };
 
 /* ─── Phone Sub-form ─────────────────────────────────────── */
-const PhoneForm = ({ onBack, onLogin, mode, role }) => {
+const PhoneForm = ({ onBack, onLogin, mode, role, theme }) => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [step, setStep] = useState('phone');
@@ -203,13 +204,14 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
                 setPhone(finalPhone);
               }}
               placeholder="Phone number"
-              className="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-sm"
+              className="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all text-sm"
             />
           </div>
           <button
             onClick={handleSendOtp}
             disabled={loading || phone.length < 10}
-            className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200 disabled:opacity-70 flex items-center justify-center gap-2"
+            className="w-full py-3.5 text-white rounded-xl font-bold text-sm hover:brightness-110 active:scale-[0.98] transition-all shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
+            style={{ backgroundColor: theme.primary }}
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
             {loading ? 'Sending...' : 'Send OTP'}
@@ -224,14 +226,15 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
                 type="text" inputMode="numeric" maxLength={1} value={d}
                 onChange={e => handleOtpChange(e.target.value, i)}
                 onKeyDown={e => e.key === 'Backspace' && !d && i > 0 && inputsRef.current[i-1]?.focus()}
-                className="w-10 h-12 text-center text-lg font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all"
+                className="w-10 h-12 text-center text-lg font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all"
               />
             ))}
           </div>
           <button
             onClick={handleVerifyOtp}
             disabled={loading || otp.some(d => !d)}
-            className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:from-pink-600 hover:to-rose-600 active:scale-[0.98] transition-all shadow-lg shadow-pink-200 disabled:opacity-70 flex items-center justify-center gap-2"
+            className="w-full py-3.5 text-white rounded-xl font-bold text-sm hover:brightness-110 active:scale-[0.98] transition-all shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
+            style={{ backgroundColor: theme.primary }}
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
             {loading ? 'Verifying...' : 'Verify & Continue'}
@@ -243,12 +246,14 @@ const PhoneForm = ({ onBack, onLogin, mode, role }) => {
 };
 
 /* ─── Main SignIn Component ─────────────────────────────── */
-const SignIn = ({ onLogin, onClose }) => {
+const SignIn = ({ profile, onLogin, onClose }) => {
   const [view, setView] = useState('main');
   const [mode, setMode] = useState('signin');
   const [role, setRole] = useState('mother');
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
+
+  const theme = profile ? (COLORS[profile.accent] || COLORS.PINK) : COLORS.PINK;
 
   // Load Google GSI script and initialize Google Auth on mount/view change
   useEffect(() => {
@@ -308,7 +313,7 @@ const SignIn = ({ onLogin, onClose }) => {
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white font-semibold text-slate-700 text-sm transition-all active:scale-[0.98] hover:shadow-md hover:bg-slate-50 border border-slate-200 disabled:opacity-60 ${className}`}
     >
       <span className="w-5 h-5 flex items-center justify-center shrink-0">
-        {btnLoading ? <Loader2 size={18} className="animate-spin text-pink-500" /> : icon}
+        {btnLoading ? <Loader2 size={18} className="animate-spin" style={{ color: theme.primary }} /> : icon}
       </span>
       {label}
     </button>
@@ -325,11 +330,11 @@ const SignIn = ({ onLogin, onClose }) => {
   };
 
   return (
-    <div className="signin-fullpage" onClick={handleBackdropClick}>
+    <div className="signin-fullpage" onClick={handleBackdropClick} style={{ background: `linear-gradient(135deg, ${theme.text} 0%, #0f172a 100%)` }}>
       {/* Animated background blobs */}
-      <div className="signin-blob signin-blob-1" />
-      <div className="signin-blob signin-blob-2" />
-      <div className="signin-blob signin-blob-3" />
+      <div className="signin-blob signin-blob-1" style={{ background: theme.primary }} />
+      <div className="signin-blob signin-blob-2" style={{ background: theme.border }} />
+      <div className="signin-blob signin-blob-3" style={{ background: theme.primary }} />
 
       {/* Close button */}
       {onClose && (
@@ -345,7 +350,7 @@ const SignIn = ({ onLogin, onClose }) => {
       {/* Left panel – branding (hidden on small screens) */}
       <div className="signin-left-panel">
         <div className="signin-brand">
-          <div className="signin-logo-ring">
+          <div className="signin-logo-ring" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.text})`, boxShadow: `0 8px 32px ${theme.primary}66` }}>
             <Heart size={28} fill="white" className="text-white" />
           </div>
           <h1 className="signin-brand-name">AfterMa</h1>
@@ -481,7 +486,7 @@ const SignIn = ({ onLogin, onClose }) => {
                 <button
                   onClick={() => setRole('mother')}
                   className="signin-doctor-btn"
-                  style={{ background: 'linear-gradient(135deg, #fdf4ff, #ffe4e6)', borderColor: '#fbcfe8', color: '#db2777' }}
+                  style={{ background: `linear-gradient(135deg, ${theme.light}, #ffffff)`, borderColor: theme.border, color: theme.text }}
                 >
                   <Heart size={15} className="shrink-0" />
                   {mode === 'signin' ? 'Sign in as Mother' : 'Sign up as Mother'}
@@ -491,7 +496,7 @@ const SignIn = ({ onLogin, onClose }) => {
               {/* Switch mode link */}
               <p className="text-center text-sm text-slate-400">
                 {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-                <button onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')} className="text-pink-500 font-bold hover:text-pink-700 transition-colors">
+                <button onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')} className="font-bold hover:brightness-90 transition-all" style={{ color: theme.primary }}>
                   {mode === 'signin' ? 'Sign Up' : 'Sign In'}
                 </button>
               </p>
@@ -505,11 +510,11 @@ const SignIn = ({ onLogin, onClose }) => {
           )}
 
           {view === 'email' && (
-            <EmailForm onBack={() => setView('main')} onLogin={onLogin} mode={mode} role={role} />
+            <EmailForm onBack={() => setView('main')} onLogin={onLogin} mode={mode} role={role} theme={theme} />
           )}
 
           {view === 'phone' && (
-            <PhoneForm onBack={() => setView('main')} onLogin={onLogin} mode={mode} role={role} />
+            <PhoneForm onBack={() => setView('main')} onLogin={onLogin} mode={mode} role={role} theme={theme} />
           )}
 
           {/* Terms */}
