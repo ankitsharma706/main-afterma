@@ -330,55 +330,31 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
   };
 
   return (
-    <div className="signin-fullpage" onClick={handleBackdropClick} style={{ background: `linear-gradient(135deg, ${theme.text} 0%, #0f172a 100%)` }}>
+    <div className="signin-fullpage" onClick={handleBackdropClick} style={{ background: '#000' }}>
+      <img 
+        src="/AfterMaLoginPic.png" 
+        alt="AfterMa Sign In Background" 
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-90"
+      />
+
       {/* Animated background blobs */}
-      <div className="signin-blob signin-blob-1" style={{ background: theme.primary }} />
-      <div className="signin-blob signin-blob-2" style={{ background: theme.border }} />
-      <div className="signin-blob signin-blob-3" style={{ background: theme.primary }} />
+      <div className="signin-blob signin-blob-1" style={{ background: theme.primary, zIndex: 0 }} />
+      <div className="signin-blob signin-blob-2" style={{ background: theme.border, zIndex: 0 }} />
+      <div className="signin-blob signin-blob-3" style={{ background: theme.primary, zIndex: 0 }} />
 
       {/* Close button */}
       {onClose && (
         <button
           onClick={onClose}
-          className="signin-close-btn"
+          className="signin-close-btn z-10"
           aria-label="Close"
         >
           <X size={20} />
         </button>
       )}
 
-      {/* Left panel – branding (hidden on small screens) */}
-      <div className="signin-left-panel">
-        <div className="signin-brand">
-          <div className="signin-logo-ring" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.text})`, boxShadow: `0 8px 32px ${theme.primary}66` }}>
-            <Heart size={28} fill="white" className="text-white" />
-          </div>
-          <h1 className="signin-brand-name">AfterMa</h1>
-          <p className="signin-brand-slogan">YOUR MATERNAL CARE COMPANION</p>
-        </div>
-
-        <div className="signin-features">
-          {[
-            { icon: '🌸', title: 'Personalised Recovery', desc: 'Tailored plans for your postpartum journey' },
-            { icon: '🧠', title: 'Mental Wellness', desc: 'Evidence-based support for emotional health' },
-            { icon: '👩‍⚕️', title: 'Expert Connect', desc: 'Chat with verified doctors & specialists' },
-            { icon: '⭐', title: 'AfterMa Plus', desc: 'Premium membership with exclusive benefits' },
-          ].map((f, i) => (
-            <div key={i} className="signin-feature-card">
-              <span className="text-2xl">{f.icon}</span>
-              <div>
-                <p className="signin-feature-title">{f.title}</p>
-                <p className="signin-feature-desc">{f.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="signin-trust">
-          <ShieldCheck size={14} />
-          <span>HIPAA compliant · End-to-end encrypted · Trusted by 50k+ mothers</span>
-        </div>
-      </div>
+      {/* Spacer for left side on desktop */}
+      <div className="signin-left-panel relative z-10" style={{ background: 'transparent', border: 'none' }} />
 
       {/* Right panel – form */}
       <div className="signin-right-panel">
