@@ -43,7 +43,7 @@ const EmailForm = ({ onBack, onLogin, mode, role, theme }) => {
         if (!user) user = await authAPI.login({ email, password });
       } else {
         // login() saves token and returns user directly
-        user = await authAPI.login({ email, password });
+        user = await authAPI.login({ email, password, role: role === 'expert' ? 'doctor' : 'user' });
       }
       // Fallback: fetch user profile if not returned
       if (!user) user = await authAPI.getMe();
@@ -246,7 +246,7 @@ const PhoneForm = ({ onBack, onLogin, mode, role, theme }) => {
 };
 
 /* ─── Main SignIn Component ─────────────────────────────── */
-const SignIn = ({ profile, onLogin, onClose }) => {
+const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
   const [view, setView] = useState('main');
   const [mode, setMode] = useState('signin');
   const [role, setRole] = useState('mother');
@@ -382,6 +382,14 @@ const SignIn = ({ profile, onLogin, onClose }) => {
 
       {/* Right panel – form */}
       <div className="signin-right-panel">
+        {onOpenLocation && (
+          <button
+            onClick={() => { if (onClose) onClose(); onOpenLocation(); }}
+            className="absolute top-6 right-6 lg:top-8 lg:right-10 flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200 transition-all hover:bg-white shadow-sm z-50 cursor-pointer"
+          >
+            <span className="text-[14px]">🏥</span> Nearby Care
+          </button>
+        )}
         <div className="signin-card">
           {/* Mode toggle tabs */}
           {view === 'main' && (

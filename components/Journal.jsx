@@ -1,10 +1,16 @@
 
-import { useState } from 'react';
-import { 
-  BookOpen, Heart, Sparkles, ChevronRight, ChevronLeft, 
-  Send, ShieldCheck, Star, MessageCircle, PenTool, 
-  ArrowRight, Smile, Sun, Moon, Cloud, Wind, X, RefreshCw, History, Calendar, Trash2
+import {
+    Calendar,
+    Heart,
+    History,
+    PenTool,
+    RefreshCw,
+    Send, ShieldCheck,
+    Sparkles,
+    Trash2,
+    X
 } from 'lucide-react';
+import { useState } from 'react';
 import { COLORS } from '../constants';
 
 const JOURNAL_PROMPTS = [
@@ -33,7 +39,7 @@ const Journal = ({ profile, setProfile, onClose }) => {
     setIsSubmitted(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!entry.trim()) return;
 
     const newEntry = {
@@ -42,6 +48,21 @@ const Journal = ({ profile, setProfile, onClose }) => {
       content: entry,
       timestamp: Date.now()
     };
+
+    try {
+      await fetch('/api/journal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: profile._id,
+          journal_text: entry,
+          mood: 'reflective',
+          timestamp: new Date()
+        })
+      });
+    } catch (e) {
+      console.error(e);
+    }
 
     setProfile(prev => ({
       ...prev,

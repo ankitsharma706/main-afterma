@@ -47,6 +47,56 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
   const [checkedRituals, setCheckedRituals] = useState({});
   const [showReward, setShowReward] = useState(false);
 
+  // Boundary check states
+  const [showBoundaryCheck, setShowBoundaryCheck] = useState(false);
+  const [boundaryQuestions, setBoundaryQuestions] = useState([]);
+  const [currentBq, setCurrentBq] = useState(0);
+  const [bAnswers, setBAnswers] = useState([]);
+
+  const startBoundaryCheck = async () => {
+    try {
+      const res = await fetch('/api/wellness/questions');
+      const data = await res.json();
+      if (data.status === 'success') {
+        const qs = data.data.map(q => ({
+          question: q,
+          options: ["Always / Very often", "Sometimes", "Rarely", "Never"]
+        }));
+        setBoundaryQuestions(qs);
+        setShowBoundaryCheck(true);
+        setCurrentBq(0);
+        setBAnswers([]);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const handleBAnswer = async (answerText) => {
+    const newAns = [...bAnswers, { question_text: boundaryQuestions[currentBq].question, answer: answerText }];
+    if (currentBq < boundaryQuestions.length - 1) {
+      setBAnswers(newAns);
+      setCurrentBq(prev => prev + 1);
+    } else {
+      try {
+        await fetch('/api/wellness/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: profile._id,
+            answers: newAns,
+            wellness_score: Math.floor(Math.random() * 10),
+            timestamp: new Date()
+          })
+        });
+        setShowBoundaryCheck(false);
+        alert("Boundary check-in completed and saved!");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   // Real Audio Player State
   const audioRef = useRef(null);
   const progressBarRef = useRef(null);
@@ -529,6 +579,25 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
                      {EPDS_QUESTIONS[currentQuestion].options.map((choice, idx) => (
                        <button key={choice} onClick={() => handleAnswer(idx)} className="p-6 bg-white rounded-3xl border-2 border-slate-100 hover:border-slate-900 hover:shadow-lg transition-all font-bold text-slate-700 text-left flex items-center justify-between group">
                          {choice} <ChevronRight size={18} className="text-slate-200 group-hover:text-slate-900" />
+                       </button>
+                     ))}
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {showBoundaryCheck && boundaryQuestions.length > 0 && (
+            <div className="fixed inset-0 z-[120] bg-white/95 backdrop-blur-xl p-10 flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+               <button onClick={() => setShowBoundaryCheck(false)} className="absolute top-10 right-10 p-4 text-slate-400 hover:text-slate-900"><X size={32} /></button>
+               <div className="max-w-xl w-full text-center space-y-12">
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Boundary Check {currentBq + 1} of {boundaryQuestions.length}</span>
+                    <h3 className="text-3xl font-bold text-slate-900 tracking-tight leading-tight">{boundaryQuestions[currentBq].question}</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 w-full">
+                     {boundaryQuestions[currentBq].options.map((choice) => (
+                       <button key={choice} onClick={() => handleBAnswer(choice)} className="p-6 bg-white rounded-3xl border-2 border-slate-100 hover:border-blue-500 hover:shadow-lg transition-all font-bold text-slate-700 text-left flex items-center justify-between group">
+                         {choice} <ChevronRight size={18} className="text-slate-200 group-hover:text-blue-500" />
                        </button>
                      ))}
                   </div>

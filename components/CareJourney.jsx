@@ -9,6 +9,7 @@ import {
     Download,
     Droplet,
     Edit3,
+    FileText,
     Frown,
     Gauge,
     Laugh,
@@ -22,7 +23,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { COLORS } from '../constants';
+import { periodAPI } from '../services/api';
 import { translations } from '../translations';
+import HealthReportModal from './HealthReportModal';
+import LactationLog from './LactationLog';
+import PuzzleGame from './PuzzleGame';
 
 const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerciseLogs, setExerciseLogs, logs, onAddLog }) => {
   const lang = profile.journeySettings.language || 'english';
@@ -32,12 +37,37 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [sessionSettings, setSessionSettings] = useState({ intensity: 'Light', environment: 'Alone' });
+  const [sessionDuration, setSessionDuration] = useState(10); // minutes, 5–30
+  const [showReport, setShowReport] = useState(false);
   const timerRef = useRef(null);
   
   const [showTTCLogic, setShowTTCLogic] = useState(false);
   const [cycleLength, setCycleLength] = useState(28);
   const [lastPeriod, setLastPeriod] = useState("");
   const [ttcResult, setTtcResult] = useState(null);
+  const [periodLogs, setPeriodLogs] = useState([]);
+
+  useEffect(() => {
+    const fetchPeriodLogs = async () => {
+      try {
+        const res = await periodAPI.getMyLogs();
+        if (res.data?.logs) {
+          // Map backend format to frontend UI format
+          const mappedLogs = res.data.logs.map(log => ({
+            id: log._id,
+            timestamp: new Date(log.cycle_start).getTime(),
+            periodFlow: log.flow_pattern ? log.flow_pattern.charAt(0).toUpperCase() + log.flow_pattern.slice(1) : 'None',
+            symptoms: log.symptoms || [],
+            notes: log.notes || ''
+          }));
+          setPeriodLogs(mappedLogs.reverse()); // Put oldest first, or whatever ordering works. Actual sorting is done later.
+        }
+      } catch (err) {
+        console.warn("Could not load period logs", err);
+      }
+    };
+    if (profile.authenticated) fetchPeriodLogs();
+  }, [profile.authenticated]);
 
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isTTC = profile.maternityStage === 'TTC';
@@ -55,9 +85,9 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   }));
 
   // Compute cycle insights from saved logs
-  const periodActiveDays = logs.filter(l => l.periodFlow && l.periodFlow !== 'None').map(l => new Date(l.timestamp).getDate());
+  const periodActiveDays = periodLogs.filter(l => l.periodFlow && l.periodFlow !== 'None').map(l => new Date(l.timestamp).getDate());
   const today = new Date();
-  const lastPeriodLog = logs.filter(l => l.periodFlow && l.periodFlow !== 'None').slice(-1)[0];
+  const lastPeriodLog = periodLogs.filter(l => l.periodFlow && l.periodFlow !== 'None').slice(-1)[0];
   const lastPeriodDate = lastPeriodLog ? new Date(lastPeriodLog.timestamp) : new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14);
   const cycleLen = 28;
   const ovulationDay = new Date(lastPeriodDate);
@@ -111,10 +141,10 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
         avgPain: (logs.reduce((acc, l) => acc + l.painLevel, 0) / (logs.length || 1)).toFixed(1),
         totalKegels: logs.reduce((acc, l) => acc + l.kegelCount, 0),
       },
-      periodLogs: logs.filter(l => l.periodFlow && l.periodFlow !== 'None').map(l => ({
+      periodLogs: periodLogs.filter(l => l.periodFlow && l.periodFlow !== 'None').map(l => ({
         date: new Date(l.timestamp).toLocaleDateString(), flow: l.periodFlow,
       })),
-      symptoms: Array.from(new Set(logs.flatMap(l => l.symptoms)))
+      symptoms: Array.from(new Set([...logs.flatMap(l => l.symptoms || []), ...periodLogs.flatMap(l => l.symptoms || [])]))
     };
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -123,6 +153,47 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
     a.download = `AfterMa_Clinical_Report_${profile.name.replace(' ', '_')}.json`;
     a.click();
     alert("Structured Clinical Report generated for OB-GYN review.");
+  };
+
+  const handleCommitEntry = async () => {
+    try {
+      if (!quickLog.date) {
+        alert("Please select a date.");
+        return;
+      }
+      const payload = {
+        cycle_start: quickLog.date,
+        flow_pattern: quickLog.periodFlow === 'None' ? '' : quickLog.periodFlow.toLowerCase(),
+        symptoms: quickLog.symptoms,
+        notes: quickLog.notes
+      };
+      
+      const res = await periodAPI.create(payload);
+      
+      const newBackendLog = res.data?.log || payload;
+      
+      // Update local state instantly
+      const newMappedLog = {
+        id: newBackendLog._id || Date.now().toString(),
+        timestamp: new Date(quickLog.date).getTime(),
+        periodFlow: quickLog.periodFlow,
+        symptoms: quickLog.symptoms,
+        notes: quickLog.notes
+      };
+      
+      setPeriodLogs(prev => [...prev, newMappedLog].sort((a,b) => a.timestamp - b.timestamp));
+      
+      alert("Period log saved successfully!");
+      
+      // Reset form
+      setQuickLog({
+        date: new Date().toISOString().split('T')[0],
+        periodFlow: 'None', isOvulating: false, crampsLevel: 0, moodLevel: 5, symptoms: [], notes: ''
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save period log. Please try again.");
+    }
   };
 
   const progress = activities.length > 0 ? (profile.completedActivities.length / activities.length) * 100 : 0;
@@ -147,6 +218,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
         <div className="inline-flex gap-1.5 bg-white/80 backdrop-blur-xl p-1.5 rounded-full border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] pointer-events-auto mt-4">
           <TabBtn label="Journey" icon={<Target size={14} />} active={activeTab === 'Journey'} onClick={() => setActiveTab('Journey')} />
           <TabBtn label="Period Log" icon={<Droplet size={14} />} active={activeTab === 'PeriodLog'} onClick={() => setActiveTab('PeriodLog')} />
+          <TabBtn label="Lactation Log" icon={<Baby size={14} />} active={activeTab === 'LactationLog'} onClick={() => setActiveTab('LactationLog')} />
           <TabBtn label="Health Summary" icon={<BarChart3 size={14} />} active={activeTab === 'HealthSummary'} onClick={() => setActiveTab('HealthSummary')} />
         </div>
       </div>
@@ -256,7 +328,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
 
               {/* Commit Button */}
               <button
-                onClick={onAddLog}
+                onClick={handleCommitEntry}
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
               >
                 <Edit3 size={17} /> Commit Entry
@@ -320,11 +392,11 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
           </div>
 
           {/* Recent Observations */}
-          {logs.filter(l => l.periodFlow).length > 0 && (
+          {periodLogs.filter(l => l.periodFlow).length > 0 && (
             <div className="space-y-4">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Recent Observations</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {logs.filter(l => l.periodFlow).slice(-6).reverse().map((l, i) => (
+                {periodLogs.filter(l => l.periodFlow).slice(-6).reverse().map((l, i) => (
                   <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-black text-slate-900">{new Date(l.timestamp).toLocaleDateString()}</span>
@@ -341,6 +413,12 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
         </div>
       )}
 
+      {activeTab === 'LactationLog' && (
+        <LactationLog profile={profile} inline={true} />
+      )}
+
+
+      {showReport && <HealthReportModal profile={profile} onClose={() => setShowReport(false)} />}
 
       {activeTab === 'HealthSummary' && (
         <div className="space-y-10 animate-in fade-in duration-500">
@@ -350,9 +428,14 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                 <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Health Summary</h3>
                 <p className="text-slate-400 font-medium italic">Clinical analytics and readiness indices for your recovery.</p>
               </div>
-              <button onClick={downloadClinicalReport} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 transition-all">
-                <Download size={18} /> Structured PDF Report
-              </button>
+              <div className="flex gap-3">
+                <button id="btn-health-summary" onClick={() => setShowReport(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 transition-all">
+                  <FileText size={18} /> View Health Summary
+                </button>
+                <button onClick={downloadClinicalReport} className="bg-white border border-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-sm flex items-center gap-3 hover:scale-105 transition-all">
+                  <Download size={18} /> Download JSON
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -420,37 +503,73 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
       )}
 
       {selectedActivity && (
-        <div className="fixed inset-0 z-[150] bg-slate-900/95 backdrop-blur-2xl flex items-center justify-center p-4 lg:p-8 animate-in fade-in duration-300">
-           <div className="max-w-6xl w-full bg-[#1b2533] rounded-[3.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col md:flex-row h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300 border border-white/5 mx-auto">
+        <div className="fixed inset-0 z-[150] bg-slate-900/50 backdrop-blur-md flex items-center justify-center p-4 lg:p-8 animate-in fade-in duration-300">
+           <div className="max-w-6xl w-full bg-[#1b2533] rounded-[3.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] flex flex-col md:flex-row h-[85vh] max-h-[850px] overflow-hidden animate-in zoom-in-95 duration-300 border border-white/5 mx-auto">
               
-              {/* LEFT PANE: TIMER & MAIN INFO */}
-              <div className="flex-1 p-8 lg:p-14 flex flex-col items-center justify-center text-center relative gap-10">
-                 <button onClick={() => { setIsTimerRunning(false); setSelectedActivity(null); }} className="absolute top-8 left-8 text-slate-400 hover:text-white transition-colors"><X size={24} /></button>
-                 
-                 <div className="space-y-4">
-                    <span className="px-4 py-1.5 bg-slate-800 shadow-sm text-slate-100 rounded-full font-black text-[10px] uppercase tracking-widest inline-block mb-2 border border-transparent">Active Session</span>
-                    <h3 className="text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">{selectedActivity.title}</h3>
-                    <p className="text-slate-300 font-medium italic text-base lg:text-lg">{selectedActivity.description}</p>
+              {/* LEFT PANE: PUZZLE + LIQUID TIMER */}
+              <div className="flex-1 p-6 lg:p-10 flex flex-col items-center pt-16 relative gap-8 overflow-y-auto">
+                 <button onClick={() => { setIsTimerRunning(false); setSelectedActivity(null); setTimer(0); }} className="absolute top-6 left-6 text-slate-400 hover:text-white transition-colors z-10"><X size={24} /></button>
+
+                 <div className="space-y-2">
+                    <span className="px-4 py-1.5 bg-slate-800 shadow-sm text-slate-100 rounded-full font-black text-[10px] uppercase tracking-widest inline-block border border-transparent">Active Session</span>
+                    <h3 className="text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">{selectedActivity.title}</h3>
+                    <p className="text-slate-300 font-medium italic text-sm">{selectedActivity.description}</p>
                  </div>
-                 
-                 <div className="relative h-64 w-64 lg:h-80 lg:w-80 flex flex-col items-center justify-center">
-                    <div className="absolute inset-0 border-[6px] border-slate-700/50 rounded-full" />
-                    <div className="text-6xl lg:text-8xl font-black text-white tracking-tighter tabular-nums z-10">
-                       {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
+
+                 {/* ── Puzzle Game ── */}
+                 <div className="w-full max-w-sm shrink-0">
+                   <PuzzleGame />
+                 </div>
+
+                 <div className="relative w-full max-w-sm flex flex-col items-center shrink-0 mt-8 mb-4">
+                    {/* ── Liquid Progress Timer (Positioned Behind) ── */}
+                    <div className="absolute -top-24 flex items-center justify-center pointer-events-none" style={{ width: 180, height: 180 }}>
+                      <svg width="180" height="180" viewBox="0 0 180 180" className="absolute inset-0" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx="90" cy="90" r="82" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="12" />
+                        <circle
+                          cx="90" cy="90" r="82"
+                          fill="none"
+                          stroke="#00D084"
+                          strokeWidth="12"
+                          strokeLinecap="round"
+                          strokeDasharray={`${2 * Math.PI * 82}`}
+                          strokeDashoffset={`${2 * Math.PI * 82 * (1 - Math.min(timer / (sessionDuration * 60), 1))}`}
+                          style={{ transition: 'stroke-dashoffset 1s linear' }}
+                        />
+                      </svg>
+                      <div className="absolute inset-2 rounded-full overflow-hidden bg-slate-900/60 backdrop-blur-sm">
+                        <div
+                          className="absolute bottom-0 left-0 right-0 rounded-b-full transition-all duration-1000"
+                          style={{
+                            height: `${Math.min((timer / (sessionDuration * 60)) * 100, 100)}%`,
+                            background: 'rgba(0,208,132,0.15)',
+                          }}
+                        />
+                      </div>
+                      <div className="relative z-10 text-center pb-4">
+                        <p className="text-4xl font-black text-white tracking-tighter tabular-nums drop-shadow-lg">
+                          {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
+                        </p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                          / {sessionDuration}m
+                        </p>
+                      </div>
                     </div>
-                 </div>
-                 
-                 <div className="flex flex-col sm:flex-row items-center gap-6 w-full max-w-md justify-center mt-2">
-                    <button onClick={() => setIsTimerRunning(!isTimerRunning)} className="h-16 w-16 bg-white shrink-0 text-slate-900 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                       {isTimerRunning ? <Lock size={28} /> : <Play size={28} className="ml-1" />}
+
+                    {/* ── Controls (Positioned Front) ── */}
+                    <div className="flex items-center gap-4 w-full justify-center relative z-10 mt-16 pt-3">
+                       <button id="btn-start-session" onClick={() => setIsTimerRunning(!isTimerRunning)} className="h-[52px] w-[52px] bg-white shrink-0 text-slate-900 rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all outline-none border-none">
+                          {isTimerRunning ? <Lock size={20} /> : <Play size={20} className="ml-0.5" />}
+                       </button>
+                       <button id="btn-complete-session" onClick={handleCompleteActivity} className="flex-1 py-[16px] bg-[#00d084] hover:bg-[#00e691] text-white rounded-full font-black text-[13px] tracking-[0.05em] shadow-[0_10px_20px_-10px_rgba(0,208,132,0.5)] active:scale-[0.98] transition-all whitespace-nowrap px-4 border-none outline-none">
+                          Complete Session
+                       </button>
+                    </div>
+
+                    <button id="btn-cancel-session" onClick={() => { setIsTimerRunning(false); setSelectedActivity(null); setTimer(0); }} className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors mt-8">
+                       Cancel Session
                     </button>
-                    <button onClick={handleCompleteActivity} className="flex-1 w-full sm:w-auto py-5 bg-[#00D084] text-white rounded-full font-bold text-sm uppercase tracking-widest shadow-2xl hover:brightness-110 active:scale-95 transition-all">
-                       Complete Session
-                    </button>
                  </div>
-                 <button onClick={() => { setIsTimerRunning(false); setSelectedActivity(null); }} className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors mt-2">
-                    Cancel Session
-                 </button>
               </div>
 
               {/* RIGHT PANE: SETTINGS */}
@@ -476,13 +595,25 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                        </div>
                     </div>
 
-                    <div className="space-y-4">
-                       <div className="flex justify-between items-center ml-1">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</label>
-                          <span className="text-xs font-bold text-white">{selectedActivity.duration}m</span>
-                       </div>
-                       <input type="range" className="w-full accent-white h-1 bg-slate-700 rounded-full appearance-none cursor-not-allowed" disabled value={selectedActivity.duration} min="1" max="60" />
-                    </div>
+                     <div className="space-y-4">
+                        <div className="flex justify-between items-center ml-1">
+                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</label>
+                           <span className="text-xs font-bold text-white">{sessionDuration} min</span>
+                        </div>
+                        {/* Scrollable duration slider: 5 to 30 min */}
+                        <input
+                           type="range"
+                           className="w-full accent-white h-1 bg-slate-700 rounded-full appearance-none cursor-pointer"
+                           value={sessionDuration}
+                           min="5"
+                           max="30"
+                           step="5"
+                           onChange={e => { setSessionDuration(parseInt(e.target.value, 10)); setTimer(0); }}
+                        />
+                        <div className="flex justify-between text-[8px] font-bold text-slate-500 px-1">
+                          <span>5m</span><span>10m</span><span>15m</span><span>20m</span><span>25m</span><span>30m</span>
+                        </div>
+                     </div>
 
                     <div className="space-y-4 border-t border-slate-700/50 pt-8 mt-2">
                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Support Environment</label>

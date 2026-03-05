@@ -1,9 +1,8 @@
-
 import {
-    AlertCircle,
+    Baby,
     Bell,
+    CalendarDays,
     Check,
-    Clipboard,
     Clock,
     Eye,
     Globe,
@@ -11,43 +10,95 @@ import {
     Monitor,
     Palette,
     Shield,
+    Target,
     ToggleLeft,
     ToggleRight,
     User,
     Users
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { COLORS } from '../constants';
+import { getUserId, userAPI } from '../services/api';
 import { translations } from '../translations';
+import PersonalDataForm from './PersonalDataForm';
 
 const Settings = ({ profile, setProfile }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [localCommitment, setLocalCommitment] = useState(15);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
 
+  // ── Debounced backend sync ──────────────────────────────────────
+  const syncTimerRef = useRef(null);
+
+  const scheduleBackendSync = (latestProfile) => {
+    // Clear any pending sync and reschedule 1.5 s after the last change
+    clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(async () => {
+      const userId = getUserId();
+      if (!userId || !latestProfile.authenticated) return;
+      setSaveStatus('saving');
+      try {
+        await userAPI.updateMe({
+          full_name:          latestProfile.name,
+          email:              latestProfile.email,
+          phase:              latestProfile.maternityStage,
+          delivery_type:      latestProfile.deliveryType,
+          preferences: {
+              language:       latestProfile.journeySettings?.language,
+          },
+          family: {
+              contact_name:   latestProfile.caregiver?.name,
+              contact_phone:  latestProfile.caregiver?.contact,
+              relation:       latestProfile.caregiver?.relationship,
+          },
+          caregiver_permissions: latestProfile.caregiver?.permissions,
+          notifications: latestProfile.notifications,
+        });
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (err) {
+        console.warn('Settings sync to backend failed:', err?.message);
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    }, 1500);
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => () => clearTimeout(syncTimerRef.current), []);
+
   const updateProfile = (fields) => {
-    setProfile(prev => ({ ...prev, ...fields }));
+    const next = { ...profile, ...fields };
+    setProfile(next);
+    scheduleBackendSync(next);
   };
 
   const updateCaregiver = (fields) => {
-    setProfile(prev => ({ ...prev, caregiver: { ...prev.caregiver, ...fields } }));
+    const next = { ...profile, caregiver: { ...profile.caregiver, ...fields } };
+    setProfile(next);
+    scheduleBackendSync(next);
   };
 
   const updateCaregiverPermissions = (fields) => {
-    setProfile(prev => ({ 
-      ...prev, 
+    const next = { 
+      ...profile, 
       caregiver: { 
-        ...prev.caregiver, 
-        permissions: { ...prev.caregiver.permissions, ...fields } 
+        ...profile.caregiver, 
+        permissions: { ...profile.caregiver.permissions, ...fields } 
       } 
-    }));
+    };
+    setProfile(next);
+    scheduleBackendSync(next);
   };
 
   const updateNotifications = (fields) => {
-    setProfile(prev => ({ ...prev, notifications: { ...prev.notifications, ...fields } }));
+    const next = { ...profile, notifications: { ...profile.notifications, ...fields } };
+    setProfile(next);
+    scheduleBackendSync(next);
   };
 
   const currentTheme = COLORS[profile.accent] || COLORS.PINK;
@@ -59,6 +110,10 @@ const Settings = ({ profile, setProfile }) => {
         <div className="px-5 mb-8">
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Settings</h2>
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 mt-2">Personalize Your Path</p>
+          {/* Save status badge */}
+          {saveStatus === 'saving' && <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest mt-2 flex items-center gap-1"><span className="animate-pulse">●</span> Saving...</p>}
+          {saveStatus === 'saved'  && <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-2 flex items-center gap-1"><Check size={10} /> Saved</p>}
+          {saveStatus === 'error'  && <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mt-2">⚠ Sync failed — changes saved locally</p>}
         </div>
         <nav className="space-y-2">
           <TabBtn icon={<User size={18} />} label={t.settings.tabs.profile} active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} theme={currentTheme} />
@@ -70,96 +125,119 @@ const Settings = ({ profile, setProfile }) => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-white rounded-[3rem] p-10 lg:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col transition-all">
+      <div className="flex-1 bg-white rounded-[1rem] p-10 lg:p-12 shadow-[0_20px_80px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col transition-all">
         <div className="flex-1">
           
           {/* Profile Tab */}
           {activeTab === 'profile' && (
-            <div className="space-y-14 animate-in fade-in duration-500">
-               <div className="pb-8 border-b border-slate-50 space-y-1.5">
-                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight capitalize">Personal Data</h3>
-                 <p className="text-sm font-medium text-slate-400 opacity-80 leading-relaxed italic">Essential information for personalized care logic.</p>
-               </div>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-10">
-                <Field label={t.settings.fields.name} value={profile.name} onChange={v => updateProfile({ name: v })} />
-                <Field label={t.settings.fields.age} type="number" value={profile.age.toString()} onChange={v => updateProfile({ age: parseInt(v) || 0 })} />
-                
-                <div className="col-span-full space-y-3">
-                   <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2 flex items-center gap-2">
-                     <Clipboard size={10} /> {t.settings.fields.medicalHistory}
-                   </label>
-                   <textarea 
-                    value={profile.medicalHistory} 
-                    onChange={e => updateProfile({ medicalHistory: e.target.value })} 
-                    placeholder="Enter relevant medical history (e.g., previous surgeries, chronic conditions)..."
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white min-h-[120px] resize-none"
-                   />
-                </div>
-
-                <div className="col-span-full space-y-3">
-                   <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2 flex items-center gap-2 text-rose-400">
-                     <AlertCircle size={10} /> {t.settings.fields.allergies}
-                   </label>
-                   <textarea 
-                    value={profile.allergies || ""} 
-                    onChange={e => updateProfile({ allergies: e.target.value })} 
-                    placeholder="List any medication or food allergies..."
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white min-h-[100px] resize-none border-rose-50"
-                   />
-                </div>
-              </div>
-            </div>
+            <PersonalDataForm 
+              profile={profile} 
+              updateProfile={updateProfile} 
+              saveStatus={saveStatus}
+            />
           )}
 
           {/* Journey Tab */}
           {activeTab === 'journey' && (
-            <div className="space-y-14 animate-in fade-in duration-500">
-               <div className="pb-8 border-b border-slate-50 space-y-1.5">
-                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight capitalize">{t.settings.journey.title}</h3>
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <div className="pb-8 border-b border-slate-50 space-y-1.5 focus:outline-none">
+                 <h3 className="text-3xl font-black text-slate-900 tracking-tight capitalize">{t.settings.journey.title}</h3>
                  <p className="text-sm font-medium text-slate-400 opacity-80 leading-relaxed italic">Adapting AfterMa to your specific maternity phase.</p>
                </div>
                
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="space-y-3">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2">{t.settings.fields.stage}</label>
-                    <select 
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white appearance-none cursor-pointer"
-                      value={profile.maternityStage}
-                      onChange={e => updateProfile({ maternityStage: e.target.value })}
-                    >
-                      <option value="TTC">{t.settings.stages.ttc}</option>
-                      <option value="Pregnant-T1">{t.settings.stages.t1}</option>
-                      <option value="Pregnant-T2">{t.settings.stages.t2}</option>
-                      <option value="Pregnant-T3">{t.settings.stages.t3}</option>
-                      <option value="Postpartum">{t.settings.stages.post}</option>
-                    </select>
+               <div className="space-y-8">
+                  {/* Phase Selection Module */}
+                  <div className="p-8 lg:p-10 bg-[#f8f9fb]/50 border border-[#eef2f6] rounded-[1rem] space-y-8 transition-all hover:bg-white hover:shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center gap-3 pb-2">
+                      <div className="p-2 bg-white rounded-xl shadow-sm  text-[#8b9bb4]">
+                        <Baby size={16} strokeWidth={2.5} />
+                      </div>
+                      <h3 className="text-[11px] font-black text-[#8b9bb4] uppercase tracking-[0.25em]">Maternity Phase</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-[#8b9bb4] uppercase tracking-widest pl-2">Current Stage</label>
+                        <div className="relative">
+                          <select 
+                            className="w-full bg-white border border-[#eef2f6] rounded-[1rem] px-8 py-5 text-slate-800 font-bold focus:outline-none focus:ring-4 focus:ring-slate-100 transition-all shadow-sm appearance-none cursor-pointer"
+                            value={profile.maternityStage}
+                            onChange={e => updateProfile({ maternityStage: e.target.value })}
+                          >
+                            <option value="TTC">{t.settings.stages.ttc}</option>
+                            <option value="Pregnant-T1">{t.settings.stages.t1}</option>
+                            <option value="Pregnant-T2">{t.settings.stages.t2}</option>
+                            <option value="Pregnant-T3">{t.settings.stages.t3}</option>
+                            <option value="Postpartum">{t.settings.stages.post}</option>
+                          </select>
+                          <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                            <CalendarDays size={16} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {profile.maternityStage === 'Postpartum' && (
+                        <div className="space-y-3 animate-in slide-in-from-top-4 duration-300">
+                          <label className="text-[10px] font-black text-[#8b9bb4] uppercase tracking-widest pl-2">Delivery Method</label>
+                          <div className="relative">
+                            <select 
+                              className="w-full bg-white border border-[#eef2f6] rounded-[1rem] px-8 py-5 text-slate-800 font-bold focus:outline-none focus:ring-4 focus:ring-slate-100 transition-all shadow-sm appearance-none cursor-pointer"
+                              value={profile.deliveryType}
+                              onChange={e => updateProfile({ deliveryType: e.target.value })}
+                            >
+                              <option value="normal">Vaginal Delivery</option>
+                              <option value="c-section">C-Section Recovery</option>
+                            </select>
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                              <Shield size={16} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {profile.maternityStage === 'Postpartum' && (
-                    <div className="space-y-3">
-                      <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2">{t.settings.fields.delivery}</label>
-                      <select 
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white appearance-none cursor-pointer"
-                        value={profile.deliveryType}
-                        onChange={e => updateProfile({ deliveryType: e.target.value })}
-                      >
-                        <option value="normal">Vaginal Delivery</option>
-                        <option value="c-section">C-Section Recovery</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <div className="space-y-8 col-span-full">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2">{t.settings.journey.commitmentTitle}</label>
-                    <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-6 lg:p-8 space-y-6 shadow-sm group">
-                       <input type="range" min="5" max="60" step="5" value={localCommitment} onChange={(e) => setLocalCommitment(parseInt(e.target.value))} style={{ color: currentTheme.primary }} className="w-full" />
-                       <div className="flex items-center justify-between px-2 pt-2">
-                          <div className="flex items-baseline gap-3">
-                            <span className="text-4xl lg:text-5xl font-bold text-slate-900 tracking-tighter tabular-nums leading-none" style={{ color: currentTheme.primary }}>{localCommitment}</span>
-                            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">MIN / DAY</span>
-                          </div>
-                          <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm text-slate-300"><Clock size={18} /></div>
+                  {/* Commitment Module */}
+                  <div className="p-8 lg:p-12 bg-[#f8f9fb]/50 border border-[#eef2f6] rounded-[1rem] space-y-10 transition-all hover:bg-white hover:shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center gap-3 pb-2">
+                       <div className="p-2 bg-white rounded-xl shadow-sm  text-rose-400">
+                         <Target size={16} strokeWidth={2.5} />
                        </div>
+                       <h3 className="text-[11px] font-black text-rose-400 uppercase tracking-[0.25em]">Journey Tuning</h3>
+                    </div>
+
+                    <div className="space-y-10">
+                      <div className="flex items-center justify-between px-2">
+                        <label className="text-[10px] font-black text-[#8b9bb4] uppercase tracking-[0.25em]">Daily Commitment</label>
+                        <div className="flex items-center gap-1">
+                           <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full ring-4 ring-white shadow-sm">Recommended</span>
+                        </div>
+                      </div>
+
+                      <div className="relative pt-6 pb-2">
+                         <input 
+                           type="range" 
+                           min="5" max="60" step="5" 
+                           value={localCommitment} 
+                           onChange={(e) => setLocalCommitment(parseInt(e.target.value))} 
+                           className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500 transition-all" 
+                         />
+                         <div className="absolute -top-1 left-0 w-full flex justify-between px-1 pointer-events-none">
+                            {[5, 15, 30, 45, 60].map(val => (
+                              <div key={val} className="w-1 h-1 rounded-full bg-slate-300" />
+                            ))}
+                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between bg-white p-8 rounded-[1rem] border border-[#eef2f6] shadow-[0_5px_15px_rgba(0,0,0,0.01)]">
+                         <div className="flex items-baseline gap-4">
+                            <span className="text-6xl font-black text-slate-900 tracking-tighter tabular-nums leading-none animate-in zoom-in-50 duration-300">{localCommitment}</span>
+                            <span className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] opacity-60">MIN / DAY</span>
+                         </div>
+                         <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shadow-inner text-slate-300 transition-transform hover:rotate-12">
+                            <Clock size={24} />
+                         </div>
+                      </div>
                     </div>
                   </div>
                </div>
@@ -246,14 +324,35 @@ const Settings = ({ profile, setProfile }) => {
                <div className="space-y-8">
                   <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 space-y-10">
                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-50 text-slate-400"><Users size={20} /></div>
+                        <div className="p-3 bg-white rounded-xl shadow-sm  text-slate-400"><Users size={20} /></div>
                         <h4 className="text-lg font-bold text-slate-900 tracking-tight">Designated Caregiver Profile</h4>
                      </div>
                      
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <Field label="Caregiver Name" value={profile.caregiver.name} onChange={v => updateCaregiver({ name: v })} />
-                        <Field label="Relationship" value={profile.caregiver.relationship} onChange={v => updateCaregiver({ relationship: v })} />
-                        <Field label="Emergency Contact Number" value={profile.caregiver.contact} onChange={v => updateCaregiver({ contact: v })} />
+                         {/* Caregiver Name */}
+                         <Field label="Caregiver Name" value={profile.caregiver.name} onChange={v => updateCaregiver({ name: v })} />
+                         {/* Relationship — structured dropdown */}
+                         <div className="space-y-3">
+                           <label className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.25em] ml-2">Relationship</label>
+                           <select
+                             value={profile.caregiver.relationship || ''}
+                             onChange={e => updateCaregiver({ relationship: e.target.value })}
+                             className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-800 focus:outline-none focus:ring-4 transition-all shadow-inner text-sm focus:bg-white appearance-none cursor-pointer"
+                           >
+                             <option value="">— Select Relationship —</option>
+                             <option value="Partner">Partner</option>
+                             <option value="Spouse">Spouse</option>
+                             <option value="Best Friend">Best Friend</option>
+                             <option value="Close Friend">Close Friend</option>
+                             <option value="Mother">Mother</option>
+                             <option value="Father">Father</option>
+                             <option value="Sibling">Sibling</option>
+                             <option value="Extended Family">Extended Family</option>
+                             <option value="Support Worker / Professional Carer">Support Worker / Professional Carer</option>
+                             <option value="Other">Other</option>
+                           </select>
+                         </div>
+                         <Field label="Emergency Contact Number" value={profile.caregiver.contact} onChange={v => updateCaregiver({ contact: v })} />
                      </div>
 
                      <div className="space-y-4">
@@ -290,7 +389,7 @@ const Settings = ({ profile, setProfile }) => {
 };
 
 const TabBtn = ({ icon, label, active, onClick, theme }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl font-bold text-sm transition-all duration-300 relative overflow-hidden active:scale-[0.97] group ${active ? 'bg-white shadow-md border border-slate-50 text-slate-900 scale-[1.05]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}>
+  <button onClick={onClick} className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl font-bold text-sm transition-all duration-300 relative overflow-hidden active:scale-[0.97] group ${active ? 'bg-white shadow-md  text-slate-900 scale-[1.05]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}>
     <div className={`shrink-0 transition-all duration-500 group-hover:scale-110 ${active ? 'text-white p-2 rounded-lg shadow-sm' : 'text-slate-300'}`} style={{ backgroundColor: active ? theme.primary : '' }}>
       {React.cloneElement(icon, { size: active ? 16 : 20 })}
     </div>

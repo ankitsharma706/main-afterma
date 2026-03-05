@@ -12,7 +12,11 @@ import ExpertAnalytics from './components/ExpertAnalytics';
 import ExpertDashboard from './components/ExpertDashboard';
 import ExpertSettings from './components/ExpertSettings';
 import HealthLogModal from './components/HealthLogModal';
+import HealthLogs from './components/HealthLogs';
+import HealthReportModal from './components/HealthReportModal';
 import Journal from './components/Journal';
+import LactationLog from './components/LactationLog';
+import LocationPage from './components/LocationPage';
 import Membership from './components/Membership';
 import MentalWellness from './components/MentalWellness';
 import Navigation from './components/Navigation';
@@ -26,7 +30,7 @@ import SOSOverlay from './components/SOSOverlay';
 import MomKart from './components/Store';
 import SurveyCommunityData from './components/SurveyCommunityData';
 import { COLORS, RECOVERY_DATABASE } from './constants';
-import { authAPI } from './services/api';
+import { authAPI, setUserId } from './services/api';
 import { translations } from './translations';
 
 const App = () => {
@@ -101,6 +105,9 @@ const App = () => {
   const sosTimerRef = useRef(null);
   
   const [appointments, setAppointments] = useState([]);
+  const [showLactationLog, setShowLactationLog] = useState(false);
+  const [showLocationPage, setShowLocationPage] = useState(false);
+  const [showExpertReport, setShowExpertReport] = useState(false);
   const [circles, setCircles] = useState([
     { id: '1', name: 'New Moms Bonding', members: 124, description: 'Sharing the joys and struggles of the first few months.', isJoined: false },
     { id: '2', name: 'Sleep Solutions', members: 89, description: 'Tips and support for the sleepless nights.', isJoined: false },
@@ -125,6 +132,56 @@ const App = () => {
     setIsMobileMenuOpen(false);
   }, [currentView]);
 
+  // ── Auto-restore authenticated session from stored JWT ─────────────────
+  useEffect(() => {
+    const restoreSession = async () => {
+      const token = localStorage.getItem('afterma_token');
+      if (!token || profile.authenticated) return; // already logged in or no token
+      try {
+        const userData = await authAPI.getMe();
+        if (userData?._id || userData?.email) {
+          const role = userData.role === 'doctor' ? 'expert' : 'mother';
+          setProfile(prev => ({
+            ...prev,
+            authenticated: true,
+            role,
+            name: userData.full_name || userData.name || prev.name,
+            email: userData.email || prev.email,
+            phone: userData.phone || prev.phone,
+            profilePicture: userData.profile_picture || userData.profilePicture || prev.profilePicture,
+            _id: userData._id,
+            dob: userData.dob || prev.dob,
+            bloodGroup: userData.blood_group || prev.bloodGroup,
+            aadharNumber: userData.aadhar_number || prev.aadharNumber,
+            address: userData.address || prev.address,
+            city: userData.city || prev.city,
+            state: userData.state || prev.state,
+            pincode: userData.pincode || prev.pincode,
+            height: userData.height_cm || prev.height,
+            weight: userData.weight_kg || prev.weight,
+            maternityStage: userData.phase || prev.maternityStage,
+            deliveryType: userData.delivery_type || prev.deliveryType,
+            symptoms: userData.symptoms || prev.symptoms,
+            caregiver: {
+              name: userData.family?.contact_name || prev.caregiver.name,
+              contact: userData.family?.contact_phone || prev.caregiver.contact,
+              relationship: userData.family?.relation || prev.caregiver.relationship,
+              permissions: userData.caregiver_permissions || prev.caregiver.permissions,
+            },
+            notifications: userData.notifications || prev.notifications,
+          }));
+          if (userData._id) setUserId(userData._id);
+        }
+      } catch (err) {
+        console.warn('Session restore failed (token may be expired):', err?.message);
+        // Token expired — clear it so user is prompted to log in
+        localStorage.removeItem('afterma_token');
+        localStorage.removeItem('afterma_refresh_token');
+      }
+    };
+    restoreSession();
+  }, []); // run once on mount
+
   // Cleanup SOS timer on unmount
   useEffect(() => {
     return () => {
@@ -140,34 +197,81 @@ const App = () => {
   };
 
   const handleLogin = (role = 'mother', userData = null) => {
-    // Merge backend data if it exists
-    const userName = userData?.full_name || (role === 'expert' ? "Dr. Expert" : "Mother");
+    // Map backend field names → profile field names
+    const userName = userData?.full_name || userData?.name || (role === 'expert' ? 'Dr. Expert' : 'New Mother');
     // If the user chose "Sign in as Doctor", always honour that selection.
-    // The backend returns role:'user' by default, which must not override the chosen doctor role.
-    const userRole = role === 'expert' ? 'expert' : (userData?.role || role);
+    // (Backend returns role:'user' by default for doctor logins too)
+    const backendRole = userData?.role;
+    const userRole = role === 'expert'
+      ? 'expert'
+      : (backendRole === 'doctor' ? 'expert' : (backendRole || role));
 
-    setProfile(prev => ({ 
-      ...prev, 
-      ...userData,  // merge all backend fields
-      name: userName, 
-      authenticated: true, 
+    setProfile(prev => ({
+      ...prev,
+      authenticated: true,
       role: userRole,
-      verification: userRole === 'expert' ? { status: 'verified', roleRequested: 'expert' } : prev.verification,
-      lastLoginDate: new Date().toISOString().split('T')[0] 
+      name: userName,
+      email: userData?.email || prev.email,
+      phone: userData?.phone || prev.phone,
+      profilePicture: userData?.profile_picture || userData?.profilePicture || prev.profilePicture,
+      _id: userData?._id || prev._id,
+      dob: userData?.dob || prev.dob,
+      bloodGroup: userData?.blood_group || prev.bloodGroup,
+      aadharNumber: userData?.aadhar_number || prev.aadharNumber,
+      address: userData?.address || prev.address,
+      city: userData?.city || prev.city,
+      state: userData?.state || prev.state,
+      pincode: userData?.pincode || prev.pincode,
+      height: userData?.height_cm || prev.height,
+      weight: userData?.weight_kg || prev.weight,
+      maternityStage: userData?.phase || prev.maternityStage,
+      deliveryType: userData?.delivery_type || prev.deliveryType,
+      symptoms: userData?.symptoms || prev.symptoms,
+      caregiver: {
+        name: userData?.family?.contact_name || prev.caregiver.name,
+        contact: userData?.family?.contact_phone || prev.caregiver.contact,
+        relationship: userData?.family?.relation || prev.caregiver.relationship,
+        permissions: userData?.caregiver_permissions || prev.caregiver.permissions,
+      },
+      notifications: userData?.notifications || prev.notifications,
+      membershipPlan: userData?.subscription_plan || userData?.membershipPlan || prev.membershipPlan,
+      verification: userRole === 'expert'
+        ? { status: 'verified', roleRequested: 'expert' }
+        : (userData?.verification || prev.verification),
+      lastLoginDate: new Date().toISOString().split('T')[0],
     }));
-    
+
+    if (userData?._id) setUserId(userData._id);
+
     if (userRole === 'expert') {
       setView('expert-dashboard');
     } else {
       setView('dashboard');
     }
-    
-    addNotification(`${t.common.welcome} ${userName.split(' ')[0]}`, `Welcome back to your care journey.`);
+
+    addNotification(
+      `${t.common.welcome} ${userName.split(' ')[0]} 🌸`,
+      'Welcome back to your care journey.'
+    );
   };
 
   const logout = () => {
-    authAPI.logout(); // clear tokens
-    setProfile(prev => ({ ...prev, authenticated: false, name: "Guest" }));
+    authAPI.logout(); // clears token + refresh token + user id from localStorage
+    localStorage.removeItem('afterma_profile_v4'); // clear cached profile
+    setProfile({
+      name: 'Guest', age: 28,
+      deliveryDate: new Date().toISOString(), deliveryType: 'normal',
+      maternityStage: 'Postpartum', authenticated: false, role: 'mother',
+      accent: 'PINK', incognito: false, medicalHistory: '', emergencyContact: '',
+      membershipPlan: 'free', currentPhase: 'Month 1', completedActivities: [],
+      streakCount: 0, streakProtectionActive: false,
+      lastLoginDate: new Date().toISOString().split('T')[0], badges: [],
+      caregiver: { name: '', relationship: '', contact: '',
+        permissions: { canViewMood: true, canViewPhysical: true, canViewMedicalHistory: false, canViewAppointments: true } },
+      journeySettings: { pace: 'gentle', preferredTime: 'morning', goals: ['improve strength', 'stabilize mood'], isPaused: false, language: 'english' },
+      notifications: { exerciseReminders: true, hydrationAlerts: true, moodCheckins: true, careConnectUpdates: true, sosConfirmations: true },
+      periodLogs: [], journalEntries: [],
+    });
     setView('education');
   };
 
@@ -267,7 +371,15 @@ const App = () => {
       )}
 
       <div className={`fixed inset-y-0 left-0 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out z-[60] lg:z-50 h-screen`}>
-        <Navigation currentView={currentView} setView={setView} profile={profile} logout={logout} onClose={() => setIsMobileMenuOpen(false)} />
+        <Navigation 
+          currentView={currentView} 
+          setView={setView} 
+          profile={profile} 
+          logout={logout} 
+          onClose={() => setIsMobileMenuOpen(false)} 
+          onOpenLocation={() => setShowLocationPage(true)}
+          onOpenLactation={() => setShowLactationLog(true)}
+        />
       </div>
       
       <main className="flex-1 lg:ml-64 min-h-screen relative flex flex-col">
@@ -330,7 +442,7 @@ const App = () => {
         <div className="flex-1 overflow-x-hidden">
           <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
             {/* Expert Views */}
-            {isExpert && currentView === 'expert-dashboard' && <ExpertDashboard profile={profile} />}
+            {isExpert && currentView === 'expert-dashboard' && <ExpertDashboard profile={profile} onViewReport={() => setShowExpertReport(true)} />}
             {isExpert && currentView === 'expert-analytics' && <ExpertAnalytics profile={profile} />}
             {isExpert && currentView === 'expert-settings' && <ExpertSettings profile={profile} logout={logout} />}
 
@@ -339,6 +451,9 @@ const App = () => {
               <>
                 {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => setShowLogModal(true)} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />}
                 {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
+                {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
+                {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
+                {currentView === 'healthsummary' && profile.authenticated && <HealthReportModal profile={profile} onClose={() => setView('dashboard')} />}
                 {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessages} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
                 {currentView === 'education' && <Education profile={profile} />}
                 {currentView === 'recipes' && <SafeRecipes profile={profile} />}
@@ -387,8 +502,11 @@ const App = () => {
       {showLogModal && <HealthLogModal profile={profile} onClose={() => setShowLogModal(false)} onSave={handleSaveLog} />}
       {showHistoryModal && <RecordsHistoryModal profile={profile} logs={logs} onClose={() => setShowHistoryModal(false)} />}
       {showJournal && <Journal profile={profile} setProfile={setProfile} onClose={() => setShowJournal(false)} />}
+      {showLactationLog && <LactationLog profile={profile} onClose={() => setShowLactationLog(false)} />}
+      {showLocationPage && <LocationPage profile={profile} onClose={() => setShowLocationPage(false)} />}
+      {showExpertReport && <HealthReportModal profile={profile} onClose={() => setShowExpertReport(false)} />}
       {(currentView === 'signin' || currentView === 'singin') && (
-        <SignIn profile={profile} onLogin={handleLogin} onClose={() => setView('education')} />
+        <SignIn profile={profile} onLogin={handleLogin} onClose={() => setView('education')} onOpenLocation={() => setShowLocationPage(true)} />
       )}
     </div>
   );

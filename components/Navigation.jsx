@@ -9,6 +9,7 @@ import {
     Home,
     LayoutDashboard,
     LogOut,
+    MapPin,
     Settings,
     ShoppingBag,
     Star,
@@ -22,7 +23,7 @@ import { useState } from 'react';
 import { COLORS, SLOGAN } from '../constants';
 import { translations } from '../translations';
 
-const Navigation = ({ currentView, setView, profile, logout, onClose }) => {
+const Navigation = ({ currentView, setView, profile, logout, onClose, onOpenLocation }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const lang = profile.journeySettings.language || 'english';
@@ -36,7 +37,7 @@ const Navigation = ({ currentView, setView, profile, logout, onClose }) => {
     { id: 'expert-settings', label: 'Portal Settings', icon: UserCog, private: true },
   ] : [
     { id: 'dashboard', label: t.nav.dashboard, icon: Home, private: true },
-    { id: 'carejourney', label: t.nav.physical, icon: Activity, private: true },
+    { id: 'carejourney', label: 'Care Journey', icon: Activity, private: true },
     { id: 'mentalwellness', label: t.nav.mental, icon: Heart, private: true },
     { id: 'careconnect', label: t.nav.care, icon: Users, private: true },
     { id: 'momkart', label: t.nav.momkart, icon: ShoppingBag, private: true },
@@ -90,43 +91,70 @@ const Navigation = ({ currentView, setView, profile, logout, onClose }) => {
           const Icon = item.icon;
 
           return (
-            <button
-              key={item.id}
-              onClick={() => {
-                setView(item.id);
-                if (onClose) onClose();
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${
-                isActive 
-                  ? 'text-white shadow-lg' 
-                  : 'text-slate-500 hover:bg-slate-50'
-              } ${isCollapsed ? 'justify-center' : ''}`}
-              style={{ 
-                backgroundColor: isActive ? theme.primary : '', 
-                color: isActive ? 'white' : ''
-              }}
-            >
-              <Icon size={18} className={isActive ? '' : 'text-slate-400 group-hover:text-slate-900'} />
-              {!isCollapsed && (
-                <span className="font-bold text-sm tracking-tight">
-                  {item.label}
-                </span>
-              )}
-              {/* Tooltip on collapsed */}
-              {isCollapsed && (
-                <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">
-                  {item.label}
+            <div key={item.id} className="flex flex-col">
+              <button
+                onClick={() => {
+                  setView(item.id);
+                  if (!item.subItems && onClose) onClose();
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${
+                  isActive || (item.subItems && item.subItems.some(sub => currentView === sub.id))
+                    ? 'text-white shadow-lg' 
+                    : 'text-slate-500 hover:bg-slate-50'
+                } ${isCollapsed ? 'justify-center' : ''}`}
+                style={{ 
+                  backgroundColor: isActive || (item.subItems && item.subItems.some(sub => currentView === sub.id)) ? theme.primary : '', 
+                  color: isActive || (item.subItems && item.subItems.some(sub => currentView === sub.id)) ? 'white' : ''
+                }}
+              >
+                <Icon size={18} className={(isActive || (item.subItems && item.subItems.some(sub => currentView === sub.id))) ? '' : 'text-slate-400 group-hover:text-slate-900'} />
+                {!isCollapsed && (
+                  <span className="font-bold text-sm tracking-tight">
+                    {item.label}
+                  </span>
+                )}
+                {/* Tooltip on collapsed */}
+                {isCollapsed && (
+                  <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">
+                    {item.label}
+                  </div>
+                )}
+                {!isCollapsed && item.id === 'aftermaplus' && profile.membershipPlan === 'plus' && 
+                  <Star size={12} fill="currentColor" className="ml-auto text-amber-300" />
+                }
+              </button>
+              
+              {!isCollapsed && item.subItems && (
+                <div className="flex flex-col ml-8 mt-1 space-y-1">
+                  {item.subItems.map(sub => (
+                    <button
+                      key={sub.id}
+                      onClick={() => {
+                        setView(sub.id);
+                        if (onClose) onClose();
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                        currentView === sub.id ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
                 </div>
               )}
-              {!isCollapsed && item.id === 'aftermaplus' && profile.membershipPlan === 'plus' && 
-                <Star size={12} fill="currentColor" className="ml-auto text-amber-300" />
-              }
-            </button>
+            </div>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-50">
+      <div className="p-4 border-t border-slate-50 space-y-2">
+        <button 
+          onClick={() => { if (onOpenLocation) onOpenLocation(); if (onClose) onClose(); }}
+          className={`w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all text-sm font-bold ${isCollapsed ? 'justify-center' : ''}`}
+        >
+          <MapPin size={18} />
+          {!isCollapsed && <span>Nearby Care</span>}
+        </button>
         {profile.authenticated && (
           <button 
             onClick={logout}

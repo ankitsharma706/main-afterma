@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Medical Report — AfterMa</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1923;
+    --ink-light: #4a5568;
+    --ink-muted: #8a9bb0;
+    --accent: #e8325a;
+    --accent-gold: #f0a500;
+    --accent-teal: #0d9488;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --surface: #ffffff;
+    --surface-alt: #f7f9fc;
+    --border: #e2e8f0;
+    --green: #10b981;
+    --page-bg: #eef2f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--page-bg);
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    max-width: 900px;
+    margin: 40px auto;
+    background: var(--surface);
+    box-shadow: 0 24px 72px rgba(0,0,0,0.13);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--ink);
+    color: white;
+    padding: 48px 56px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -70px; right: -70px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: rgba(232,50,90,0.13);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -50px; right: 100px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(240,165,0,0.09);
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+  }
+  .brand { display: flex; flex-direction: column; gap: 4px; }
+  .brand-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    letter-spacing: 0.5px;
+    color: white;
+  }
+  .brand-name span { color: var(--accent); }
+  .brand-tagline {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .report-meta {
+    text-align: right;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    line-height: 2.1;
+  }
+  .report-meta strong { color: rgba(255,255,255,0.88); }
+  .patient-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 40px;
+    line-height: 1.1;
+    color: white;
+    margin-bottom: 6px;
+  }
+  .patient-subtitle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+  }
+  .header-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 26px 0;
+  }
+  .patient-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.7);
+  }
+  .chip strong { color: white; }
+
+  /* ── PATIENT INFO BANNER ── */
+  .info-banner {
+    background: linear-gradient(135deg, #f8f9fc 0%, #f1f5fd 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 56px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+  }
+  .info-item { padding-right: 20px; border-right: 1px solid var(--border); padding-left: 20px; }
+  .info-item:first-child { padding-left: 0; }
+  .info-item:last-child { border-right: none; }
+  .info-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px; }
+  .info-value { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .info-sub { font-size: 10px; color: var(--ink-muted); margin-top: 1px; }
+
+  /* ── BODY ── */
+  .body { padding: 0 56px 56px; }
+
+  /* ── SECTION ── */
+  .section { margin-top: 46px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 11px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .section-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .section-title { font-size: 10.5px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; }
+  .section-num { margin-left: auto; font-size: 10px; color: var(--ink-muted); letter-spacing: 1px; }
+
+  /* ── VITALS GRID ── */
+  .vitals-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .vital-card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px; padding: 18px 16px; }
+  .vital-badge { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; border-radius: 100px; margin-bottom: 12px; display: inline-block; }
+  .badge-green  { background: #d1fae5; color: #065f46; }
+  .badge-yellow { background: #fef3c7; color: #92400e; }
+  .badge-blue   { background: #dbeafe; color: #1e40af; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+  .vital-label { font-size: 10px; color: var(--ink-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .vital-value { font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1; color: var(--ink); }
+  .vital-sub { font-size: 10px; color: var(--ink-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  /* ── LABS GRID ── */
+  .labs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .lab-card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; display: flex; align-items: flex-start; gap: 12px; }
+  .lab-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .lab-label { font-size: 10px; color: var(--ink-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+  .lab-value { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .lab-ref { font-size: 10px; color: var(--ink-muted); margin-top: 2px; }
+  .lab-status { margin-left: auto; font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 100px; white-space: nowrap; }
+
+  /* ── READINESS BARS ── */
+  .readiness-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .readiness-group-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 16px; font-weight: 600; }
+  .bar-item { margin-bottom: 18px; }
+  .bar-item:last-child { margin-bottom: 0; }
+  .bar-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+  .bar-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-light); }
+  .bar-pct { font-size: 13px; font-weight: 600; }
+  .bar-track { height: 5px; background: var(--border); border-radius: 100px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 100px; }
+
+  /* ── CYCLE SECTION ── */
+  .cycle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .cycle-card { border: 1px solid var(--border); border-radius: 10px; padding: 18px; background: var(--surface-alt); }
+  .cycle-card-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 6px; }
+  .cycle-card-value { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); margin-bottom: 2px; }
+  .cycle-card-note { font-size: 10px; color: var(--accent-gold); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .symptom-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .symptom-pill { border: 1px solid var(--border); border-radius: 100px; padding: 5px 14px; font-size: 11px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; color: var(--ink-light); background: var(--surface-alt); }
+
+  /* ── WELLBEING ── */
+  .wellbeing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .wellbeing-card { border: 1px solid var(--border); border-radius: 10px; padding: 20px; background: var(--surface-alt); }
+  .wb-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 12px; }
+  .wb-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px; }
+  .wb-value { font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1; color: var(--ink); }
+  .wb-range { display: flex; justify-content: space-between; font-size: 9px; color: var(--ink-muted); margin-top: 10px; letter-spacing: 0.8px; text-transform: uppercase; }
+  .wb-bar { height: 3px; background: var(--border); border-radius: 100px; margin-top: 8px; overflow: hidden; }
+  .wb-bar-fill { height: 100%; border-radius: 100px; }
+
+  /* ── NOTES ── */
+  .notes-box { background: var(--surface-alt); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 22px 26px; }
+  .notes-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 10px; font-weight: 600; }
+  .notes-text { font-size: 13px; line-height: 1.78; color: var(--ink-light); font-style: italic; }
+
+  /* ── RECOMMENDATIONS ── */
+  .rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .rec-item { display: flex; gap: 14px; align-items: flex-start; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .rec-icon { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+  .rec-label { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .rec-desc { font-size: 11px; color: var(--ink-muted); line-height: 1.6; }
+
+  /* ── SIGNATURE ── */
+  .signature-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px; }
+  .sig-block { border-top: 1px solid var(--border); padding-top: 12px; }
+  .sig-label { font-size: 10px; color: var(--ink-muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .sig-name { font-size: 15px; font-weight: 600; color: var(--ink); margin-top: 5px; }
+  .sig-role { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+  .sig-reg  { font-size: 10px; color: var(--ink-muted); margin-top: 1px; letter-spacing: 0.4px; }
+
+  /* ── FOOTER ── */
+  .footer { background: var(--ink); padding: 26px 56px; display: flex; justify-content: space-between; align-items: center; margin-top: 48px; }
+  .footer-brand { font-family: 'DM Serif Display', serif; color: white; font-size: 17px; opacity: 0.75; }
+  .footer-brand span { color: var(--accent); opacity: 1; }
+  .footer-disclaimer { font-size: 10px; color: rgba(255,255,255,0.32); max-width: 420px; text-align: right; line-height: 1.65; letter-spacing: 0.3px; }
+  .footer-page { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.45); font-size: 11px; display: flex; align-items: center; justify-content: center; }
+
+  @media print { body { background: white; } .page { box-shadow: none; margin: 0; border-radius: 0; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-name">After<span>Ma</span></div>
+        <div class="brand-tagline">Women's Health Platform</div>
+      </div>
+      <div class="report-meta">
+        <div>Report ID &nbsp;<strong>#AM-IN-2026-0226</strong></div>
+        <div>Generated &nbsp;<strong>26 February 2026</strong></div>
+        <div>Period &nbsp;<strong>Jan – Feb 2026</strong></div>
+        <div>Facility &nbsp;<strong>Apollo Hospitals, New Delhi</strong></div>
+        <div>Status &nbsp;<strong style="color:#10b981;">ACTIVE PATIENT</strong></div>
+      </div>
+    </div>
+    <div class="patient-title">Patient Health<br>Summary Report</div>
+    <div class="patient-subtitle">Clinical Analytics &amp; Gynaecological Recovery Indices</div>
+    <div class="header-divider"></div>
+    <div class="patient-chips">
+      <div class="chip">Patient &nbsp;<strong>Priya Sharma</strong></div>
+      <div class="chip">DOB &nbsp;<strong>14 March 1995 · Age 30</strong></div>
+      <div class="chip">UHID &nbsp;<strong>APL-DL-082943</strong></div>
+      <div class="chip">Blood Group &nbsp;<strong>B+</strong></div>
+      <div class="chip">Phase &nbsp;<strong>Luteal</strong></div>
+      <div class="chip">Cycle Day &nbsp;<strong>Day 22</strong></div>
+    </div>
+  </div>
+
+  <!-- ══ PATIENT INFO BANNER ══ -->
+  <div class="info-banner">
+    <div class="info-item">
+      <div class="info-label">Consultant</div>
+      <div class="info-value">Dr. Kavitha Menon</div>
+      <div class="info-sub">MS OB/GYN, AIIMS Delhi</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Address</div>
+      <div class="info-value">New Delhi – 110029</div>
+      <div class="info-sub">Delhi NCR, India</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Contact</div>
+      <div class="info-value">+91 98112 74035</div>
+      <div class="info-sub">priya.sharma@gmail.com</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Aadhaar Ref</div>
+      <div class="info-value">XXXX-XXXX-4821</div>
+      <div class="info-sub">Govt. of India ID</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Insurance</div>
+      <div class="info-value">Star Health</div>
+      <div class="info-sub">Policy #SHI-2024-98321</div>
+    </div>
+  </div>
+
+  <!-- ══ BODY ══ -->
+  <div class="body">
+
+    <!-- 01: CLINICAL VITALS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent-teal);"></div>
+        <div class="section-title">Clinical Vitals Overview</div>
+        <div class="section-num">01</div>
+      </div>
+      <div class="vitals-grid">
+        <div class="vital-card">
+          <div class="vital-badge badge-green">Optimal</div>
+          <div class="vital-label">Hydration Ratio</div>
+          <div class="vital-value">50<span style="font-size:17px">%</span></div>
+          <div class="vital-sub">Daily Adherence</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-badge badge-yellow">Improving</div>
+          <div class="vital-label">Sleep Quality</div>
+          <div class="vital-value">75<span style="font-size:17px">%</span></div>
+          <div class="vital-sub">Rest Efficiency</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-badge badge-blue">Verified</div>
+          <div class="vital-label">Pelvic Index</div>
+          <div class="vital-value">0.0</div>
+          <div class="vital-sub">Muscle Tone Score</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-badge badge-purple">Balanced</div>
+          <div class="vital-label">Activity Load</div>
+          <div class="vital-value">1</div>
+          <div class="vital-sub">Log Consistency</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02: LAB VALUES -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent-blue);"></div>
+        <div class="section-title">Anthropometric &amp; Laboratory Investigations</div>
+        <div class="section-num">02</div>
+      </div>
+      <div class="labs-grid">
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#dbeafe;">⚖️</div>
+          <div style="flex:1;">
+            <div class="lab-label">BMI / Body Weight</div>
+            <div class="lab-value">58 kg &nbsp;·&nbsp; 22.4</div>
+            <div class="lab-ref">Ht: 161 cm &nbsp;|&nbsp; Ref BMI: 18.5–24.9</div>
+          </div>
+          <div class="lab-status" style="background:#d1fae5; color:#065f46;">Normal</div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#fee2e2;">🩸</div>
+          <div style="flex:1;">
+            <div class="lab-label">Haemoglobin (CBC)</div>
+            <div class="lab-value">10.8 g/dL</div>
+            <div class="lab-ref">Ref: 12.0–16.0 g/dL</div>
+          </div>
+          <div class="lab-status" style="background:#fee2e2; color:#991b1b;">Low ↓</div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#fef3c7;">🔬</div>
+          <div style="flex:1;">
+            <div class="lab-label">Serum Ferritin</div>
+            <div class="lab-value">9 ng/mL</div>
+            <div class="lab-ref">Ref: 12–150 ng/mL</div>
+          </div>
+          <div class="lab-status" style="background:#fee2e2; color:#991b1b;">Low ↓</div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#ede9fe;">🧪</div>
+          <div style="flex:1;">
+            <div class="lab-label">TSH (Thyroid)</div>
+            <div class="lab-value">2.8 µIU/mL</div>
+            <div class="lab-ref">Ref: 0.4–4.0 µIU/mL</div>
+          </div>
+          <div class="lab-status" style="background:#d1fae5; color:#065f46;">Normal</div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#fce7f3;">☀️</div>
+          <div style="flex:1;">
+            <div class="lab-label">Vitamin D3 (25-OH)</div>
+            <div class="lab-value">18 ng/mL</div>
+            <div class="lab-ref">Ref: 30–100 ng/mL</div>
+          </div>
+          <div class="lab-status" style="background:#fef3c7; color:#92400e;">Deficient</div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#d1fae5;">💉</div>
+          <div style="flex:1;">
+            <div class="lab-label">Fasting Blood Glucose</div>
+            <div class="lab-value">88 mg/dL</div>
+            <div class="lab-ref">Ref: 70–99 mg/dL</div>
+          </div>
+          <div class="lab-status" style="background:#d1fae5; color:#065f46;">Normal</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03: DAILY WELLNESS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent);"></div>
+        <div class="section-title">Daily Wellness Indices</div>
+        <div class="section-num">03</div>
+      </div>
+      <div class="wellbeing-grid">
+        <div class="wellbeing-card">
+          <div class="wb-icon" style="background:#fce7f3;">😊</div>
+          <div class="wb-label">Mood Balance</div>
+          <div class="wb-value">5 <span style="font-size:14px; color:var(--accent);">/10</span></div>
+          <div class="wb-bar"><div class="wb-bar-fill" style="width:50%; background:var(--accent);"></div></div>
+          <div class="wb-range"><span>Low</span><span>Radiant</span></div>
+        </div>
+        <div class="wellbeing-card">
+          <div class="wb-icon" style="background:#fef3c7;">⚡</div>
+          <div class="wb-label">Energy Vitality</div>
+          <div class="wb-value">5 <span style="font-size:14px; color:var(--accent-gold);">/10</span></div>
+          <div class="wb-bar"><div class="wb-bar-fill" style="width:50%; background:var(--accent-gold);"></div></div>
+          <div class="wb-range"><span>Drained</span><span>Vibrant</span></div>
+        </div>
+        <div class="wellbeing-card">
+          <div class="wb-icon" style="background:#fee2e2;">📉</div>
+          <div class="wb-label">Pain Intensity</div>
+          <div class="wb-value">2 <span style="font-size:14px; color:var(--accent-teal);">/10</span></div>
+          <div class="wb-bar"><div class="wb-bar-fill" style="width:20%; background:var(--accent-teal);"></div></div>
+          <div class="wb-range"><span>None</span><span>Severe</span></div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;">
+        <div class="wellbeing-card" style="display:flex; align-items:center; gap:16px;">
+          <div class="wb-icon" style="background:#dbeafe; font-size:20px;">🌙</div>
+          <div>
+            <div class="wb-label">Sleep Duration</div>
+            <div style="font-family:'DM Serif Display',serif; font-size:26px; color:var(--ink);">6 <span style="font-size:13px; color:var(--ink-muted);">hrs/night</span></div>
+          </div>
+          <div style="margin-left:auto; font-size:10px; font-weight:600; background:#dbeafe; color:#1e40af; padding:4px 10px; border-radius:100px;">Adequate</div>
+        </div>
+        <div class="wellbeing-card" style="display:flex; align-items:center; gap:16px;">
+          <div class="wb-icon" style="background:#fef3c7; font-size:20px;">💧</div>
+          <div>
+            <div class="wb-label">Water Intake</div>
+            <div style="font-family:'DM Serif Display',serif; font-size:26px; color:var(--ink);">5 <span style="font-size:13px; color:var(--ink-muted);">cups/day</span></div>
+          </div>
+          <div style="margin-left:auto; font-size:10px; font-weight:600; background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:100px;">Below Target</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04: MENSTRUAL & CYCLE DATA -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent-gold);"></div>
+        <div class="section-title">Menstrual &amp; Cycle Data</div>
+        <div class="section-num">04</div>
+      </div>
+      <div class="cycle-grid">
+        <div class="cycle-card">
+          <div class="cycle-card-label">Cycle Length</div>
+          <div class="cycle-card-value">28 Days</div>
+          <div class="cycle-card-note">Regular Eumenorrhoea</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-card-label">Cycle Variance</div>
+          <div class="cycle-card-value">±2 Days</div>
+          <div class="cycle-card-note">Clinical Stability</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-card-label">Next Ovulation</div>
+          <div class="cycle-card-value">May 12–16</div>
+          <div class="cycle-card-note">Hormonal Peak Window</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-card-label">Flow Intensity</div>
+          <div class="cycle-card-value">None</div>
+          <div class="cycle-card-note" style="color:var(--accent-teal);">Current Observation</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-card-label">Cramps Severity</div>
+          <div class="cycle-card-value">0 <span style="font-size:14px; color:var(--green);">/10</span></div>
+          <div class="cycle-card-note" style="color:var(--green);">None Reported</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-card-label">Mood State</div>
+          <div class="cycle-card-value" style="font-size:20px;">Balanced</div>
+          <div class="cycle-card-note" style="color:var(--accent-teal);">Clinician Verified</div>
+        </div>
+      </div>
+      <div>
+        <div class="readiness-group-title" style="margin-bottom:10px;">Premenstrual Symptoms Reported</div>
+        <div class="symptom-pills">
+          <div class="symptom-pill">Nausea</div>
+          <div class="symptom-pill">Backache</div>
+          <div class="symptom-pill">Pedal Oedema</div>
+          <div class="symptom-pill">Insomnia</div>
+          <div class="symptom-pill">Dizziness</div>
+          <div class="symptom-pill">Fatigue</div>
+          <div class="symptom-pill" style="background:white; color:var(--ink-muted); border-style:dashed;">No Active Cramps</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05: READINESS & BEHAVIOURAL INDICES -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent-blue);"></div>
+        <div class="section-title">Readiness &amp; Behavioural Indices</div>
+        <div class="section-num">05</div>
+      </div>
+      <div class="readiness-grid">
+        <div>
+          <div class="readiness-group-title">Physiological Readiness</div>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span class="bar-label">Tissue Restoration</span>
+              <span class="bar-pct" style="color:var(--green);">82%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:82%; background:var(--green);"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span class="bar-label">Pelvic Resilience</span>
+              <span class="bar-pct" style="color:var(--accent);">0%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:0%; background:var(--accent);"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span class="bar-label">Core Alignment</span>
+              <span class="bar-pct" style="color:var(--accent-purple);">65%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:65%; background:var(--accent-purple);"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="readiness-group-title">Behavioural Patterns</div>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span class="bar-label">Hydration Adherence</span>
+              <span class="bar-pct" style="color:var(--accent-blue);">90%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:90%; background:var(--accent-blue);"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span class="bar-label">Rest Efficiency</span>
+              <span class="bar-pct" style="color:var(--accent-blue);">70%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:70%; background:var(--accent-blue);"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label-row">
+              <span class="bar-label">Log Consistency</span>
+              <span class="bar-pct" style="color:var(--accent);">85%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:85%; background:var(--accent);"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 06: CURRENT MEDICATIONS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent-teal);"></div>
+        <div class="section-title">Current Medications &amp; Supplements</div>
+        <div class="section-num">06</div>
+      </div>
+      <div class="labs-grid">
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#fee2e2;">💊</div>
+          <div style="flex:1;">
+            <div class="lab-label">Iron + Folic Acid</div>
+            <div class="lab-value" style="font-size:13px;">Ferrous Sulphate 200 mg</div>
+            <div class="lab-ref">1 tab OD after food · 8 weeks</div>
+          </div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#fef3c7;">🌞</div>
+          <div style="flex:1;">
+            <div class="lab-label">Vitamin D3 Supplement</div>
+            <div class="lab-value" style="font-size:13px;">Cholecalciferol 60,000 IU</div>
+            <div class="lab-ref">1 sachet weekly × 8 weeks</div>
+          </div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-icon" style="background:#d1fae5;">🍋</div>
+          <div style="flex:1;">
+            <div class="lab-label">Vitamin C (Co-therapy)</div>
+            <div class="lab-value" style="font-size:13px;">Ascorbic Acid 500 mg</div>
+            <div class="lab-ref">1 tab OD with iron · 8 weeks</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 07: CLINICAL RECOMMENDATIONS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--accent-purple);"></div>
+        <div class="section-title">Clinical Recommendations</div>
+        <div class="section-num">07</div>
+      </div>
+      <div class="rec-grid">
+        <div class="rec-item">
+          <div class="rec-icon" style="background:#fee2e2;">🩸</div>
+          <div class="rec-content">
+            <div class="rec-label">Iron Supplementation — Priority</div>
+            <div class="rec-desc">Hb 10.8 g/dL and ferritin 9 ng/mL indicate iron-deficiency anaemia — common in Indian women of reproductive age. Continue Ferrous Sulphate 200 mg OD + Vitamin C 500 mg. Include iron-rich foods: spinach, lentils, jaggery, ragi. Repeat CBC after 8 weeks.</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-icon" style="background:#fef3c7;">☀️</div>
+          <div class="rec-content">
+            <div class="rec-label">Vitamin D3 Correction</div>
+            <div class="rec-desc">Vitamin D3 at 18 ng/mL is deficient. Cholecalciferol 60,000 IU weekly × 8 weeks prescribed. Advise 20 min morning sunlight daily. Recheck serum 25-OH Vit D in 3 months. Maintain with 1,000 IU/day thereafter.</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-icon" style="background:#d1fae5;">💧</div>
+          <div class="rec-content">
+            <div class="rec-label">Increase Water Intake</div>
+            <div class="rec-desc">Current intake of 5 cups/day is below the recommended 2–2.5 litres for the luteal phase. Advise coconut water or ORS to address pedal oedema and dizziness. Target 8–10 cups (2 litres) minimum daily.</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-icon" style="background:#dbeafe;">🌙</div>
+          <div class="rec-content">
+            <div class="rec-label">Sleep Hygiene Improvement</div>
+            <div class="rec-desc">6 hrs recorded, below the recommended 7–9 hrs. Advise fixed sleep–wake schedule, reduce screen exposure after 9 PM. If insomnia persists beyond 2 weeks, consider Melatonin 0.5 mg at bedtime under guidance.</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-icon" style="background:#ede9fe;">🧘</div>
+          <div class="rec-content">
+            <div class="rec-label">Pelvic Floor Physiotherapy</div>
+            <div class="rec-desc">Pelvic resilience index at 0% requires immediate intervention. Refer to pelvic floor physiotherapist. Prescribe Kegel exercises 3 sets × 10 reps daily. Reassess pelvic index at next monthly review appointment.</div>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-icon" style="background:#fce7f3;">📊</div>
+          <div class="rec-content">
+            <div class="rec-label">Continue AfterMa Daily Logging</div>
+            <div class="rec-desc">Log consistency at 85% is commendable. Continue daily entries over the next 2 cycles to track insomnia, pedal oedema, fatigue, and iron supplementation response. Share export with treating clinician at next visit.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 08: CLINICIAN NOTES -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-dot" style="background:var(--ink-muted);"></div>
+        <div class="section-title">Clinician Medical Notes</div>
+        <div class="section-num">08</div>
+      </div>
+      <div class="notes-box">
+        <div class="notes-title">Observations — Dr. Kavitha Menon, MS OB/GYN · Apollo Hospitals, New Delhi</div>
+        <div class="notes-text">
+          Patient Priya Sharma, 30-year-old female from New Delhi, is currently in the luteal phase (Day 22) of a 28-day eumenorrhoeic cycle with clinically stable variance of ±2 days. No active bleeding or dysmenorrhoea reported on the observation date 26/02/2026. A premenstrual symptom cluster is noted — nausea, backache, pedal oedema, insomnia, dizziness, and fatigue — consistent with mild Premenstrual Syndrome (PMS). Mood is balanced; energy at moderate levels (5/10); pain intensity minimal (2/10).
+          <br><br>
+          Laboratory investigations reveal iron-deficiency anaemia (Hb 10.8 g/dL, Ferritin 9 ng/mL) and Vitamin D3 insufficiency (18 ng/mL), both highly prevalent among Indian women of reproductive age and contributing to patient's reported fatigue and dizziness. TSH (2.8 µIU/mL) and fasting blood glucose (88 mg/dL) are within normal reference ranges. BMI of 22.4 kg/m² is in the healthy range. Hydration adherence is commendable at 90%; however, absolute daily water volume remains below the clinical target for the luteal phase. Pelvic resilience index at 0% necessitates immediate pelvic floor physiotherapy referral. Core alignment at 65% — continued monitoring advised. Overall recovery trajectory is positive with appropriate supplementation, dietary guidance, and lifestyle modification.
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE -->
+    <div class="signature-row">
+      <div class="sig-block">
+        <div class="sig-label">Reviewed &amp; Digitally Signed By</div>
+        <div class="sig-name">Dr. Kavitha Menon</div>
+        <div class="sig-role">MS OB/GYN · Apollo Hospitals, New Delhi</div>
+        <div class="sig-reg">MCI Reg. No. 2019-DL-48321 &nbsp;|&nbsp; Date: 26-02-2026</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-label">Patient Acknowledgement</div>
+        <div class="sig-name">Priya Sharma</div>
+        <div class="sig-role">UHID: APL-DL-082943 &nbsp;·&nbsp; Blood Group: B+</div>
+        <div class="sig-reg">Date: 26-02-2026 &nbsp;|&nbsp; New Delhi, India</div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ══ FOOTER ══ -->
+  <div class="footer">
+    <div class="footer-brand">After<span>Ma</span></div>
+    <div class="footer-page">1</div>
+    <div class="footer-disclaimer">This report is generated from patient-entered data via the AfterMa Women's Health Platform and is intended for clinical reference only. It does not constitute a standalone medical diagnosis. Confidential — for authorised healthcare personnel only. Always consult a registered medical practitioner (RMP) for clinical decisions.</div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

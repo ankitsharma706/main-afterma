@@ -1,49 +1,105 @@
-
 import {
     AlertCircle,
     Bell,
-    Bot,
     Calendar,
-    CheckCircle2,
     ChevronRight,
     FileText,
-    Hand,
-    HelpCircle,
     MessageCircle,
-    MessageSquare,
-    Mic, MicOff,
-    MoreHorizontal,
-    PhoneOff,
     Search,
-    Settings as SettingsIcon, Share,
-    Shield,
     ShieldCheck,
-    Star, TrendingUp,
     Users,
-    Video,
-    VideoOff,
-    X
+    Video
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { COLORS } from '../constants';
+import { expertAPI, sessionsAPI } from '../services/api';
 
-const ExpertDashboard = ({ profile }) => {
+const ExpertDashboard = ({ profile, onViewReport }) => {
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const [activeTab, setActiveTab] = useState('sessions');
-  const [showMeeting, setShowMeeting] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isCamOff, setIsCamOff] = useState(false);
+  
+  // State for metrics and sessions
+  const [dashboardData, setDashboardData] = useState({
+    active_sessions: 0,
+    critical_alerts: 0,
+    assigned_members: 0,
+    clinical_accuracy: 98
+  });
+  const [sessions, setSessions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load Data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [dashRes, sessRes] = await Promise.all([
+          expertAPI.getDashboard(),
+          expertAPI.getSessions(),
+        ]);
+        if (dashRes?.data) setDashboardData(dashRes.data);
+        if (sessRes?.data?.sessions) setSessions(sessRes.data.sessions);
+      } catch (err) {
+        console.error('Failed to load expert dashboard data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const stats = [
-    { label: 'Active Sessions', value: '12', icon: <Calendar size={18} />, color: 'blue' },
-    { label: 'Critical Alerts', value: '2', icon: <AlertCircle size={18} />, color: 'rose' },
-    { label: 'Assigned Members', value: '48', icon: <Users size={18} />, color: 'emerald' },
-    { label: 'Clinical Accuracy', value: '99%', icon: <ShieldCheck size={18} />, color: 'indigo' },
+    { label: 'Active Sessions', value: dashboardData.active_sessions.toString(), icon: <Calendar size={18} />, color: 'blue' },
+    { label: 'Critical Alerts', value: dashboardData.critical_alerts.toString(), icon: <AlertCircle size={18} />, color: 'rose' },
+    { label: 'Assigned Members', value: dashboardData.assigned_members.toString(), icon: <Users size={18} />, color: 'emerald' },
+    { label: 'Clinical Accuracy', value: `${dashboardData.clinical_accuracy}%`, icon: <ShieldCheck size={18} />, color: 'indigo' },
   ];
+
+  // Actions
+  const handleJoin = async (sessionId) => {
+    try {
+      const res = await sessionsAPI.join(sessionId);
+      if (res?.data?.join_url) {
+        window.open(res.data.join_url, '_blank');
+      } else {
+        alert('Join URL not available yet.');
+      }
+    } catch (err) {
+      alert('Failed to get join link: ' + err.message);
+    }
+  };
+
+  const handleCancel = async (sessionId) => {
+    if (!window.confirm('Are you sure you want to cancel this session?')) return;
+    try {
+      await sessionsAPI.cancel(sessionId, 'Cancelled by Expert');
+      setSessions(prev => prev.map(s => s._id === sessionId ? { ...s, session_status: 'cancelled' } : s));
+    } catch (err) {
+      alert('Failed to cancel session: ' + err.message);
+    }
+  };
+
+  const handleReschedule = async (sessionId) => {
+    const newDate = prompt('Enter new date (YYYY-MM-DD):');
+    if (!newDate) return;
+    const newTime = prompt('Enter new time (HH:MM):');
+    if (!newTime) return;
+    try {
+      const res = await sessionsAPI.reschedule(sessionId, { session_date: newDate, session_time: newTime });
+      if (res?.data?.session) {
+         // Replace the old session with the new one in the list, or just mark old as rescheduled and add new.
+         // Let's just refetch sessions to be safe:
+         const sessRes = await expertAPI.getSessions();
+         if (sessRes?.data?.sessions) setSessions(sessRes.data.sessions);
+         alert('Session rescheduled successfully.');
+      }
+    } catch (err) {
+      alert('Failed to reschedule session: ' + err.message);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-32 animate-in">
-      
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pt-10">
         <div className="space-y-2">
@@ -57,149 +113,40 @@ const ExpertDashboard = ({ profile }) => {
           <p className="text-slate-400 font-medium italic">Welcome back, {profile.name}. Your clinical expertise is making a difference.</p>
         </div>
         <div className="flex items-center gap-4">
+           <button
+             onClick={onViewReport}
+             className="flex items-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-2xl font-bold text-xs uppercase tracking-widest border border-emerald-100 transition-all"
+           >
+             <FileText size={16} /> View Patient Report
+           </button>
            <button className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 shadow-sm transition-all relative">
               <Bell size={20} />
-              <div className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-           </button>
-           <button 
-              onClick={() => setShowMeeting(true)}
-              className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
-            >
-              <Video size={18} />
-              <span>Start Live Room</span>
+              {dashboardData.critical_alerts > 0 && <div className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />}
            </button>
         </div>
       </header>
 
       {/* Stats Grid */}
-      {!showMeeting && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map(stat => (
-            <div key={stat.label} className="bg-white p-8 rounded-[2.5rem] border border-slate-50 shadow-sm hover:shadow-md transition-all space-y-4">
-              <div className={`w-12 h-12 rounded-2xl bg-${stat.color}-50 flex items-center justify-center text-${stat.color}-600`}>
-                {stat.icon}
-              </div>
-              <div className="space-y-1">
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                 <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
-              </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map(stat => (
+          <div key={stat.label} className={`bg-white p-8 rounded-[2.5rem] border border-${stat.color}-100 shadow-sm hover:shadow-md transition-all space-y-4`}>
+            <div className={`w-12 h-12 rounded-2xl bg-${stat.color}-50 flex items-center justify-center text-${stat.color}-600`}>
+              {stat.icon}
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Live Meeting Room (NEW from v3) */}
-      {showMeeting && (
-        <div className="fixed inset-0 z-[200] bg-slate-950 flex flex-col animate-in fade-in duration-500">
-           {/* Meeting Header */}
-           <div className="h-16 border-b border-white/10 flex items-center justify-between px-8 shrink-0">
-              <div className="flex items-center gap-4">
-                 <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Live Room Active</span>
-                 </div>
-                 <span className="text-white/40 text-xs font-medium">|</span>
-                 <span className="text-white/60 text-xs font-bold tracking-tight">Postpartum Support Group • 12 Participants</span>
-              </div>
-              <div className="flex items-center gap-4">
-                 <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Room ID: AM-772-B9</div>
-                 <button onClick={() => setShowMeeting(false)} className="p-2 text-white/40 hover:text-white transition-colors"><X size={20} /></button>
-              </div>
-           </div>
-
-           {/* Participant Grid */}
-           <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto scrollbar-hide">
-              {/* Expert Tile (Self) */}
-              <div className="relative aspect-video bg-slate-900 rounded-3xl overflow-hidden border-2 border-emerald-500 shadow-2xl group">
-                 {!isCamOff ? (
-                    <img src="https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=800" alt="Expert" className="w-full h-full object-cover opacity-80" />
-                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                       <div className="w-24 h-24 bg-slate-700 rounded-full flex items-center justify-center text-4xl font-black text-white shadow-inner">AI</div>
-                    </div>
-                 )}
-                 <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-xl border border-white/10">
-                    <span className="text-[10px] font-bold text-white uppercase tracking-widest">You (Expert)</span>
-                    {isMuted && <MicOff size={12} className="text-rose-500" />}
-                 </div>
-                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 bg-black/40 backdrop-blur-md rounded-lg text-white/60 hover:text-white"><SettingsIcon size={16} /></button>
-                 </div>
-              </div>
-
-              {/* Other Participants */}
-              {[
-                { name: "Anjali S.", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400" },
-                { name: "Priya P.", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=400" },
-                { name: "Meera G.", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400" },
-                { name: "Sonia K.", img: "https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&q=80&w=400" },
-                { name: "Ritu M.", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400" },
-                { name: "Kavita R.", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400" },
-                { name: "Neha S.", img: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=400" }
-              ].map((p, i) => (
-                <div key={i} className="relative aspect-video bg-slate-900 rounded-3xl overflow-hidden border border-white/5 group hover:border-white/20 transition-all">
-                   <img src={p.img} alt={p.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
-                   <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-xl border border-white/10">
-                      <span className="text-[10px] font-bold text-white uppercase tracking-widest">{p.name}</span>
-                   </div>
-                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 bg-black/40 backdrop-blur-md rounded-lg text-white/60 hover:text-white"><Star size={14} /></button>
-                      <button className="p-2 bg-black/40 backdrop-blur-md rounded-lg text-white/60 hover:text-white"><MoreHorizontal size={14} /></button>
-                   </div>
-                </div>
-              ))}
-           </div>
-
-           {/* Meeting Controls */}
-           <div className="h-24 bg-slate-900/50 backdrop-blur-xl border-t border-white/10 flex items-center justify-between px-12 shrink-0">
-              <div className="flex items-center gap-6">
-                 <div className="text-white/80 font-bold text-sm tracking-tight">
-                   {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                 </div>
-                 <div className="h-4 w-px bg-white/10" />
-                 <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Clinical Session</div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                 <button 
-                    onClick={() => setIsMuted(!isMuted)}
-                    className={`p-5 rounded-2xl transition-all ${isMuted ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-800 text-white hover:bg-slate-700'}`}
-                 >
-                    {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-                 </button>
-                 <button 
-                    onClick={() => setIsCamOff(!isCamOff)}
-                    className={`p-5 rounded-2xl transition-all ${isCamOff ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-800 text-white hover:bg-slate-700'}`}
-                 >
-                    {isCamOff ? <VideoOff size={24} /> : <Video size={24} />}
-                 </button>
-                 <button className="p-5 bg-slate-800 text-white rounded-2xl hover:bg-slate-700 transition-all"><Hand size={24} /></button>
-                 <button className="p-5 bg-slate-800 text-white rounded-2xl hover:bg-slate-700 transition-all"><Share size={24} /></button>
-                 <button 
-                    onClick={() => setShowMeeting(false)}
-                    className="px-8 py-5 bg-rose-500 text-white rounded-2xl font-bold text-sm flex items-center gap-3 hover:bg-rose-600 transition-all shadow-xl shadow-rose-500/20"
-                 >
-                    <PhoneOff size={20} />
-                    <span>End Session</span>
-                 </button>
-              </div>
-
-              <div className="flex items-center gap-4">
-                 <button className="p-4 text-white/40 hover:text-white transition-colors relative">
-                    <MessageSquare size={20} />
-                    <div className="absolute top-3 right-3 w-2 h-2 bg-emerald-500 rounded-full border-2 border-slate-900" />
-                 </button>
-                 <button className="p-4 text-white/40 hover:text-white transition-colors"><Users size={20} /></button>
-                 <button className="p-4 text-white/40 hover:text-white transition-colors"><Shield size={20} /></button>
-              </div>
-           </div>
-        </div>
-      )}
+            <div className="space-y-1">
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+               {isLoading ? (
+                 <p className="text-3xl font-black text-slate-200 animate-pulse">...</p>
+               ) : (
+                 <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+               )}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Main Content Area */}
-      {!showMeeting && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Sidebar Navigation */}
         <div className="lg:col-span-3 space-y-2">
           <DashNavBtn active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} icon={<Calendar size={18} />} label="Manage Sessions" />
@@ -207,141 +154,50 @@ const ExpertDashboard = ({ profile }) => {
           <DashNavBtn active={activeTab === 'queries'} onClick={() => setActiveTab('queries')} icon={<MessageCircle size={18} />} label="Patient Queries" />
           <DashNavBtn active={activeTab === 'rooms'} onClick={() => setActiveTab('rooms')} icon={<Video size={18} />} label="Support Rooms" />
           <DashNavBtn active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon={<Users size={18} />} label="My Members" />
-          
-          <div className="pt-10 space-y-6">
-            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
-              <div className="flex items-center gap-3 text-slate-900 font-bold">
-                <TrendingUp size={18} className="text-emerald-500" />
-                <span className="text-sm">Weekly Impact</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  <span>Target Met</span>
-                  <span className="text-emerald-600">85%</span>
-                </div>
-                <div className="h-1.5 w-full bg-white rounded-full overflow-hidden shadow-inner">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '85%' }} />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 space-y-4 group relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 text-indigo-900 font-bold">
-                  <Bot size={18} className="text-indigo-500" />
-                  <span className="text-sm">AI Usage Rate</span>
-                </div>
-                <div className="relative group/tooltip">
-                  <HelpCircle size={14} className="text-indigo-300 cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-48 p-3 bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest rounded-xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50">
-                    Anonymized aggregate metrics. No patient-identifiable data is processed.
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-indigo-900">42%</span>
-                  <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">of sessions</span>
-                </div>
-                <p className="text-[10px] text-indigo-700 font-medium leading-relaxed italic">
-                  Referenced AI triage suggestions for clinical efficiency.
-                </p>
-                <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
-                  <TrendingUp size={12} /> +12% this week
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Content View */}
         <div className="lg:col-span-9 bg-white p-10 rounded-[3.5rem] border border-slate-50 shadow-sm min-h-[600px] relative">
-          <div className="absolute top-6 right-10 flex items-center gap-2 text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-            <Shield size={10} className="text-emerald-500" />
-            Audit Trail Enabled • Session ID: {Math.random().toString(36).substring(7).toUpperCase()}
-          </div>
-
+          
           {activeTab === 'sessions' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <div className="flex justify-between items-center">
                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Upcoming Sessions</h3>
                 <div className="flex gap-2">
                   <button className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-slate-900"><Search size={18} /></button>
-                  <button className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-slate-900"><MoreHorizontal size={18} /></button>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <SessionRow name="Anjali Sharma" type="Postpartum Physio" time="10:30 AM" date="Today" status="Confirmed" />
-                <SessionRow name="Priya Patel" type="Lactation Support" time="02:00 PM" date="Today" status="Pending" />
-                <SessionRow name="Meera Gupta" type="Pelvic Floor Check" time="11:00 AM" date="Tomorrow" status="Confirmed" />
-              </div>
+              {isLoading ? (
+                <div className="text-slate-400 text-sm font-bold animate-pulse">Loading sessions...</div>
+              ) : sessions.length === 0 ? (
+                <div className="p-10 text-center text-slate-400 italic">No upcoming sessions.</div>
+              ) : (
+                <div className="space-y-4">
+                  {sessions.filter(s => s.session_status !== 'completed' && s.session_status !== 'cancelled' && s.session_status !== 'rescheduled').map(session => (
+                    <SessionRow 
+                      key={session._id} 
+                      session={session} 
+                      onJoin={() => handleJoin(session._id)}
+                      onReschedule={() => handleReschedule(session._id)}
+                      onCancel={() => handleCancel(session._id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {activeTab === 'logs' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Clinical Logs & Notes</h3>
-                <button className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest">New Clinical Note</button>
-              </div>
-              <div className="space-y-4">
-                <LogEntry patient="Anjali Sharma" date="23 Feb 2026" type="Physical Assessment" text="Patient reports 20% improvement in pelvic floor strength. Recommended increasing Kegel intensity." />
-                <LogEntry patient="Priya Patel" date="22 Feb 2026" type="Lactation Note" text="Observed latching difficulties. Suggested side-lying position. Follow-up in 48 hours." />
-                <LogEntry patient="Meera Gupta" date="21 Feb 2026" type="Recovery Metric" text="Energy levels stabilizing. Sleep quality improved to 6.5h avg." />
-              </div>
-            </div>
+          {activeTab !== 'sessions' && (
+             <div className="flex items-center justify-center p-20 text-slate-400 italic font-medium">
+               This section is currently under development.
+             </div>
           )}
 
-          {activeTab === 'queries' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Patient Queries</h3>
-              <div className="space-y-4">
-                <QueryCard 
-                  name="Sonia K." 
-                  text="Is it normal to have mild back pain 3 weeks after C-section when starting the gentle core exercises?" 
-                  time="2h ago" 
-                  priority="High"
-                />
-                <QueryCard 
-                  name="Ritu M." 
-                  text="Can I increase my water intake beyond 3L if I'm breastfeeding twins?" 
-                  time="5h ago" 
-                  priority="Medium"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'rooms' && (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
-              <div className="p-10 bg-slate-50 rounded-full text-slate-200">
-                <Video size={64} />
-              </div>
-              <div className="space-y-2">
-                <h4 className="text-xl font-bold text-slate-900">No Active Rooms</h4>
-                <p className="text-sm text-slate-400 max-w-xs mx-auto">Host a live support room to interact with multiple members simultaneously.</p>
-              </div>
-              <button onClick={() => setShowMeeting(true)} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl">Create New Room</button>
-            </div>
-          )}
-
-          {activeTab === 'members' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Assigned Members</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <MemberCard name="Kavita R." stage="Postpartum (Month 2)" progress={75} />
-                <MemberCard name="Neha S." stage="Pregnant (T3)" progress={90} />
-                <MemberCard name="Pooja B." stage="Postpartum (Month 1)" progress={40} />
-                <MemberCard name="Deepa V." stage="Pregnant (T2)" progress={60} />
-              </div>
-            </div>
-          )}
         </div>
       </div>
-    )}
-  </div>
-);
+    </div>
+  );
 };
 
 const DashNavBtn = ({ active, onClick, icon, label }) => (
@@ -357,97 +213,48 @@ const DashNavBtn = ({ active, onClick, icon, label }) => (
   </button>
 );
 
-const SessionRow = ({ name, type, time, date, status }) => (
-  <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-    <div className="flex items-center gap-6">
-      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-bold text-slate-400 shadow-sm border border-slate-50">
-        {name[0]}
-      </div>
-      <div>
-        <p className="font-bold text-slate-900">{name}</p>
-        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{type}</p>
-      </div>
-    </div>
-    <div className="flex items-center gap-10">
-      <div className="text-right">
-        <p className="font-bold text-slate-900 text-sm">{time}</p>
-        <p className="text-[10px] font-bold uppercase text-slate-300 tracking-widest">{date}</p>
-      </div>
-      <div className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${
-        status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-      }`}>
-        {status}
-      </div>
-      <button className="p-2 text-slate-200 hover:text-slate-900 transition-colors"><ChevronRight size={20} /></button>
-    </div>
-  </div>
-);
+const SessionRow = ({ session, onJoin, onReschedule, onCancel }) => {
+  const patientName = session.user_id?.full_name || 'Unknown Patient';
+  const type = session.session_type || 'Unknown';
+  const time = session.session_time;
+  const dateStr = session.session_date ? new Date(session.session_date).toLocaleDateString() : 'N/A';
+  const status = session.session_status;
 
-const LogEntry = ({ patient, date, type, text }) => (
-  <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-3">
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-bold text-slate-900">{patient}</span>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">• {type}</span>
-      </div>
-      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{date}</span>
-    </div>
-    <p className="text-sm text-slate-600 leading-relaxed italic">"{text}"</p>
-    <div className="flex items-center gap-2 text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
-      <CheckCircle2 size={12} />
-      Verified Entry
-    </div>
-  </div>
-);
+  const isUp = status === 'upcoming';
 
-const QueryCard = ({ name, text, time, priority }) => (
-  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6 hover:bg-white hover:shadow-md transition-all">
-    <div className="flex justify-between items-start">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-bold text-slate-400 shadow-sm">
-          {name[0]}
+  return (
+    <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white hover:shadow-md transition-all gap-4">
+      <div className="flex items-center gap-6 self-start md:self-center">
+        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-bold text-slate-400 shadow-sm border border-slate-50">
+          {patientName[0]}
         </div>
         <div>
-          <p className="font-bold text-slate-900">{name}</p>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{time}</p>
+          <p className="font-bold text-slate-900">{patientName}</p>
+          <div className="flex items-center gap-2 mt-1">
+             <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{type}</p>
+             <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest border ${
+               isUp ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+             }`}>
+               {status}
+             </span>
+          </div>
         </div>
       </div>
-      <span className={`px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border ${
-        priority === 'High' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-blue-50 text-blue-600 border-blue-100'
-      }`}>
-        {priority} Priority
-      </span>
-    </div>
-    <p className="text-sm text-slate-600 leading-relaxed italic">"{text}"</p>
-    <div className="flex gap-3">
-      <button className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg">Respond</button>
-      <button className="px-6 py-3 bg-white border border-slate-200 text-slate-400 rounded-xl font-bold text-[10px] uppercase tracking-widest">Archive</button>
-    </div>
-  </div>
-);
-
-const MemberCard = ({ name, stage, progress }) => (
-  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6">
-    <div className="flex items-center gap-4">
-      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-bold text-slate-400 shadow-sm">
-        {name[0]}
-      </div>
-      <div>
-        <p className="font-bold text-slate-900">{name}</p>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{stage}</p>
+      <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-8 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-200">
+        <div className="text-left md:text-right w-full md:w-auto">
+          <p className="font-bold text-slate-900 text-sm">{time}</p>
+          <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{dateStr}</p>
+        </div>
+        {isUp && (
+          <div className="flex gap-2 w-full md:w-auto justify-end">
+            <button onClick={onJoin} className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest">Join</button>
+            <button onClick={onReschedule} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-[10px] font-bold uppercase tracking-widest">Reschedule</button>
+            <button onClick={onCancel} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-[10px] font-bold uppercase tracking-widest">Cancel</button>
+          </div>
+        )}
       </div>
     </div>
-    <div className="space-y-2">
-      <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-        <span>Recovery Progress</span>
-        <span className="text-emerald-600">{progress}%</span>
-      </div>
-      <div className="h-1.5 w-full bg-white rounded-full overflow-hidden shadow-inner">
-        <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
-      </div>
-    </div>
-    <button className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">View Health Summary</button>
-  </div>
-);
+  );
+};
 
 export default ExpertDashboard;

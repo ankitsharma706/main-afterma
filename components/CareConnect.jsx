@@ -6,14 +6,16 @@ import {
     ExternalLink,
     Heart,
     Info,
+    Loader2,
     Phone, ShieldCheck, Star,
     Stethoscope,
     TrendingUp,
     Users,
     X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { COLORS, EXPERT_DATA, HELPLINES, NGO_DATA } from '../constants';
+import { communitiesAPI, doctorsAPI } from '../services/api';
 import { translations } from '../translations';
 import ExpertDashboard from './ExpertDashboard';
 import VerificationFlow from './VerificationFlow';
@@ -38,6 +40,69 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
   const isVerifiedCreator = profile.role === 'community_creator' && profile.verification?.status === 'verified';
   const isPending = profile.verification?.status === 'pending';
 
+  // ── Live data state ──────────────────────────────────────────────────────
+  const [liveExperts, setLiveExperts] = useState([]);
+  const [expertsLoading, setExpertsLoading] = useState(false);
+  const [commLoading, setCommLoading] = useState(false);
+
+  // Fetch doctors from backend on mount
+  useEffect(() => {
+    const loadDoctors = async () => {
+      setExpertsLoading(true);
+      try {
+        const res = await doctorsAPI.getAll();
+        const docs = res?.data?.doctors || res?.doctors || (Array.isArray(res?.data) ? res.data : []);
+        if (Array.isArray(docs) && docs.length > 0) {
+          const mapped = docs.map(d => ({
+            _id: d._id || d.doctor_id,
+            category: d.specialization || d.category || 'Physiotherapy',
+            name: d.name || d.full_name,
+            role: d.designation || d.specialization || '',
+            credentials: d.credentials || d.doctor_proof || '',
+            insight: d.quote || '',
+            price: d.session_fee ? `₹${d.session_fee}` : '₹1,000',
+            rating: d.rating,
+            location: d.location,
+          }));
+          setLiveExperts(mapped);
+        }
+      } catch (err) {
+        console.warn('Doctors fetch failed — using static data:', err?.message);
+      } finally {
+        setExpertsLoading(false);
+      }
+    };
+    loadDoctors();
+  }, []);
+
+  // Fetch communities from backend on mount
+  useEffect(() => {
+    const loadCommunities = async () => {
+      setCommLoading(true);
+      try {
+        const res = await communitiesAPI.getAll();
+        const comms = res?.data?.communities || res?.communities || (Array.isArray(res?.data) ? res.data : []);
+        if (Array.isArray(comms) && comms.length > 0) {
+          const mapped = comms.map(c => ({
+            id: c._id || c.id,
+            name: c.title || c.name,
+            members: c.member_count || c.members || 0,
+            description: c.short_description || '',
+            isJoined: c.is_joined || false,
+          }));
+          setCircles(mapped);
+        }
+      } catch (err) {
+        console.warn('Communities fetch failed — using static data:', err?.message);
+      } finally {
+        setCommLoading(false);
+      }
+    };
+    loadCommunities();
+  }, []);
+
+  const displayExperts = liveExperts.length > 0 ? liveExperts : EXPERT_DATA;
+
   const handleVerificationComplete = (data) => {
     setProfile(prev => ({ ...prev, role: data.roleRequested, verification: data }));
     setShowVerification(false);
@@ -49,6 +114,32 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     setShowVerification(true);
   };
 
+  useEffect(() => {
+    if (activeSubTab === 'MyBookings' && profile?._id) {
+      const loadMySessions = async () => {
+        try {
+          const res = await fetch(`/api/sessions/my/${profile._id}`);
+          const data = await res.json();
+          if (data.status === 'success' && data.data) {
+            const mappedAppts = data.data.map(session => ({
+              id: session._id,
+              specialistName: session.doctor_id?.name || 'Doctor',
+              type: session.doctor_id?.specialization || session.session_type,
+              date: new Date(session.session_date).toISOString().split('T')[0],
+              time: session.session_time,
+              status: session.status || 'Upcoming',
+              price: `₹${session.session_fee || 1000}`,
+            }));
+            setAppointments(mappedAppts);
+          }
+        } catch (e) {
+          console.error("Failed to fetch sessions:", e);
+        }
+      };
+      loadMySessions();
+    }
+  }, [activeSubTab, profile?._id]);
+
   const simulateApproval = () => {
     setProfile(prev => ({ ...prev, verification: { ...prev.verification, status: 'verified' } }));
     addNotification("Account Verified", `Your status as a ${profile.role === 'expert' ? 'Healthcare Expert' : 'Community Creator'} is now active.`);
@@ -56,21 +147,62 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
   if (isVerifiedExpert) return <ExpertDashboard profile={profile} />;
 
-  const handleRSVP = (id) => {
-    setCircles(prev => prev.map(c => {
-      if (c.id === id) {
-        if (!c.isJoined) addNotification("Circle Joined", `Welcome to the ${c.name} sisterhood.`);
-        return { ...c, isJoined: !c.isJoined, members: c.isJoined ? c.members - 1 : c.members + 1 };
+  // ── Community join/leave (optimistic + real API) ─────────────────────────
+  const handleRSVP = async (id) => {
+    const circle = circles.find(c => c.id === id);
+    if (!circle) return;
+    const wasJoined = circle.isJoined;
+    setCircles(prev => prev.map(c =>
+      c.id === id ? { ...c, isJoined: !wasJoined, members: wasJoined ? c.members - 1 : c.members + 1 } : c
+    ));
+    try {
+      if (wasJoined) {
+        await communitiesAPI.leave(id);
+      } else {
+        await communitiesAPI.join(id);
+        addNotification("Circle Joined", `Welcome to the ${circle.name} sisterhood.`);
       }
-      return c;
-    }));
+    } catch (err) {
+      console.warn('Community join/leave error — rolling back:', err?.message);
+      setCircles(prev => prev.map(c =>
+        c.id === id ? { ...c, isJoined: wasJoined, members: wasJoined ? c.members + 1 : c.members - 1 } : c
+      ));
+    }
   };
 
-  const handleBook = (name, type, price) => {
-    const newAppt = { id: Date.now().toString(), specialistName: name, type, date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0], time: '11:30 AM', status: 'Upcoming', price };
+  // ── Book session (local + real API) ─────────────────────────────────────
+  const handleBook = async (expert) => {
+    const sessionDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
+    const newAppt = {
+      id: Date.now().toString(),
+      specialistName: expert.name,
+      type: expert.role,
+      date: sessionDate,
+      time: '11:30 AM',
+      status: 'Upcoming',
+      price: expert.price,
+    };
     setAppointments(prev => [...prev, newAppt]);
-    addNotification("Session Scheduled", `Confirmed appointment with ${name}.`);
+    addNotification("Session Scheduled", `Confirmed appointment with ${expert.name}.`);
     setActiveSubTab('MyBookings');
+    try {
+      if (expert._id) {
+        await fetch('/api/sessions/book', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: profile._id,
+            doctor_id: expert._id,
+            session_date: sessionDate,
+            session_time: '11:30 AM',
+            session_type: 'video',
+            session_fee: parseInt(String(expert.price).replace(/[^\d]/g, '')) || 1000
+          })
+        });
+      }
+    } catch (err) {
+      console.warn('Session booking API error (saved locally):', err?.message);
+    }
   };
 
   const cancelAppointment = (id) => {
@@ -79,7 +211,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     }
   };
 
-  const filteredExperts = EXPERT_DATA.filter(e => e.category === expertFilter);
+  const filteredExperts = displayExperts.filter(e => e.category === expertFilter);
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 lg:space-y-16 animate-in pb-32">
@@ -129,26 +261,30 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
-              {circles.map(c => (
-                <div key={c.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col justify-between hover:translate-y-[-6px]">
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-start">
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner" style={{ color: theme.primary }}><Users size={24} /></div>
-                      <span className="text-[8px] font-bold uppercase text-emerald-500 bg-emerald-50 px-3 py-1 rounded-md border border-emerald-100/40">Sisterhood active</span>
+            {commLoading ? (
+              <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-slate-300" /></div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+                {circles.map(c => (
+                  <div key={c.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col justify-between hover:translate-y-[-6px]">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-start">
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner" style={{ color: theme.primary }}><Users size={24} /></div>
+                        <span className="text-[8px] font-bold uppercase text-emerald-500 bg-emerald-50 px-3 py-1 rounded-md border border-emerald-100/40">Sisterhood active</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{c.name}</h3>
+                      <p className="text-sm text-slate-500 font-medium leading-relaxed italic opacity-80 line-clamp-3">"{c.description}"</p>
+                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-50 px-4 py-2 rounded-xl w-fit">
+                        <Star size={14} className="text-amber-400 fill-amber-400" /> {c.members} {t.care.community.sistersJoined}
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight leading-tight">{c.name}</h3>
-                    <p className="text-sm text-slate-500 font-medium leading-relaxed italic opacity-80 line-clamp-3">"{c.description}"</p>
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-50 px-4 py-2 rounded-xl w-fit">
-                      <Star size={14} className="text-amber-400 fill-amber-400" /> {c.members} {t.care.community.sistersJoined}
-                    </div>
+                    <button onClick={() => handleRSVP(c.id)} className={`w-full py-4 rounded-full font-bold text-xs uppercase tracking-widest transition-all mt-8 ${c.isJoined ? 'bg-slate-100 text-slate-400' : 'text-white'}`} style={{ backgroundColor: c.isJoined ? '' : theme.primary }}>
+                      {c.isJoined ? 'In Circle' : t.care.community.joinSisters}
+                    </button>
                   </div>
-                  <button onClick={() => handleRSVP(c.id)} className={`w-full py-4 rounded-full font-bold text-xs uppercase tracking-widest transition-all mt-8 ${c.isJoined ? 'bg-slate-100 text-slate-400' : 'text-white'}`} style={{ backgroundColor: c.isJoined ? '' : theme.primary }}>
-                    {c.isJoined ? 'In Circle' : t.care.community.joinSisters}
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -166,35 +302,39 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {filteredExperts.map(expert => (
-                <div key={expert.name} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 flex flex-col justify-between hover:shadow-xl transition-all duration-500 group shadow-sm hover:translate-y-[-6px]">
-                  <div className="space-y-10">
-                    <div className="flex items-center gap-8">
-                      <div className="w-20 h-20 rounded-[1.75rem] bg-slate-50 flex items-center justify-center font-bold text-3xl shadow-inner border border-slate-100" style={{ color: theme.primary, backgroundColor: theme.bg }}>{expert.name[0]}</div>
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-tight">{expert.name}</h3>
-                        <p className="text-[11px] font-bold uppercase tracking-widest mt-1" style={{ color: theme.primary }}>{expert.role}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-3 tracking-widest bg-slate-50 px-3 py-1 rounded-md w-fit border border-slate-100">{expert.credentials}</p>
+            {expertsLoading ? (
+              <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-slate-300" /></div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {filteredExperts.map(expert => (
+                  <div key={expert.name} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 flex flex-col justify-between hover:shadow-xl transition-all duration-500 group shadow-sm hover:translate-y-[-6px]">
+                    <div className="space-y-10">
+                      <div className="flex items-center gap-8">
+                        <div className="w-20 h-20 rounded-[1.75rem] bg-slate-50 flex items-center justify-center font-bold text-3xl shadow-inner border border-slate-100" style={{ color: theme.primary, backgroundColor: theme.bg }}>{expert.name[0]}</div>
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-tight">{expert.name}</h3>
+                          <p className="text-[11px] font-bold uppercase tracking-widest mt-1" style={{ color: theme.primary }}>{expert.role}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase mt-3 tracking-widest bg-slate-50 px-3 py-1 rounded-md w-fit border border-slate-100">{expert.credentials}</p>
+                        </div>
+                      </div>
+                      <div className="p-6 bg-slate-50/40 rounded-2xl border border-slate-100 flex gap-5 shadow-inner">
+                        <div className="p-2.5 bg-white rounded-xl shadow-sm text-slate-300 shrink-0"><Info size={20} /></div>
+                        <p className="text-sm font-bold text-slate-600 leading-relaxed italic opacity-85">"{expert.insight}"</p>
                       </div>
                     </div>
-                    <div className="p-6 bg-slate-50/40 rounded-2xl border border-slate-100 flex gap-5 shadow-inner">
-                      <div className="p-2.5 bg-white rounded-xl shadow-sm text-slate-300 shrink-0"><Info size={20} /></div>
-                      <p className="text-sm font-bold text-slate-600 leading-relaxed italic opacity-85">"{expert.insight}"</p>
+                    <div className="flex justify-between items-center pt-10 mt-10 border-t border-slate-50">
+                      <div className="space-y-0.5">
+                        <span className="text-2xl font-bold text-slate-900 tracking-tight">{expert.price}</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-widest opacity-60">Session Fee</span>
+                      </div>
+                      <button onClick={() => handleBook(expert)} className="px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 text-white" style={{ backgroundColor: theme.primary }}>
+                        {t.care.experts.book}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center pt-10 mt-10 border-t border-slate-50">
-                    <div className="space-y-0.5">
-                      <span className="text-2xl font-bold text-slate-900 tracking-tight">{expert.price}</span>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-widest opacity-60">Session Fee</span>
-                    </div>
-                    <button onClick={() => handleBook(expert.name, expert.role, expert.price)} className="px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 text-white" style={{ backgroundColor: theme.primary }}>
-                      {t.care.experts.book}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

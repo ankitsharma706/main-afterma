@@ -1,7 +1,8 @@
 
-import { Activity, Droplet, Moon, Pill, ShieldCheck, Smile, Sparkles, X, Zap } from 'lucide-react';
+import { Activity, Droplet, Loader2, Moon, Pill, ShieldCheck, Smile, Sparkles, X, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { COLORS } from '../constants';
+import { logsAPI, mapLogToBackend } from '../services/api';
 
 const HealthLogModal = ({ profile, onClose, onSave }) => {
   const theme = COLORS[profile.accent] || COLORS.PINK;
@@ -10,6 +11,8 @@ const HealthLogModal = ({ profile, onClose, onSave }) => {
     medicationsTaken: false, kegelCount: 0, symptoms: [], periodFlow: 'None',
     isOvulating: false, crampsLevel: 0, notes: ''
   });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const symptomsList = profile.maternityStage === 'Postpartum' 
     ? ['Lochia', 'Breast Pain', 'Pelvic Pressure', 'Fatigue', 'Headache']
@@ -17,7 +20,7 @@ const HealthLogModal = ({ profile, onClose, onSave }) => {
       ? ['Cramps', 'Bloating', 'Breast Tenderness', 'Acne', 'Mood Swings']
       : ['Nausea', 'Backache', 'Swelling', 'Insomnia', 'Dizziness'];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const finalLog = {
       id: Date.now().toString(),
       timestamp: Date.now(),
@@ -35,8 +38,41 @@ const HealthLogModal = ({ profile, onClose, onSave }) => {
       crampsLevel: log.crampsLevel || 0,
       notes: log.notes || ''
     };
+
+    setSaving(true);
+    setSaveError('');
+    try {
+      const backendPayload = mapLogToBackend({ ...finalLog, isSensitive: profile.incognito });
+      await logsAPI.create(backendPayload);
+    } catch (err) {
+      if (err?.status === 409) {
+        try {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const existingLogsResp = await logsAPI.getAll();
+          const logsArr = existingLogsResp?.data?.logs || existingLogsResp?.logs || [];
+          const todayLog = logsArr.find(l => l.log_date?.startsWith(todayStr));
+          
+          if (todayLog?._id) {
+             const backendPayload = mapLogToBackend({ ...finalLog, isSensitive: profile.incognito });
+             await logsAPI.update(todayLog._id, backendPayload);
+             setSaving(false);
+             onSave(finalLog);
+             return;
+          }
+        } catch (patchErr) {
+          console.warn('⚠️ Failed to PATCH existing log:', patchErr);
+        }
+      }
+      
+      console.warn('⚠️ Log saved locally only — backend error:', err?.message);
+      setSaveError('Saved offline. Will sync when connected.');
+    } finally {
+      setSaving(false);
+    }
+
     onSave(finalLog);
   };
+
 
   const toggleSymptom = (s) => {
     setLog(prev => {
@@ -139,10 +175,20 @@ const HealthLogModal = ({ profile, onClose, onSave }) => {
           </div>
         </div>
 
+        {saveError && (
+          <div className="mx-8 lg:mx-12 mb-2 px-4 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-semibold rounded-xl">
+            ⚠️ {saveError}
+          </div>
+        )}
         <div className="p-8 lg:p-12 border-t border-slate-50 bg-slate-50/30 flex flex-col sm:flex-row gap-4">
            <button onClick={onClose} className="flex-1 py-5 bg-white border border-slate-200 rounded-3xl font-bold text-xs uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all">Discard</button>
-           <button onClick={handleSave} style={{ backgroundColor: theme.primary }} className="flex-1 py-5 text-white rounded-3xl font-bold text-xs uppercase tracking-widest shadow-xl hover:brightness-105 active:scale-95 transition-all">
-             Commit Log Entry
+           <button
+             onClick={handleSave}
+             disabled={saving}
+             style={{ backgroundColor: theme.primary }}
+             className="flex-1 py-5 text-white rounded-3xl font-bold text-xs uppercase tracking-widest shadow-xl hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+           >
+             {saving ? <><Loader2 size={14} className="animate-spin" /> Syncing...</> : 'Commit Log Entry'}
            </button>
         </div>
       </div>
