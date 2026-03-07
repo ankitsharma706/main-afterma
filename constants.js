@@ -351,8 +351,8 @@ export const AUDIO_LIBRARY = [
   { type: 'audio', title: "Dear Zindagi", duration: "12m", mood: "Calm", src: "/music/DearZindagi.mp3", img: "/music/DearZindagi.jpeg" },
   { type: 'audio', title: "EdSheeran Perfect ", duration: "15m", mood: "Grounded", src: "/music/EdSheeranPerfect.mp3", img: "/music/EdSheeranPerfect.jpeg" },
   { type: 'audio', title: "Laadki ", duration: "8m", mood: "Fresh", src: "/music/Laadki.mp3", img: "/music/Laadki.jpeg" }
-  , { type: 'audio', title: "Meri Duniya Tuhi Re  ", duration: "12m", mood: "Calm", src: "/music/MeriDuniyaTuhiRe.mp3", img: "/music/MeriDuniyaTuhiRe.jpeg" },
-  { type: 'audio', title: "Until I Found You  ", duration: "15m", mood: "Grounded", src: "/music/UntilIFoundYou.mp3", img: "/music/UntilIFoundYou.jpeg" },
+  , { type: 'audio', title: "Meri Duniya Tuhi Re  ", duration: "12m", mood: "Calm", src: "/music/MeriDuniyaTuhiRe.mp3", img: "/music/MeriDuniyaTuhiRe.webp" },
+  { type: 'audio', title: "Until I Found You  ", duration: "15m", mood: "Grounded", src: "/music/UntilIFoundYou.mp3", img: "/music/UntilIFoundYou.jpg" },
   { type: 'audio', title: "ColdPlay Yellow", duration: "8m", mood: "Fresh", src: "/music/ColdPlayYellow.mp3", img: "/music/ColdPlayYellow.jpeg" }
 ]
 export const RECIPES = [
@@ -467,7 +467,7 @@ export const VIDEO_LIBRARY = [
     thumbnail: '/VIDEOS/MaaMummyAurAchaar.jpg',
   },
   {
-    
+
     id: 'v2',
     title: 'Postpartum Physical Recovery Guide',
     duration: '11:02',
