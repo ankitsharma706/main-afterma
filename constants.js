@@ -348,12 +348,12 @@ export const MOCK_CENTERS = [{ id: 1, name: 'IMS SUM Hospital', type: 'hospital'
 { id: 216, name: 'Munna medicine store', type: 'hospital', distance: '', address: 'Bhubaneswar', phone: 'N/A', lat: 20.23996, lng: 85.83329 }
 ];
 export const AUDIO_LIBRARY = [
-  { type: 'audio', title: "Dear Zindagi", duration: "12m", mood: "Calm", src: "/music/DearZindagi.mp3", img: "/music/DearZindagi.jpeg" },
-  { type: 'audio', title: "EdSheeran Perfect ", duration: "15m", mood: "Grounded", src: "/music/EdSheeranPerfect.mp3", img: "/music/EdSheeranPerfect.jpeg" },
-  { type: 'audio', title: "Laadki ", duration: "8m", mood: "Fresh", src: "/music/Laadki.mp3", img: "/music/Laadki.jpeg" }
-  , { type: 'audio', title: "Meri Duniya Tuhi Re  ", duration: "12m", mood: "Calm", src: "/music/MeriDuniyaTuhiRe.mp3", img: "/music/MeriDuniyaTuhiRe.webp" },
-  { type: 'audio', title: "Until I Found You  ", duration: "15m", mood: "Grounded", src: "/music/UntilIFoundYou.mp3", img: "/music/UntilIFoundYou.jpg" },
-  { type: 'audio', title: "ColdPlay Yellow", duration: "8m", mood: "Fresh", src: "/music/ColdPlayYellow.mp3", img: "/music/ColdPlayYellow.jpeg" }
+  { type: 'audio', title: "Dear Zindagi", duration: "12m", mood: "Calm", src: "https://res.cloudinary.com/dz5qfzydp/video/upload/v1772845900/DearZindagi_f4jzv0.mp3", img: "https://res.cloudinary.com/dz5qfzydp/image/upload/v1772845965/DearZindagi_ddtsmw.jpg" },
+  { type: 'audio', title: "EdSheeran Perfect ", duration: "15m", mood: "Grounded", src: "https://res.cloudinary.com/dz5qfzydp/video/upload/v1772845906/EdSheeranPerfect_orb8hz.mp3", img: "https://res.cloudinary.com/dz5qfzydp/image/upload/v1772845965/EdSheeranPerfect_hfzkyp.jpg" },
+  { type: 'audio', title: "Laadki ", duration: "8m", mood: "Fresh", src: "https://res.cloudinary.com/dz5qfzydp/video/upload/v1772845912/Laadki_vh0dmv.mp3", img: "https://res.cloudinary.com/dz5qfzydp/image/upload/v1772845965/Laadki_asal6y.jpg" }
+  , { type: 'audio', title: "Meri Duniya Tuhi Re  ", duration: "12m", mood: "Calm", src: "https://res.cloudinary.com/dz5qfzydp/video/upload/v1772845904/MeriDuniyaTuhiRe_wq71du.mp3", img: "https://res.cloudinary.com/dz5qfzydp/image/upload/v1772845965/Laadki_asal6y.jpg" },
+  { type: 'audio', title: "Until I Found You  ", duration: "15m", mood: "Grounded", src: "https://res.cloudinary.com/dz5qfzydp/video/upload/v1772845905/UntilIFoundYou_fokjoc.mp3", img: "https://res.cloudinary.com/dz5qfzydp/image/upload/v1772845966/UntilIFoundYou_ehlarj.jpg" },
+  { type: 'audio', title: "ColdPlay Yellow", duration: "8m", mood: "Fresh", src: "https://res.cloudinary.com/dz5qfzydp/video/upload/v1772845969/ColdPlayYellow_nftbya.mp3", img: "https://res.cloudinary.com/dz5qfzydp/image/upload/v1772845963/ColdPlayYellow_d20xfc.jpg" }
 ]
 export const RECIPES = [
   {
@@ -463,7 +463,7 @@ export const VIDEO_LIBRARY = [
     title: 'Understanding the Fourth Trimester',
     duration: '8:24',
     category: 'Mental Health',
-    youtubeId: 'kAUBBwj2GxA',
+    youtubeId: 'scRQR-FRfIo',
     thumbnail: '/VIDEOS/MaaMummyAurAchaar.jpg',
   },
   {
@@ -472,7 +472,7 @@ export const VIDEO_LIBRARY = [
     title: 'Postpartum Physical Recovery Guide',
     duration: '11:02',
     category: 'Physical Recovery',
-    youtubeId: '7gL5xH1Fh9Q',
+    youtubeId: 'scRQR-FRfIo',
     thumbnail: '/VIDEOS/MomViddseecom.jpg',
   },
   {
@@ -514,10 +514,10 @@ export const TRUSTED_PICKS = [
   { brand: "Himalaya", product: "Ayurvedic Diaper Cream", reason: "Gentle healing since 1930", tag: "Trusted Heritage" }
 ];
 export const ARTICLES = [
-  { title: "Understanding the 'Fourth Trimester'", category: "Mental Health", readTime: "5 min", summary: "The transition from pregnancy to motherhood requires a different kind of clinical grace and internal patience." },
-  { title: "C-Section Incision Care 101", category: "Physical Recovery", readTime: "8 min", summary: "Gentle techniques to ensure a smooth scar healing process and identifying early warning signs of infection." },
-  { title: "Nutrients for Iron Recovery", category: "Nutrition", readTime: "4 min", summary: "Traditional Indian superfoods to rebuild your vitality after blood loss, optimized for modern lifestyles." },
-  { title: "Diastasis Recti Self-Check", category: "Physical Recovery", readTime: "6 min", summary: "A step-by-step clinical guide to assessing abdominal separation and safe restorative exercises." },
+  { id: "article-fourth-trimester", title: "Understanding the 'Fourth Trimester'", category: "Mental Health", readTime: "5 min read", summary: "The transition from pregnancy to motherhood requires a different kind of clinical grace and internal patience.", expert: "Dr. Meera Sharma, OB-GYN", image: "https://picsum.photos/seed/fourth-trimester/1200/500" },
+  { id: "article-csection-care", title: "C-Section Incision Care 101", category: "Physical Recovery", readTime: "8 min read", summary: "Gentle techniques to ensure a smooth scar healing process and identifying early warning signs of infection.", expert: "Dr. Rohan Mehra, Physiotherapist", image: "https://picsum.photos/seed/csection-care/1200/500" },
+  { id: "article-iron-recovery", title: "Nutrients for Iron Recovery", category: "Nutrition", readTime: "4 min read", summary: "Traditional Indian superfoods to rebuild your vitality after blood loss, optimized for modern lifestyles.", expert: "Dr. Kavita Reddy, Nutritionist", image: "https://picsum.photos/seed/iron-recovery/1200/500" },
+  { id: "article-diastasis-recti", title: "Diastasis Recti Self-Check", category: "Physical Recovery", readTime: "6 min read", summary: "A step-by-step clinical guide to assessing abdominal separation and safe restorative exercises.", expert: "Dr. Ananya Roy, MPT", image: "https://picsum.photos/seed/diastasis-recti/1200/500" },
 ];
 export const COMMUNITY_INSIGHTS = [
   {

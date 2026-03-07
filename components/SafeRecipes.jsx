@@ -7,11 +7,13 @@ import {
     Utensils
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { COLORS, RECIPES } from '../constants';
 
 
 
 const SafeRecipes = ({ profile }) => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const theme = COLORS?.[profile?.accent] || COLORS.PINK;
   const query = search.toLowerCase();
@@ -43,7 +45,15 @@ const SafeRecipes = ({ profile }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filtered.map(recipe => (
-          <div key={recipe.id} className="bg-white rounded-[2.5rem] border border-slate-50 shadow-sm overflow-hidden group hover:shadow-xl transition-all flex flex-col">
+          <div
+            key={recipe.id}
+            className="bg-white rounded-[2.5rem] border border-slate-50 shadow-sm overflow-hidden group hover:shadow-xl transition-all flex flex-col cursor-pointer"
+            onClick={() => navigate(`/learning-center/${recipe.id}`)}
+            role="article"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && navigate(`/learning-center/${recipe.id}`)}
+            aria-label={`Open recipe: ${recipe.title}`}
+          >
             <div className="h-56 relative overflow-hidden">
               <img src={recipe.image} alt={recipe.title} loading="lazy" onError={(e) => e.target.src = "/images/recipe-placeholder.png"}  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
               <div className="absolute top-4 right-4 flex gap-2 z-20">
@@ -77,7 +87,11 @@ const SafeRecipes = ({ profile }) => {
                   <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400"><Utensils size={16} /></div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{recipe.mood}</span>
                 </div>
-                <button className="p-3 bg-slate-900 text-white rounded-xl hover:scale-110 transition-all shadow-lg">
+                <button
+                  className="p-3 bg-slate-900 text-white rounded-xl hover:scale-110 transition-all shadow-lg"
+                  onClick={e => { e.stopPropagation(); navigate(`/learning-center/${recipe.id}`); }}
+                  aria-label={`Open ${recipe.title} recipe`}
+                >
                   <ChevronRight size={18} />
                 </button>
               </div>

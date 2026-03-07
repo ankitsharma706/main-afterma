@@ -75,7 +75,7 @@ const SurveyCommunityData = ({ profile }) => {
         ))}
       </div>
 
-      <div className="bg-slate-900 rounded-[4rem] p-10 lg:p-20 text-white relative overflow-hidden">
+      <div className="bg-slate-50 transparent rounded-[4rem] p-10 lg:p-20 text-slate-900 relative overflow-hidden">
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
@@ -87,11 +87,11 @@ const SurveyCommunityData = ({ profile }) => {
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/10 rounded-xl"><ShieldCheck size={20} className="text-emerald-400" /></div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">100% Anonymized</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700">100% Anonymized</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/10 rounded-xl"><Lock size={20} className="text-emerald-400" /></div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Secure & Private</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700">Secure & Private</span>
               </div>
             </div>
             <button 
@@ -103,12 +103,12 @@ const SurveyCommunityData = ({ profile }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
-              <div className="h-40 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">🧘‍♀️</div>
-              <div className="h-56 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">🥗</div>
+              <div className="h-40 bg-black/10 transparent rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">🧘</div>
+              <div className="h-56 bg-black/10 transparent rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">🥗</div>
             </div>
             <div className="space-y-4 pt-8">
-              <div className="h-56 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">🤱</div>
-              <div className="h-40 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">💖</div>
+              <div className="h-56 bg-black/10 transparent rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">🤱</div>
+              <div className="h-40 bg-black/10 transparent rounded-[2.5rem] border border-white/10 flex items-center justify-center text-4xl">💖</div>
             </div>
           </div>
         </div>

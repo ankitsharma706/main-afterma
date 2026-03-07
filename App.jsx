@@ -15,6 +15,7 @@ import HealthLogs from './components/HealthLogs';
 import HealthReportModal from './components/HealthReportModal';
 import Journal from './components/Journal';
 import LactationLog from './components/LactationLog';
+import ArticlePage from './components/LearningCenter/ArticlePage';
 import LocationPage from './components/LocationPage';
 import Membership from './components/Membership';
 import MentalWellness from './components/MentalWellness';
@@ -29,6 +30,7 @@ import SOSOverlay from './components/SOSOverlay';
 import MomKart from './components/Store';
 import SurveyCommunityData from './components/SurveyCommunityData';
 import { COLORS, RECOVERY_DATABASE } from './constants';
+import JourneySessionPage from './pages/JourneySessionPage';
 import { authAPI, setUserId } from './services/api';
 import { translations } from './translations';
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -87,7 +89,15 @@ const App = () => {
   const navigate = useNavigate();
 
   const path = location.pathname.substring(1);
-  const currentView = path || (profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified' ? 'expert-dashboard' : (profile.authenticated ? 'dashboard' : 'education'));
+  // Handle /learning-center/:articleId pattern
+  const isArticlePage = location.pathname.startsWith('/learning-center/');
+  // Handle /care-journey/session/:activityId — full-page, no nav chrome
+  const isSessionPage = location.pathname.startsWith('/care-journey/session');
+  const currentView = isSessionPage
+    ? 'journey-session'
+    : isArticlePage
+      ? 'learning-center'
+      : (path || (profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified' ? 'expert-dashboard' : (profile.authenticated ? 'dashboard' : 'education')));
 
   const setView = (viewPath) => {
     navigate(`/${viewPath}`);
@@ -375,6 +385,19 @@ const App = () => {
       });
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
   const triageMessagesMemo = useMemo(() => triageMessages, [triageMessages]);
+
+  // ── Journey Session: render standalone, no sidebar/header chrome ──
+  if (isSessionPage) {
+    return (
+      <JourneySessionPage
+        profile={profile}
+        activities={filteredActivities}
+        onToggleActivity={toggleActivity}
+        setExerciseLogs={setExerciseLogs}
+      />
+    );
+  }
+
   return (
     <div className={`min-h-screen flex transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
       {isMobileMenuOpen && (
@@ -468,6 +491,7 @@ const App = () => {
                 {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessagesMemo} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
                 {currentView === 'education' && <Education profile={profile} />}
                 {currentView === 'recipes' && <SafeRecipes profile={profile} />}
+                {currentView === 'learning-center' && <ArticlePage profile={profile} />}
                 {currentView === 'community-wisdom' && <SurveyCommunityData profile={profile} />}
                 {currentView === 'momkart' && profile.authenticated && (
                   <MomKart

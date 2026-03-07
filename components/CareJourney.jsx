@@ -13,33 +13,26 @@ import {
   Frown,
   Gauge,
   Laugh,
-  Lock,
   Moon,
   Play,
   Smile,
-  Sparkles,
   Target,
   X
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { COLORS } from '../constants';
 import { periodAPI } from '../services/api';
 import { translations } from '../translations';
 import HealthReportModal from './HealthReportModal';
 import LactationLog from './LactationLog';
-import PuzzleGame from './PuzzleGame';
 
 const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerciseLogs, setExerciseLogs, logs, onAddLog }) => {
+  const navigate = useNavigate();
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
   const [activeTab, setActiveTab] = useState('Journey');
-  const [selectedActivity, setSelectedActivity] = useState(null);
-  const [timer, setTimer] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [sessionSettings, setSessionSettings] = useState({ intensity: 'Light', environment: 'Alone' });
-  const [sessionDuration, setSessionDuration] = useState(10);
   const [showReport, setShowReport] = useState(false);
-  const timerRef = useRef(null);
 
   const [showTTCLogic, setShowTTCLogic] = useState(false);
   const [cycleLength, setCycleLength] = useState(28);
@@ -100,43 +93,13 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const ovulationStr = `${monthNames[ovulationDay.getMonth()]} ${ovulationDay.getDate()}-${ovulationEnd.getDate()}`;
 
-  useEffect(() => {
-    if (!isTimerRunning) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    timerRef.current = setInterval(() => setTimer(prev => prev + 1), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isTimerRunning]);
 
   const handleStartActivity = (activity) => {
-    setSelectedActivity(activity);
-    setTimer(0);
-    setIsTimerRunning(true);
+    // Navigate to the dedicated session page (full-page route)
+    navigate(`/care-journey/session/${activity.id}`);
   };
 
-  const handleCompleteActivity = () => {
-    if (!selectedActivity) return;
-    const newLog = {
-      id: Date.now().toString(),
-      activityId: selectedActivity.id,
-      duration: Math.floor(timer / 60),
-      intensity: profile.journeySettings.pace,
-      timestamp: Date.now(),
-      completed: true
-    };
-    setExerciseLogs(prev => [...prev, newLog]);
-    onToggleActivity(selectedActivity.id);
-    setIsTimerRunning(false);
-    setSelectedActivity(null);
-    setTimer(0);
-  };
 
-  const closeSession = () => {
-    setIsTimerRunning(false);
-    setSelectedActivity(null);
-    setTimer(0);
-  };
 
   const calculateTTC = () => {
     if (!lastPeriod) return;
@@ -202,11 +165,6 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   };
 
   const progress = activities.length > 0 ? (profile.completedActivities.length / activities.length) * 100 : 0;
-
-  // Timer ring constants
-  const R = 57;
-  const CIRC = 2 * Math.PI * R;
-  const timerProgress = Math.min(timer / (sessionDuration * 60), 1);
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 lg:space-y-12 pb-32 animate-in relative">
@@ -487,183 +445,6 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════
-          SESSION MODAL — fully responsive, header always pinned
-          ═══════════════════════════════════════════════════════ */}
-      {selectedActivity && (
-        <div
-          className="fixed inset-0 z-[150] flex items-center justify-center animate-in fade-in duration-300"
-          style={{ background: 'rgba(10,15,25,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
-        >
-          {/* Card — fixed height so both panes can scroll independently */}
-          <div
-            className="w-full bg-[#1b2533] rounded-[2rem] lg:rounded-[3rem] shadow-[0_30px_80px_rgba(0,0,0,0.7)] flex flex-col lg:flex-row border border-white/5 animate-in zoom-in-95 duration-300 overflow-hidden mx-3 sm:mx-5 lg:mx-8"
-            style={{ maxWidth: 1100, height: '92vh' }}
-          >
-            {/* ── LEFT PANE ── */}
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-
-              {/* PINNED HEADER — never scrolls */}
-              <div className="flex-shrink-0 relative flex flex-col items-center text-center px-6 pt-5 pb-4 border-b border-white/5">
-                <button
-                  onClick={closeSession}
-                  className="absolute top-4 left-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all"
-                >
-                  <X size={16} />
-                </button>
-                <span className="px-3 py-1 bg-slate-800 text-slate-200 rounded-full font-black text-[9px] uppercase tracking-widest mb-2 inline-block">
-                  Active Session
-                </span>
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
-                  {selectedActivity.title}
-                </h3>
-                <p className="text-slate-400 italic text-xs mt-1">{selectedActivity.description}</p>
-              </div>
-
-              {/* SCROLLABLE BODY — puzzle + timer + controls */}
-              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center gap-5 px-6 py-5">
-                {/* Puzzle */}
-                <div className="w-full max-w-xs sm:max-w-sm flex-shrink-0">
-                  <PuzzleGame />
-                </div>
-
-                {/* Timer ring */}
-                <div className="flex-shrink-0 relative" style={{ width: 130, height: 130 }}>
-                  <svg width="130" height="130" viewBox="0 0 130 130" className="absolute inset-0" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx="65" cy="65" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                    <circle
-                      cx="65" cy="65" r={R}
-                      fill="none" stroke="#00D084" strokeWidth="8" strokeLinecap="round"
-                      strokeDasharray={CIRC}
-                      strokeDashoffset={CIRC * (1 - timerProgress)}
-                      style={{ transition: 'stroke-dashoffset 1s linear' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 rounded-full overflow-hidden">
-                    <div
-                      className="absolute bottom-0 left-0 right-0 transition-all duration-1000"
-                      style={{ height: `${timerProgress * 100}%`, background: 'rgba(0,208,132,0.12)' }}
-                    />
-                  </div>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-2xl font-black text-white tabular-nums tracking-tighter drop-shadow-lg">
-                      {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
-                    </p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">/ {sessionDuration}m</p>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex-shrink-0 flex items-center gap-3 w-full max-w-xs sm:max-w-sm">
-                  <button
-                    id="btn-start-session"
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    className="h-11 w-11 bg-white shrink-0 text-slate-900 rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all"
-                  >
-                    {isTimerRunning ? <Lock size={16} /> : <Play size={16} className="ml-0.5" />}
-                  </button>
-                  <button
-                    id="btn-complete-session"
-                    onClick={handleCompleteActivity}
-                    className="flex-1 py-3 bg-[#00d084] hover:bg-[#00e691] text-white rounded-full font-black text-[12px] tracking-wide shadow-lg active:scale-[0.98] transition-all"
-                  >
-                    Complete Session
-                  </button>
-                </div>
-
-                <button
-                  id="btn-cancel-session"
-                  onClick={closeSession}
-                  className="flex-shrink-0 text-[9px] font-bold text-slate-600 hover:text-white uppercase tracking-widest transition-colors pb-2"
-                >
-                  Cancel Session
-                </button>
-              </div>
-            </div>
-
-            {/* ── RIGHT PANE ── */}
-            <div className="lg:w-[360px] xl:w-[400px] flex-shrink-0 bg-[#1e2a3b] border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col overflow-hidden">
-              {/* Pinned right header */}
-              <div className="flex-shrink-0 px-6 lg:px-8 pt-5 pb-4 border-b border-slate-700/40">
-                <h4 className="text-lg sm:text-xl font-bold text-white tracking-tight">Session Settings</h4>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">Customize your recovery rhythm.</p>
-              </div>
-
-              {/* Scrollable right body */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 lg:px-8 py-5 space-y-6">
-                {/* Intensity */}
-                <div className="space-y-3">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Intensity</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['Light', 'Moderate', 'Strong'].map(i => (
-                      <button
-                        key={i}
-                        onClick={() => setSessionSettings(prev => ({ ...prev, intensity: i }))}
-                        className={`py-2.5 rounded-full font-bold text-[9px] uppercase tracking-wider transition-all border ${sessionSettings.intensity === i ? 'bg-white text-slate-900 border-white shadow-lg' : 'bg-transparent text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'}`}
-                      >
-                        {i}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Duration */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Duration</label>
-                    <span className="text-xs font-bold text-white">{sessionDuration} min</span>
-                  </div>
-                  <input
-                    type="range" className="w-full accent-white h-1 bg-slate-700 rounded-full appearance-none cursor-pointer"
-                    value={sessionDuration} min="5" max="30" step="5"
-                    onChange={e => { setSessionDuration(parseInt(e.target.value, 10)); setTimer(0); }}
-                  />
-                  <div className="flex justify-between text-[8px] font-bold text-slate-600 px-0.5">
-                    <span>5m</span><span>10m</span><span>15m</span><span>20m</span><span>25m</span><span>30m</span>
-                  </div>
-                </div>
-
-                {/* Support Environment */}
-                <div className="space-y-3 border-t border-slate-700/50 pt-5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Support Environment</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['Alone', 'With Partner', 'With Friend', 'With Family', 'With Support Worker', 'In a Group'].map(env => (
-                      <button
-                        key={env}
-                        onClick={() => setSessionSettings(prev => ({ ...prev, environment: env }))}
-                        className={`py-2.5 px-2 rounded-2xl font-bold text-[8px] uppercase tracking-wide transition-all border truncate ${sessionSettings.environment === env ? 'bg-white text-slate-900 border-white shadow-lg' : 'bg-transparent text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'}`}
-                      >
-                        {env}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recommendation */}
-                <div className="p-4 rounded-3xl bg-slate-800/60 border border-slate-700/50 space-y-2">
-                  <div className="flex items-center gap-2 text-[#eab308] font-bold text-[9px] uppercase tracking-widest">
-                    <Sparkles size={12} /> Recommendation
-                  </div>
-                  <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                    Based on your environment ({sessionSettings.environment}), a{' '}
-                    <span className="text-white font-bold">{sessionSettings.intensity} intensity</span> is recommended.
-                  </p>
-                  <p className="text-[9px] text-slate-500 italic leading-relaxed">
-                    Listen to your body's whispers before they become shouts. Stay aware of your breath.
-                  </p>
-                </div>
-
-                {/* Disclaimer */}
-                <div className="pt-4 border-t border-slate-700/50">
-                  <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest leading-relaxed text-center">
-                    DISCLAIMER: ALL SUGGESTIONS ARE GUIDANCE ONLY AND NOT MEDICAL ADVICE. CONSULT YOUR OB-GYN FOR CLINICAL CLEARANCE.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
