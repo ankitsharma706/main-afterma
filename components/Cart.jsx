@@ -1,20 +1,29 @@
 import { ArrowLeft, Minus, Plus, ShoppingBag, Truck, X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { COLORS } from '../constants';
 
 const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToPayment }) => {
-  const theme = COLORS[profile.accent] || COLORS.PINK;
+
+  const theme = COLORS?.[profile?.accent] || COLORS.PINK;
+
   const [expressDelivery, setExpressDelivery] = useState(false);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const safeCart = cart || [];
+
+  const subtotal = useMemo(
+    () => safeCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [safeCart]
+  );
+
   const gst = Math.round(subtotal * 0.18);
   const deliveryCharge = expressDelivery ? 49 : 0;
   const total = subtotal + gst + deliveryCharge;
 
+  const itemCount = safeCart.reduce((sum, i) => sum + i.quantity, 0);
   return (
     <div className="animate-in min-h-screen pb-32" style={{ backgroundColor: '#f8fafc' }}>
       {/* Floating Header Pill */}
-      <div className="sticky top-[80px] z-[50] flex justify-center pointer-events-none mt-2">
+      <div className="sticky top-[calc(var(--navbar-height)+10px)] z-[50] flex justify-center pointer-events-none mt-2">
         <div className="pointer-events-auto flex items-center gap-5 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-lg px-6 py-2.5 rounded-full transition-all duration-300 w-[90%] max-w-5xl">
           <button onClick={onGoBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900 group">
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -23,7 +32,7 @@ const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToP
             <h1 className="text-lg font-black text-slate-900 tracking-tight">Your Cart</h1>
             <span className="text-slate-300 hidden sm:block">•</span>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
-              {cart.length} item{cart.length !== 1 ? 's' : ''}
+              {itemCount} item{itemCount !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -49,7 +58,7 @@ const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToP
             cart.map(item => (
               <div key={item.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-5 flex gap-5 hover:shadow-md transition-all">
                 <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={item.image} alt={item.name} loading='lazy' onError={(e) => e.target.src = "/images/product-placeholder.png"} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="flex justify-between items-start gap-3">
@@ -64,7 +73,11 @@ const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToP
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-lg font-black text-slate-900">₹{item.price * item.quantity}</span>
                     <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                      <button onClick={() => onUpdateQuantity(item.id, -1)} className="text-slate-400 hover:text-slate-900 transition-colors">
+                      <button onClick={() =>
+                        item.quantity > 1
+                          ? onUpdateQuantity(item.id, -1)
+                          : onRemoveItem(item.id)
+                      } className="text-slate-400 hover:text-slate-900 transition-colors">
                         <Minus size={13} strokeWidth={3} />
                       </button>
                       <span className="text-sm font-black text-slate-900 min-w-[20px] text-center">{item.quantity}</span>
@@ -84,6 +97,7 @@ const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToP
           <div className="lg:col-span-2">
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 space-y-6 lg:sticky lg:top-36">
               <h3 className="text-lg font-black text-slate-900 tracking-tight">Order Summary</h3>
+
 
               <div className="space-y-3">
                 <SummaryRow label="Subtotal" value={`₹${subtotal}`} />

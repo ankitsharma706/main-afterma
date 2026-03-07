@@ -1,12 +1,11 @@
 
 import { Bell, Menu, Search, ShieldCheck } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CareConnect from './components/CareConnect';
 import CaregiverView from './components/CaregiverView';
 import CareJourney from './components/CareJourney';
 import Cart from './components/Cart';
-import Dashboard from './components/Dashboard';
 import Education from './components/Education';
 import ExpertAnalytics from './components/ExpertAnalytics';
 import ExpertDashboard from './components/ExpertDashboard';
@@ -32,6 +31,7 @@ import SurveyCommunityData from './components/SurveyCommunityData';
 import { COLORS, RECOVERY_DATABASE } from './constants';
 import { authAPI, setUserId } from './services/api';
 import { translations } from './translations';
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
 const App = () => {
   const [profile, setProfile] = useState(() => {
@@ -85,7 +85,7 @@ const App = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const path = location.pathname.substring(1);
   const currentView = path || (profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified' ? 'expert-dashboard' : (profile.authenticated ? 'dashboard' : 'education'));
 
@@ -101,9 +101,9 @@ const App = () => {
   const [showJournal, setShowJournal] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const lastClickRef = useRef(0);
+  // const lastClickRef = useRef(0);
   const sosTimerRef = useRef(null);
-  
+
   const [appointments, setAppointments] = useState([]);
   const [showLactationLog, setShowLactationLog] = useState(false);
   const [showLocationPage, setShowLocationPage] = useState(false);
@@ -122,10 +122,13 @@ const App = () => {
   const [triageMessages, setTriageMessages] = useState([]);
   const [cart, setCart] = useState([]);
   const [orderSummary, setOrderSummary] = useState(null);
-
   useEffect(() => {
-    localStorage.setItem('afterma_profile_v4', JSON.stringify(profile));
-    document.documentElement.lang = lang === 'hindi' ? 'hi' : 'en';
+    const save = setTimeout(() => {
+      localStorage.setItem('afterma_profile_v4', JSON.stringify(profile));
+      document.documentElement.lang = lang === 'hindi' ? 'hi' : 'en';
+    }, 300);
+
+    return () => clearTimeout(save);
   }, [profile, lang]);
 
   useEffect(() => {
@@ -136,7 +139,7 @@ const App = () => {
   useEffect(() => {
     const restoreSession = async () => {
       const token = localStorage.getItem('afterma_token');
-      if (!token || profile.authenticated) return; // already logged in or no token
+      if (!token) return; // already logged in or no token
       try {
         const userData = await authAPI.getMe();
         if (userData?._id || userData?.email) {
@@ -180,7 +183,7 @@ const App = () => {
       }
     };
     restoreSession();
-  }, []); // run once on mount
+  }, []); // run once on mount only
 
   // Cleanup SOS timer on unmount
   useEffect(() => {
@@ -266,8 +269,10 @@ const App = () => {
       membershipPlan: 'free', currentPhase: 'Month 1', completedActivities: [],
       streakCount: 0, streakProtectionActive: false,
       lastLoginDate: new Date().toISOString().split('T')[0], badges: [],
-      caregiver: { name: '', relationship: '', contact: '',
-        permissions: { canViewMood: true, canViewPhysical: true, canViewMedicalHistory: false, canViewAppointments: true } },
+      caregiver: {
+        name: '', relationship: '', contact: '',
+        permissions: { canViewMood: true, canViewPhysical: true, canViewMedicalHistory: false, canViewAppointments: true }
+      },
       journeySettings: { pace: 'gentle', preferredTime: 'morning', goals: ['improve strength', 'stabilize mood'], isPaused: false, language: 'english' },
       notifications: { exerciseReminders: true, hydrationAlerts: true, moodCheckins: true, careConnectUpdates: true, sosConfirmations: true },
       periodLogs: [], journalEntries: [],
@@ -279,10 +284,10 @@ const App = () => {
     if (profile.journeySettings.isPaused) return;
     setProfile(prev => {
       const isCompleted = prev.completedActivities.includes(activityId);
-      const newCompleted = isCompleted 
+      const newCompleted = isCompleted
         ? prev.completedActivities.filter(id => id !== activityId)
         : [...prev.completedActivities, activityId];
-      
+
       if (!isCompleted) {
         addNotification("Activity Logged", "Your progress has been recorded securely.");
       }
@@ -320,14 +325,20 @@ const App = () => {
   const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
 
   const updateQuantity = (id, delta) => {
-    setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i));
+    setCart(prev =>
+      prev
+        .map(i =>
+          i.id === id ? { ...i, quantity: i.quantity + delta } : i
+        )
+        .filter(i => i.quantity > 0)
+    );
   };
 
   const handleSaveLog = (newLog) => {
     setLogs(prev => [...prev, newLog]);
     setShowLogModal(false);
     addNotification("Health Logged", "Your daily metrics have been securely recorded.");
-    
+
     // Streak logic
     const today = new Date().toISOString().split('T')[0];
     if (profile.lastLoginDate !== today) {
@@ -363,7 +374,7 @@ const App = () => {
         return true;
       });
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
-
+  const triageMessagesMemo = useMemo(() => triageMessages, [triageMessages]);
   return (
     <div className={`min-h-screen flex transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
       {isMobileMenuOpen && (
@@ -371,17 +382,17 @@ const App = () => {
       )}
 
       <div className={`fixed inset-y-0 left-0 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out z-[60] lg:z-50 h-screen`}>
-        <Navigation 
-          currentView={currentView} 
-          setView={setView} 
-          profile={profile} 
-          logout={logout} 
-          onClose={() => setIsMobileMenuOpen(false)} 
+        <Navigation
+          currentView={currentView}
+          setView={setView}
+          profile={profile}
+          logout={logout}
+          onClose={() => setIsMobileMenuOpen(false)}
           onOpenLocation={() => setShowLocationPage(true)}
           onOpenLactation={() => setShowLactationLog(true)}
         />
       </div>
-      
+
       <main className="flex-1 lg:ml-64 min-h-screen relative flex flex-col">
         <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between border-b border-slate-100 shadow-sm transition-all duration-300">
           <div className="flex items-center gap-3 lg:gap-6 flex-1 max-w-2xl">
@@ -399,7 +410,7 @@ const App = () => {
                   <Search className={`${profile.incognito ? 'text-purple-500' : 'text-gray-400'}`} size={16} />
                 </div>
                 <input type="text" placeholder={profile.incognito ? "GHOST Mode Active..." : t.common.searchPlaceholder} className={`w-full border rounded-full py-2 pl-10 pr-20 focus:outline-none focus:ring-2 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 border-purple-200 focus:ring-purple-100' : 'bg-white border-slate-200 focus:ring-pink-100 shadow-sm'}`} />
-                <button onClick={() => setProfile(p => ({...p, incognito: !p.incognito}))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
+                <button onClick={() => setProfile(p => ({ ...p, incognito: !p.incognito }))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
               </div>
             )}
           </div>
@@ -407,8 +418,8 @@ const App = () => {
           <div className="flex items-center gap-3 lg:gap-5 ml-4">
             {/* Improved SOS with confirm state (from v3) */}
             <div className="relative group">
-              <button 
-                onClick={handleSOSClick} 
+              <button
+                onClick={handleSOSClick}
                 className={`px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg ${sosConfirming ? 'bg-amber-500 text-black animate-pulse' : 'bg-[#eab308] text-black shadow-amber-200'}`}
               >
                 {sosConfirming ? 'Tap again to confirm SOS' : 'Double tap for SOS'}
@@ -454,7 +465,7 @@ const App = () => {
                 {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
                 {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
                 {currentView === 'healthsummary' && profile.authenticated && <HealthReportModal profile={profile} onClose={() => setView('dashboard')} />}
-                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessages} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
+                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessagesMemo} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
                 {currentView === 'education' && <Education profile={profile} />}
                 {currentView === 'recipes' && <SafeRecipes profile={profile} />}
                 {currentView === 'community-wisdom' && <SurveyCommunityData profile={profile} />}
@@ -505,7 +516,7 @@ const App = () => {
       {showLactationLog && <LactationLog profile={profile} onClose={() => setShowLactationLog(false)} />}
       {showLocationPage && <LocationPage profile={profile} onClose={() => setShowLocationPage(false)} />}
       {showExpertReport && <HealthReportModal profile={profile} onClose={() => setShowExpertReport(false)} />}
-      {(currentView === 'signin' || currentView === 'singin') && (
+      {currentView === 'signin' && (
         <SignIn profile={profile} onLogin={handleLogin} onClose={() => setView('education')} onOpenLocation={() => setShowLocationPage(true)} />
       )}
     </div>

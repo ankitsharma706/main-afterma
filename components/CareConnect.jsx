@@ -1,40 +1,35 @@
-
+// import { FixedSizeList as List } from 'react-window';
 import {
-    Calendar,
-    CheckCircle2,
-    Clock,
-    ExternalLink,
-    Heart,
-    Info,
-    Loader2,
-    Phone, ShieldCheck, Star,
-    Stethoscope,
-    TrendingUp,
-    Users,
-    X
+  Calendar,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Heart,
+  Info,
+  Loader2,
+  Phone, ShieldCheck, Star,
+  Stethoscope,
+  TrendingUp,
+  Users,
+  X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { COLORS, EXPERT_DATA, HELPLINES, NGO_DATA } from '../constants';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { COLORS, EXPERT_DATA, HELPLINES, INSURANCE_PLANS, NGO_DATA } from '../constants';
 import { communitiesAPI, doctorsAPI } from '../services/api';
 import { translations } from '../translations';
 import ExpertDashboard from './ExpertDashboard';
 import VerificationFlow from './VerificationFlow';
 
-const INSURANCE_PLANS = [
-  { bank: 'SBI', logo: 'S', plan: 'Janani Raksha Health Cover', range: '₹5L - ₹10L', highlights: ['Full Hospitalization', 'Mental Health Support', 'In-Home Nursing'], approval: '88%', processing: '5 Days', count: '12k+', eligibility: 'Moms 18+', theme: 'BLUE' },
-  { bank: 'HDFC Bank', logo: 'H', plan: 'Maternity Extension Plan', range: '₹3L - ₹15L', highlights: ['Cashless Recovery Assist', 'Expert Consultations', 'Medication Coverage'], approval: '92%', processing: '3 Days', count: '18k+', eligibility: 'Moms 21+', theme: 'BLUE' },
-  { bank: 'ICICI Bank', logo: 'I', plan: 'New Mother Essential', range: '₹2L - ₹8L', highlights: ['Postpartum Physio Inclusion', 'Safe Shield Protection', 'Lactation Specialist Access'], approval: '78%', processing: '4 Days', count: '8k+', eligibility: 'Moms 18+', theme: 'YELLOW' },
-  { bank: 'Axis Bank', logo: 'A', plan: 'AfterMa Wellness Plan', range: '₹5L - ₹20L', highlights: ['Priority Triage Assist', 'Holistic Wellness Rider', 'Emergency Red Flag Cover'], approval: '85%', processing: '6 Days', count: '10k+', eligibility: 'Moms 25+', theme: 'PURPLE' },
-];
+
 
 const CareConnect = ({ profile, setProfile, appointments, setAppointments, circles, setCircles, addNotification }) => {
-  const lang = profile.journeySettings.language || 'english';
+  const lang = profile?.journeySettings?.language || 'english';
   const t = translations[lang];
   const [activeSubTab, setActiveSubTab] = useState('Community');
   const [expertFilter, setExpertFilter] = useState('Physiotherapy');
   const [showVerification, setShowVerification] = useState(false);
   const [verificationRole, setVerificationRole] = useState('expert');
-  const theme = COLORS[profile.accent] || COLORS.PINK;
+  const theme = COLORS[profile?.accent] || COLORS.PINK;
 
   const isVerifiedExpert = profile.role === 'expert' && profile.verification?.status === 'verified';
   const isVerifiedCreator = profile.role === 'community_creator' && profile.verification?.status === 'verified';
@@ -101,7 +96,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     loadCommunities();
   }, []);
 
-  const displayExperts = liveExperts.length > 0 ? liveExperts : EXPERT_DATA;
+  const displayExperts = liveExperts?.length ? liveExperts : EXPERT_DATA;
 
   const handleVerificationComplete = (data) => {
     setProfile(prev => ({ ...prev, role: data.roleRequested, verification: data }));
@@ -118,7 +113,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     if (activeSubTab === 'MyBookings' && profile?._id) {
       const loadMySessions = async () => {
         try {
-          const res = await fetch(`/api/sessions/my/${profile._id}`);
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/sessions/my/${profile._id}`);
           const data = await res.json();
           if (data.status === 'success' && data.data) {
             const mappedAppts = data.data.map(session => ({
@@ -148,8 +143,8 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
   if (isVerifiedExpert) return <ExpertDashboard profile={profile} />;
 
   // ── Community join/leave (optimistic + real API) ─────────────────────────
-  const handleRSVP = async (id) => {
-    const circle = circles.find(c => c.id === id);
+  const handleRSVP = useCallback(async (id) => {
+    const circle = circles?.find(c => c.id === id);
     if (!circle) return;
     const wasJoined = circle.isJoined;
     setCircles(prev => prev.map(c =>
@@ -168,10 +163,10 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
         c.id === id ? { ...c, isJoined: wasJoined, members: wasJoined ? c.members + 1 : c.members - 1 } : c
       ));
     }
-  };
+  },[circles]);
 
   // ── Book session (local + real API) ─────────────────────────────────────
-  const handleBook = async (expert) => {
+  const handleBook = useCallback(async (expert) => {
     const sessionDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
     const newAppt = {
       id: Date.now().toString(),
@@ -203,7 +198,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     } catch (err) {
       console.warn('Session booking API error (saved locally):', err?.message);
     }
-  };
+  },[profile]);
 
   const cancelAppointment = (id) => {
     if (window.confirm("Are you sure you want to cancel this healing session?")) {
@@ -211,7 +206,9 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     }
   };
 
-  const filteredExperts = displayExperts.filter(e => e.category === expertFilter);
+  const filteredExperts = useMemo(() => {
+    return displayExperts.filter(e => e.category === expertFilter);
+  }, [displayExperts, expertFilter]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 lg:space-y-16 animate-in pb-32">
@@ -406,7 +403,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
         {activeSubTab === 'MyBookings' && (
           <div className="animate-in fade-in duration-500">
-            {appointments.length === 0 ? (
+            {appointments?.length === 0 ? (
               <div className="bg-slate-50 p-20 rounded-[2.5rem] border-2 border-dashed border-slate-100 flex flex-col items-center text-center space-y-6">
                 <div className="p-10 bg-white rounded-full shadow-sm text-slate-100"><Calendar size={64} /></div>
                 <div className="space-y-1">
@@ -455,9 +452,9 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
 const MetricBox = ({ icon, val, label }) => (
   <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center text-center space-y-1 shadow-inner">
-     <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-50 mb-0.5">{icon}</div>
-     <span className="text-xs font-bold text-slate-800 tracking-tight">{val}</span>
-     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
+    <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-50 mb-0.5">{icon}</div>
+    <span className="text-xs font-bold text-slate-800 tracking-tight">{val}</span>
+    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
   </div>
 );
 

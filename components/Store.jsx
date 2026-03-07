@@ -1,16 +1,18 @@
 import { Filter, Minus, Package, Plus, ShoppingBag, Sparkles, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { COLORS, STORE_ITEMS } from '../constants';
 
 const CATEGORIES = ['All', 'Baby Care', 'Recovery', 'Nutrition', 'Devices', 'Maternity Care'];
 
 const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, onGoToCart }) => {
   const [activeCategory, setActiveCategory] = useState('All');
-  const theme = COLORS[profile.accent] || COLORS.PINK;
+  const theme = COLORS?.[profile?.accent] || COLORS.PINK;
 
-  const filteredItems = activeCategory === 'All'
-    ? STORE_ITEMS
-    : STORE_ITEMS.filter(item => item.category === activeCategory);
+  const filteredItems = useMemo(() => {
+    return activeCategory === 'All'
+      ? STORE_ITEMS
+      : STORE_ITEMS.filter(item => item.category === activeCategory);
+  }, [activeCategory]);
 
   return (
     <div className="animate-in w-full -mt-4 lg:-mt-8 pb-32 relative">
@@ -23,7 +25,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
         <ShoppingBag size={24} />
         {cart.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-rose-500 text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white">
-            {cart.length}
+            {(cart || []).length}
           </span>
         )}
       </button>
@@ -39,7 +41,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
           </div>
 
           {/* Category pills - using flex-1 to push the cart to the far right */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide flex-1 max-w-[80vw] sm:max-w-none">
+          <div className="flex items-center gap-1.5 scrollbar-hide flex-1 overflow-x-auto max-w-full sm:max-w-none">
             {CATEGORIES.map(cat => (
               <button
                 key={cat}
@@ -100,7 +102,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
             return (
               <div key={item.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group flex flex-col h-full overflow-hidden hover:translate-y-[-6px]">
                 <div className="relative aspect-[4/5] bg-slate-50/30 overflow-hidden">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                  <img src={item.image} alt={item.name} loading='lazy' onError={(e) => e.target.src = "/images/placeholder.png"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                   <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm border border-white/40">
                     <Star size={11} className="text-amber-400 fill-amber-400" />
                     <span className="text-[10px] font-bold text-slate-800">{item.rating}</span>
@@ -117,7 +119,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
                   <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-50">
                     <span className="text-xl font-bold text-slate-900">₹{item.price}</span>
                     {(() => {
-                      const cartItem = cart.find(cItem => cItem.id === item.id);
+                      const cartItem = inCart;
                       if (cartItem) {
                         return (
                           <div className="flex items-center gap-4 bg-slate-50 px-4 py-2.5 rounded-full border border-slate-100 shadow-sm">

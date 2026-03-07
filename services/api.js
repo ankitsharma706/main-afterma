@@ -35,8 +35,15 @@ const request = async (method, path, body, auth = false) => {
     headers: headers(auth),
     body: body ? JSON.stringify(body) : undefined,
   });
-  const json = await res.json().catch(() => ({ status: 'error', message: 'No response body' }));
-  if (!res.ok) throw new Error(json.message || `Request failed: ${res.status}`);
+  const json = await res.json().catch(() => null);
+
+  // if (res.status === 401) {
+  //   removeToken();
+  //   window.location.href = "/login";
+  // }
+  if (!res.ok) {
+    throw new Error(json?.message || `Request failed (${res.status})`);
+  }
   return json;
 };
 
@@ -258,8 +265,15 @@ export const usersAPI = {
       ...(data.maternity_stage && { phase: data.maternity_stage }),
       ...(data.delivery_type && { delivery_type: data.delivery_type }),
       ...(data.symptoms && { symptoms: data.symptoms }),
-      ...(data.cycle_length_days && { preferences: { reminder_time: data.reminder_time || '08:00' } }),
-      ...(data.language && { preferences: { language: data.language } }),
+
+      ...(data.language || data.reminder_time
+        ? {
+          preferences: {
+            ...(data.language && { language: data.language }),
+            ...(data.reminder_time && { reminder_time: data.reminder_time }),
+          },
+        }
+        : {}),
     };
     // Pass any remaining fields through unchanged
     const merged = { ...data, ...mapped };
@@ -354,7 +368,10 @@ export const chatbotAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, userContext }),
     });
-    if (!res.ok) throw new Error(`AI request failed: ${res.status}`);
+    if (!res.ok) throw new Error(`AI request failed: ${res.status}`); if (res.status === 401) {
+      removeToken();
+      window.location.href = "/login";
+    }
     return res.json();
   },
 };

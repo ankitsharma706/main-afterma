@@ -1,61 +1,13 @@
 
 import { ArrowRight, Book, ChevronRight, ExternalLink, FileText, HeartPulse, Pause, Play, PlayCircle, ShieldCheck, Star, Users, Volume2, VolumeX, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { GOVT_SCHEMES } from '../constants';
+import { ARTICLES, GOVT_SCHEMES, TRUSTED_PICKS, VIDEO_LIBRARY } from '../constants';
 import { translations } from '../translations';
 import SurveyCommunityData from './SurveyCommunityData';
 
 /* ─── Video data with real YouTube embed IDs ─────────────────────────── */
-const VIDEO_LIBRARY = [
-  {
-    id: 'v1',
-    title: 'Understanding the Fourth Trimester',
-    duration: '8:24',
-    category: 'Mental Health',
-    youtubeId: 'kAUBBwj2GxA',
-    thumbnail: 'https://picsum.photos/seed/postpartum1/600/400',
-  },
-  {
-    id: 'v2',
-    title: 'Postpartum Physical Recovery Guide',
-    duration: '11:02',
-    category: 'Physical Recovery',
-    youtubeId: 'kAUBBwj2GxA',
-    thumbnail: 'https://picsum.photos/seed/postpartum2/600/400',
-  },
-  {
-    id: 'v3',
-    title: 'Nutrition & Iron Recovery After Birth',
-    duration: '6:15',
-    category: 'Nutrition',
-    youtubeId: 'kAUBBwj2GxA',
-    thumbnail: 'https://picsum.photos/seed/postpartum3/600/400',
-  },
-  {
-    id: 'v4',
-    title: 'Safe Exercises: Diastasis Recti Recovery',
-    duration: '14:30',
-    category: 'Physical Recovery',
-    youtubeId: 'kAUBBwj2GxA',
-    thumbnail: 'https://picsum.photos/seed/postpartum4/600/400',
-  },
-  {
-    id: 'v5',
-    title: 'Breastfeeding Basics & Latching Tips',
-    duration: '9:47',
-    category: 'Newborn Care',
-    youtubeId: 'kAUBBwj2GxA',
-    thumbnail: 'https://picsum.photos/seed/postpartum5/600/400',
-  },
-  {
-    id: 'v6',
-    title: 'Managing Postpartum Anxiety & Mood',
-    duration: '12:18',
-    category: 'Mental Health',
-    youtubeId: 'kAUBBwj2GxA',
-    thumbnail: 'https://picsum.photos/seed/postpartum6/600/400',
-  },
-];
+
+
 
 /* ─── Inline Video Player Component ─────────────────────────────────── */
 const VideoPlayerModal = ({ video, onClose }) => {
@@ -177,6 +129,7 @@ const VideoPlayerModal = ({ video, onClose }) => {
                 <img
                   src={video.thumbnail}
                   alt={video.title}
+                  loading="lazy"
                   className="w-full h-full object-cover opacity-80"
                 />
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-4">
@@ -274,7 +227,7 @@ const VideoPlayerModal = ({ video, onClose }) => {
                   <span className="text-white/80 text-sm font-mono ml-2 font-medium tracking-wide">
                     {fmt(currentTime)} / {fmt(duration)}
                   </span>
-                  <p className="ml-auto text-white font-bold text-base truncate max-w-[40%]">{video.title}</p>
+                  <p className="ml-auto text-white font-bold text-base truncate max-w-[40%]" title={video.title}>{video.title}</p>
                 </div>
               </div>
             )}
@@ -294,7 +247,7 @@ const VideoPlayerModal = ({ video, onClose }) => {
 const VideoCard = ({ video, onPlay }) => (
   <div
     className="bg-white rounded-[3rem] border border-gray-50 shadow-sm hover:shadow-xl transition-all group cursor-pointer space-y-6 p-8 hover:border-blue-200"
-    onClick={() => onPlay(video)}
+    onClick={() => onPlay(video)} aria-label={`Play ${video.title}`}
   >
     <div className="aspect-video bg-slate-100 rounded-[2rem] overflow-hidden relative border border-slate-100">
       <img
@@ -340,8 +293,8 @@ const VideoCard = ({ video, onPlay }) => (
 const GenericCard = ({ index, activeSection }) => (
   <div
     className={`bg-white p-8 rounded-[3rem] border shadow-sm hover:shadow-xl transition-all group cursor-pointer space-y-6 ${activeSection === 'guides' ? 'hover:border-pink-200' :
-        activeSection === 'tips' ? 'hover:border-rose-200' :
-          'hover:border-emerald-200'
+      activeSection === 'tips' ? 'hover:border-rose-200' :
+        'hover:border-emerald-200'
       }`}
   >
     <div className="aspect-video bg-slate-100 rounded-[2rem] overflow-hidden relative border border-slate-100">
@@ -350,8 +303,8 @@ const GenericCard = ({ index, activeSection }) => (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeSection === 'guides' ? 'bg-pink-50 text-pink-600' :
-            activeSection === 'tips' ? 'bg-rose-50 text-rose-600' :
-              'bg-emerald-50 text-emerald-600'
+          activeSection === 'tips' ? 'bg-rose-50 text-rose-600' :
+            'bg-emerald-50 text-emerald-600'
           }`}>Expert Verified</span>
         <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{index + 2}m read</span>
       </div>
@@ -363,8 +316,8 @@ const GenericCard = ({ index, activeSection }) => (
       </p>
     </div>
     <button className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeSection === 'guides' ? 'bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white' :
-        activeSection === 'tips' ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' :
-          'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'
+      activeSection === 'tips' ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' :
+        'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'
       }`}>
       Open Resource <ChevronRight size={14} />
     </button>
@@ -373,7 +326,7 @@ const GenericCard = ({ index, activeSection }) => (
 
 /* ─── Main Education Component ───────────────────────────────────────── */
 const Education = ({ profile }) => {
-  const lang = profile.journeySettings.language || 'english';
+  const lang = profile?.journeySettings?.language || 'english';
   const t = translations[lang];
 
   const [activeSection, setActiveSection] = useState(null);
@@ -388,8 +341,8 @@ const Education = ({ profile }) => {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
-        setPlayingVideo(null);
-        setActiveSection(null);
+        if (playingVideo) setPlayingVideo(null);
+        else setActiveSection(null);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -412,68 +365,59 @@ const Education = ({ profile }) => {
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  const articles = [
-    { title: "Understanding the 'Fourth Trimester'", category: "Mental Health", readTime: "5 min", summary: "The transition from pregnancy to motherhood requires a different kind of clinical grace and internal patience." },
-    { title: "C-Section Incision Care 101", category: "Physical Recovery", readTime: "8 min", summary: "Gentle techniques to ensure a smooth scar healing process and identifying early warning signs of infection." },
-    { title: "Nutrients for Iron Recovery", category: "Nutrition", readTime: "4 min", summary: "Traditional Indian superfoods to rebuild your vitality after blood loss, optimized for modern lifestyles." },
-    { title: "Diastasis Recti Self-Check", category: "Physical Recovery", readTime: "6 min", summary: "A step-by-step clinical guide to assessing abdominal separation and safe restorative exercises." },
-  ];
 
-  const trustedPicks = [
-    { brand: "Mamaearth", product: "Plant-Based Baby Wipes", reason: "Toxin-free & Biodegradable", tag: "Editor's Choice" },
-    { brand: "FirstCry", product: "Organic Nursing Pads", reason: "Super absorbent, naturally breathable", tag: "Best Seller" },
-    { brand: "Himalaya", product: "Ayurvedic Diaper Cream", reason: "Gentle healing since 1930", tag: "Trusted Heritage" }
-  ];
+
+
 
   if (activeSection) {
     return (
       <div className="max-w-6xl mx-auto pt-6 animate-in slide-in-from-right-4 duration-500">
         <div className="w-full bg-white rounded-[3rem] overflow-hidden border border-slate-100 shadow-xl pb-20">
           <div className="border-b border-slate-100 flex items-center justify-between py-6 px-10 bg-white/95 backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl ${activeSection === 'guides' ? 'bg-pink-50 text-pink-600' :
-              activeSection === 'videos' ? 'bg-blue-50 text-blue-600' :
-                activeSection === 'tips' ? 'bg-rose-50 text-rose-600' :
-                  'bg-emerald-50 text-emerald-600'
-              }`}>
-              {activeSection === 'guides' && <Book size={24} />}
-              {activeSection === 'videos' && <PlayCircle size={24} />}
-              {activeSection === 'tips' && <HeartPulse size={24} />}
-              {activeSection === 'safety' && <ShieldCheck size={24} />}
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-xl ${activeSection === 'guides' ? 'bg-pink-50 text-pink-600' :
+                activeSection === 'videos' ? 'bg-blue-50 text-blue-600' :
+                  activeSection === 'tips' ? 'bg-rose-50 text-rose-600' :
+                    'bg-emerald-50 text-emerald-600'
+                }`}>
+                {activeSection === 'guides' && <Book size={24} />}
+                {activeSection === 'videos' && <PlayCircle size={24} />}
+                {activeSection === 'tips' && <HeartPulse size={24} />}
+                {activeSection === 'safety' && <ShieldCheck size={24} />}
+              </div>
+              <div>
+                <h3 className="font-black text-xl text-slate-900 capitalize leading-tight">
+                  {activeSection} Portal
+                </h3>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+                  Curated Expert Resources
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-black text-xl text-slate-900 capitalize leading-tight">
-                {activeSection} Portal
-              </h3>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
-                Curated Expert Resources
-              </p>
-            </div>
+            <button
+              onClick={() => setActiveSection(null)}
+              className="p-3 text-slate-400 hover:text-slate-900 transition-all bg-slate-50 hover:bg-slate-200 rounded-full"
+            >
+              <X size={20} />
+            </button>
           </div>
-          <button
-            onClick={() => setActiveSection(null)}
-            className="p-3 text-slate-400 hover:text-slate-900 transition-all bg-slate-50 hover:bg-slate-200 rounded-full"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        
-        <div className="p-10 lg:p-12 pt-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-            {activeSection === 'videos'
-              ? VIDEO_LIBRARY.map((vid) => (
-                <VideoCard key={vid.id} video={vid} onPlay={setPlayingVideo} />
-              ))
-              : Array.from({ length: 6 }).map((_, i) => (
-                <GenericCard key={i} index={i} activeSection={activeSection} />
-              ))
-            }
-          </div>
-        </div>
 
-        {playingVideo && (
-          <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
-        )}
+          <div className="p-10 lg:p-12 pt-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+              {activeSection === 'videos'
+                ? VIDEO_LIBRARY.map((vid) => (
+                  <VideoCard key={vid.id} video={vid} onPlay={setPlayingVideo} />
+                ))
+                : Array.from({ length: 6 }).map((_, i) => (
+                  <GenericCard key={i} index={i} activeSection={activeSection} />
+                ))
+              }
+            </div>
+          </div>
+
+          {playingVideo && (
+            <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
+          )}
         </div>
       </div>
     );
@@ -500,7 +444,7 @@ const Education = ({ profile }) => {
           <div className="space-y-0.5">
             <h2 className="text-2xl lg:text-3xl font-black text-gray-800">Community Wisdom</h2>
             <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Voices of Motherhood</p>
-          </div>
+                      </div>
         </div>
         <SurveyCommunityData profile={profile} />
       </section>
@@ -522,7 +466,7 @@ const Education = ({ profile }) => {
           onMouseMove={handleMouseMove}
           className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory cursor-grab active:cursor-grabbing select-none -mx-4 px-4 lg:-mx-8 lg:px-8"
         >
-          {trustedPicks.map((pick, i) => (
+          {TRUSTED_PICKS.map((pick, i) => (
             <div key={i} className="min-w-[85%] md:min-w-[45%] lg:min-w-[31%] snap-start bg-white p-8 rounded-[3rem] border border-gray-50 shadow-md hover:shadow-2xl transition-all group flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex justify-between items-start"><span className="text-[8px] font-black uppercase px-3 py-1 bg-pink-50 text-pink-500 rounded-full">{pick.tag}</span><Star size={16} className="text-amber-300" fill="currentColor" /></div>
@@ -559,11 +503,11 @@ const Education = ({ profile }) => {
         </div>
       </section>
 
-      {/* Latest articles */}
+      {/* Latest ARTICLES */}
       <section className="space-y-8">
         <h2 className="text-2xl lg:text-3xl font-black text-gray-800">{t.education.latestResources}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
-          {articles.map((art, idx) => (
+          {ARTICLES.map((art, idx) => (
             <div key={idx} className="bg-white p-8 rounded-[3rem] border border-gray-50 flex flex-col sm:flex-row gap-8 hover:shadow-2xl transition-all cursor-pointer group shadow-md">
               <div className="w-full sm:w-32 h-32 lg:w-40 lg:h-40 bg-pink-100 rounded-[2rem] shrink-0 overflow-hidden shadow-inner">
                 <img src={`https://picsum.photos/seed/${idx + 10}/400/400`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Article" />

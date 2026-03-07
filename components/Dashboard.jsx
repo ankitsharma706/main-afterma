@@ -33,8 +33,22 @@ const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
   const t = translations[lang];
   const [inspiration, setInspiration] = useState(t.dashboard.inspiration);
   const lastLog = logs[logs.length - 1];
+  const [compliment, setCompliment] = useState('');
   const theme = COLORS[profile.accent] || COLORS.PINK;
+  const compliments = [
+    "Your strength is quiet but undeniable.",
+    "There is a beautiful glow in your resilience.",
+    "The way you care for yourself is inspiring.",
+    "Your presence brings a gentle warmth to this circle.",
+    "Your smile holds so much love and power.",
+    "The softness in your eyes tells a story of courage.",
+    "Your hair looks lovely today, a crown of grace.",
+    "You are doing something incredible, every single day."
+  ];
 
+  useEffect(() => {
+    setCompliment(compliments[Math.floor(Math.random() * compliments.length)]);
+  }, []);
   // Pregnancy Progress Logic
   const isPregnant = profile.maternityStage.startsWith('Pregnant');
   const edd = new Date(profile.deliveryDate);

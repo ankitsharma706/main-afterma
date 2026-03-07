@@ -1,89 +1,191 @@
 /**
- * Afterma AI Service
- * Routes all AI calls to the deployed chatbot backend:
- *   https://aichatbot-0w82.onrender.com/api/ai
- *
- * Falls back gracefully if the service is unreachable.
+ * Afterma AI Service (Local Mode)
+ * No external AI calls — all responses generated locally
  */
 
-import { buildUserContext, chatbotAPI } from './api.js';
+import { buildUserContext } from './api.js';
 
 /**
- * Primary AI triage function — used by MentalWellness component
- * @param {string[]} symptoms  - array of symptom strings from user input
- * @param {object}  profile    - user profile object (for context)
- * @returns {string}           - formatted response text for the chat UI
+ * Primary triage analysis
  */
 export const getTriageAnalysis = async (symptoms, profile) => {
-  const question = symptoms.join('. ');
+
   const userContext = buildUserContext(profile);
+  const text = symptoms.join(' ').toLowerCase();
 
-  try {
-    const response = await chatbotAPI.ask(question, userContext);
+  let triage = "mild";
+  let message = "";
+  let bullets = [];
+  let warnings = [];
 
-    // Build a rich formatted message from the structured response
-    let text = response.message || '';
+  // Emergency keywords
+  if (
+    text.includes("bleeding") ||
+    text.includes("severe pain") ||
+    text.includes("unconscious") ||
+    text.includes("chest pain")
+  ) {
+    triage = "emergency";
+    message = "Your symptoms may require urgent medical attention.";
 
-    if (response.bullets?.length) {
-      text += '\n\n' + response.bullets.map(b => `• ${b}`).join('\n');
-    }
+    bullets = [
+      "Seek immediate medical help.",
+      "Call emergency services (112).",
+      "Do not delay professional care."
+    ];
 
-    if (response.warnings?.length) {
-      text += '\n\n⚠️ ' + response.warnings.join('\n⚠️ ');
-    }
-
-    // Surface triage level clearly
-    const triageLabel = {
-      mild: '🟢 Mild — self-care is sufficient.',
-      moderate: '🟡 Moderate — please consult a doctor soon.',
-      emergency: '🔴 Emergency — seek immediate medical help or call 112.',
-    };
-    if (response.triage && triageLabel[response.triage]) {
-      text = `${triageLabel[response.triage]}\n\n${text}`;
-    }
-
-    return text;
-  } catch (error) {
-    console.error('[AfterMa AI] Triage request failed:', error);
-    return 'I am here to support you. I had trouble connecting to the AI service right now. If you are experiencing an emergency, please call 112 immediately. Otherwise, please try again in a moment.';
+    warnings = ["Possible emergency condition."];
   }
+
+  // Moderate symptoms
+  else if (
+    text.includes("fever") ||
+    text.includes("infection") ||
+    text.includes("persistent pain") ||
+    text.includes("swelling")
+  ) {
+    triage = "moderate";
+
+    message = "Your symptoms may require medical consultation.";
+
+    bullets = [
+      "Monitor your symptoms carefully.",
+      "Schedule a doctor's appointment.",
+      "Stay hydrated and rest."
+    ];
+  }
+
+  // Default mild
+  else {
+    triage = "mild";
+
+    message = "Your symptoms appear mild based on the information provided.";
+
+    bullets = [
+      "Rest and monitor your condition.",
+      "Maintain hydration and balanced nutrition.",
+      "Seek medical advice if symptoms worsen."
+    ];
+  }
+
+  const triageLabel = {
+    mild: "🟢 Mild — self-care may be sufficient.",
+    moderate: "🟡 Moderate — consult a doctor soon.",
+    emergency: "🔴 Emergency — seek immediate medical help."
+  };
+
+  let output = `${triageLabel[triage]}\n\n${message}`;
+
+  if (bullets.length) {
+    output += "\n\n" + bullets.map(b => `• ${b}`).join("\n");
+  }
+
+  if (warnings.length) {
+    output += "\n\n⚠️ " + warnings.join("\n⚠️ ");
+  }
+
+  return output;
 };
 
 /**
- * Full structured AI response — used when you need the complete schema
- * (triage level, bullets, warnings, quick_replies, ui_flags)
- * @param {string} question
- * @param {object} profile
- * @returns {{ triage, message, bullets, warnings, quick_replies, ui_flags }}
+ * Structured response version
  */
 export const getStructuredAIResponse = async (question, profile) => {
-  const userContext = buildUserContext(profile);
-  try {
-    return await chatbotAPI.ask(question, userContext);
-  } catch (error) {
-    console.error('[AfterMa AI] Structured request failed:', error);
-    return {
-      triage: 'mild',
-      message: 'I had trouble connecting to the AI service. Please try again.',
-      bullets: [],
-      warnings: ['If this is urgent, please contact your doctor or call 112.'],
-      quick_replies: ['Try again', 'What are emergency signs to watch for?'],
-      ui_flags: { show_emergency_banner: false, highlight: false },
-    };
+
+  const text = question.toLowerCase();
+
+  let triage = "mild";
+  let message = "";
+  let bullets = [];
+  let warnings = [];
+
+  if (text.includes("bleeding") || text.includes("unconscious")) {
+
+    triage = "emergency";
+
+    message = "These symptoms may indicate a serious condition.";
+
+    bullets = [
+      "Seek emergency medical help immediately.",
+      "Call emergency number 112.",
+      "Do not wait for symptoms to improve."
+    ];
+
+    warnings = ["Potential medical emergency."];
+
+  } else if (text.includes("pain") || text.includes("fever")) {
+
+    triage = "moderate";
+
+    message = "Your symptoms may require medical evaluation.";
+
+    bullets = [
+      "Monitor your symptoms carefully.",
+      "Consider contacting your doctor.",
+      "Rest and stay hydrated."
+    ];
+
+  } else {
+
+    triage = "mild";
+
+    message = "Your symptoms appear mild.";
+
+    bullets = [
+      "Rest and monitor symptoms.",
+      "Maintain healthy diet and hydration."
+    ];
   }
+
+  return {
+    triage,
+    message,
+    bullets,
+    warnings,
+    quick_replies: [
+      "What symptoms should I watch for?",
+      "When should I see a doctor?",
+      "Give me self-care tips"
+    ],
+    ui_flags: {
+      show_emergency_banner: triage === "emergency",
+      highlight: triage === "emergency"
+    }
+  };
 };
 
 /**
- * Daily inspiration — short motivational message
- * @param {number} mood  - 1-10 mood score
- * @returns {string}
+ * Daily inspiration (local messages)
  */
-export const getDailyInspiration = async (mood) => {
-  try {
-    const question = `Give me a warm, 2-sentence daily inspiration for a new mother feeling a mood of ${mood}/10.`;
-    const response = await chatbotAPI.ask(question, {});
-    return response.message || 'You are doing an amazing job. Take it one breath at a time.';
-  } catch {
-    return 'You are doing an amazing job. Take it one breath at a time.';
-  }
+export const getDailyInspiration = (mood) => {
+
+  const inspiration = {
+    low: [
+      "Even difficult days pass. Be gentle with yourself.",
+      "You are stronger than you feel today.",
+      "Every small step forward is progress."
+    ],
+
+    medium: [
+      "You are doing a wonderful job — keep going.",
+      "Your strength is shaping a beautiful future.",
+      "Take a deep breath and appreciate how far you’ve come."
+    ],
+
+    high: [
+      "Your positivity brings light to those around you.",
+      "Celebrate today's small victories.",
+      "You are doing amazing things."
+    ]
+  };
+
+  let group;
+
+  if (mood <= 3) group = inspiration.low;
+  else if (mood <= 7) group = inspiration.medium;
+  else group = inspiration.high;
+
+  const randomIndex = Math.floor(Math.random() * group.length);
+
+  return group[randomIndex];
 };

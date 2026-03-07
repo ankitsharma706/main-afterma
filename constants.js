@@ -37,7 +37,12 @@ export const RECOVERY_DATABASE = [
   { id: 'm2-p1', phase: 'Month 2', category: 'Physical Recovery', title: 'Diastasis Check', description: 'Self-assessment and initial core alignment drills.', duration: 10, frequency: '3x week', points: 40, intensityScale: 3 },
   { id: 'm3-s1', phase: 'Month 3', category: 'Strength Building', title: 'Postpartum Core Restore', description: 'Safe transverse abdominis activation.', duration: 15, frequency: '3x week', points: 45, intensityScale: 5 }
 ];
-
+export const INSURANCE_PLANS = [
+  { bank: 'SBI', logo: 'S', plan: 'Janani Raksha Health Cover', range: '₹5L - ₹10L', highlights: ['Full Hospitalization', 'Mental Health Support', 'In-Home Nursing'], approval: '88%', processing: '5 Days', count: '12k+', eligibility: 'Moms 18+', theme: 'BLUE' },
+  { bank: 'HDFC Bank', logo: 'H', plan: 'Maternity Extension Plan', range: '₹3L - ₹15L', highlights: ['Cashless Recovery Assist', 'Expert Consultations', 'Medication Coverage'], approval: '92%', processing: '3 Days', count: '18k+', eligibility: 'Moms 21+', theme: 'BLUE' },
+  { bank: 'ICICI Bank', logo: 'I', plan: 'New Mother Essential', range: '₹2L - ₹8L', highlights: ['Postpartum Physio Inclusion', 'Safe Shield Protection', 'Lactation Specialist Access'], approval: '78%', processing: '4 Days', count: '8k+', eligibility: 'Moms 18+', theme: 'YELLOW' },
+  { bank: 'Axis Bank', logo: 'A', plan: 'AfterMa Wellness Plan', range: '₹5L - ₹20L', highlights: ['Priority Triage Assist', 'Holistic Wellness Rider', 'Emergency Red Flag Cover'], approval: '85%', processing: '6 Days', count: '10k+', eligibility: 'Moms 25+', theme: 'PURPLE' },
+];
 export const STABILIZATION_TASKS = [
   "Safe Space: Light a lavender candle and breathe for 2 mins.",
   "Connection: Place hands on bump or hold baby skin-to-skin.",
@@ -341,4 +346,202 @@ export const MOCK_CENTERS = [{ id: 1, name: 'IMS SUM Hospital', type: 'hospital'
 { id: 214, name: 'Sara Gastro & Laparoscopic Hospital', type: 'hospital', distance: '', address: 'Bhubaneswar', phone: 'N/A', lat: 20.25398, lng: 85.84584 },
 { id: 215, name: 'Dr. Abhay Sahoo', type: 'doctors', distance: '', address: 'Bhubaneswar', phone: 'N/A', lat: 20.29623, lng: 85.82521 },
 { id: 216, name: 'Munna medicine store', type: 'hospital', distance: '', address: 'Bhubaneswar', phone: 'N/A', lat: 20.23996, lng: 85.83329 }
+];
+export const AUDIO_LIBRARY = [
+  { type: 'audio', title: "Dear Zindagi", duration: "12m", mood: "Calm", src: "/music/DearZindagi.mp3", img: "/music/DearZindagi.jpeg" },
+  { type: 'audio', title: "EdSheeran Perfect ", duration: "15m", mood: "Grounded", src: "/music/EdSheeranPerfect.mp3", img: "/music/EdSheeranPerfect.jpeg" },
+  { type: 'audio', title: "Laadki ", duration: "8m", mood: "Fresh", src: "/music/Laadki.mp3", img: "/music/Laadki.jpeg" }
+  , { type: 'audio', title: "Meri Duniya Tuhi Re  ", duration: "12m", mood: "Calm", src: "/music/MeriDuniyaTuhiRe.mp3", img: "/music/MeriDuniyaTuhiRe.jpeg" },
+  { type: 'audio', title: "Until I Found You  ", duration: "15m", mood: "Grounded", src: "/music/UntilIFoundYou.mp3", img: "/music/UntilIFoundYou.jpeg" },
+  { type: 'audio', title: "ColdPlay Yellow", duration: "8m", mood: "Fresh", src: "/music/ColdPlayYellow.mp3", img: "/music/ColdPlayYellow.jpeg" }
+]
+export const RECIPES = [
+  {
+    id: 'r1',
+    title: 'Golden Ginger Congee',
+    duration: '20 min',
+    intensity: 'Gentle',
+    mood: 'Soothing',
+    tags: ['Digestion', 'Warming'],
+    description: 'A traditional rice porridge infused with fresh ginger and turmeric to soothe the digestive system.',
+    image: '/SafeRecipies/GoldenGingerCongee.jpg'
+  },
+  {
+    id: 'r2',
+    title: 'Iron-Boost Beetroot Hummus',
+    duration: '10 min',
+    intensity: 'Fresh',
+    mood: 'Energizing',
+    tags: ['Iron', 'Blood Health'],
+    description: 'Vibrant beetroot and chickpea blend to help replenish iron levels naturally.',
+    image: '/SafeRecipies/IronBeetRootHumus.jpg'
+  },
+  {
+    id: 'r3',
+    title: 'Fenugreek Lactation Broth',
+    duration: '45 min',
+    intensity: 'Deep',
+    mood: 'Nurturing',
+    tags: ['Lactation', 'Recovery'],
+    description: 'Slow-simmered vegetable broth with fenugreek seeds and fennel to support healthy milk supply.',
+    image: '/SafeRecipies/FenugreekLactationBroath.jpg'
+  },
+  {
+    id: 'r4',
+    title: 'Warm Spinach & Date Salad',
+    duration: '15 min',
+    intensity: 'Light',
+    mood: 'Balanced',
+    tags: ['Fiber', 'Energy'],
+    description: 'Sautéed baby spinach with sweet dates and toasted sesame for a quick energy boost.',
+    image: '/SafeRecipies/SpinachDateSalad.jpg'
+  },
+  {
+    id: 'r5',
+    title: 'Turmeric Golden Milk',
+    duration: '5 min',
+    intensity: 'Gentle',
+    mood: 'Restorative',
+    tags: ['Anti-inflammatory', 'Sleep'],
+    description: 'The classic healing drink with black pepper for maximum turmeric absorption.',
+    image: '/SafeRecipies/TurmericGolldenMilk.jpg'
+  },
+  {
+    id: 'r6',
+    title: 'Oat & Flaxseed Energy Bites',
+    duration: '15 min',
+    intensity: 'Easy',
+    mood: 'Joyful',
+    tags: ['Snack', 'Omega-3'],
+    description: 'No-bake bites with oats, flax, and honey for sustained energy throughout the day.',
+    image: '/SafeRecipies/OAtFlaxSeedBites.jpg'
+  },
+  {
+    id: 'r7',
+    title: 'Mung Dal Healing Soup',
+    duration: '30 min',
+    intensity: 'Moderate',
+    mood: 'Grounding',
+    tags: ['Protein', 'Easy Digest'],
+    description: 'Lightly spiced yellow lentils, perfect for the first few weeks of postpartum recovery.',
+    image: '/SafeRecipies/MoongDalSoup.jpg'
+  },
+  {
+    id: 'r8',
+    title: 'Sesame & Jaggery Ladoo',
+    duration: '20 min',
+    intensity: 'Traditional',
+    mood: 'Comforting',
+    tags: ['Calcium', 'Sweet'],
+    description: 'A traditional Indian treat rich in calcium and iron for bone health.',
+    image: '/SafeRecipies/SesameJAggeryLaddo.jpg'
+  },
+  {
+    id: 'r9',
+    title: 'Papaya & Mint Smoothie',
+    duration: '5 min',
+    intensity: 'Cooling',
+    mood: 'Refreshing',
+    tags: ['Enzymes', 'Hydration'],
+    description: 'Ripe papaya with fresh mint to aid digestion and provide a cooling effect.',
+    image: '/SafeRecipies/PapayaMintSmoothie.jpg'
+  },
+  {
+    id: 'r10',
+    title: 'Roasted Cumin Buttermilk',
+    duration: '2 min',
+    intensity: 'Light',
+    mood: 'Digestive',
+    tags: ['Probiotic', 'Cooling'],
+    description: 'A refreshing probiotic drink with roasted cumin to prevent bloating.',
+    image: '/SafeRecipies/RoastedCuminButterMilk.jpg'
+  }
+];
+export const VIDEO_LIBRARY = [
+  {
+    id: 'v1',
+    title: 'Understanding the Fourth Trimester',
+    duration: '8:24',
+    category: 'Mental Health',
+    youtubeId: 'kAUBBwj2GxA',
+    thumbnail: '/VIDEOS/MaaMummyAurAchaar.jpg',
+  },
+  {
+    
+    id: 'v2',
+    title: 'Postpartum Physical Recovery Guide',
+    duration: '11:02',
+    category: 'Physical Recovery',
+    youtubeId: '7gL5xH1Fh9Q',
+    thumbnail: '/VIDEOS/MomViddseecom.jpg',
+  },
+  {
+    id: 'v3',
+    title: 'Nutrition & Iron Recovery After Birth',
+    duration: '6:15',
+    category: 'Nutrition',
+    youtubeId: '2NnN9N3kK1A',
+    thumbnail: '/VIDEOS/TheChoice.jpg',
+  },
+  {
+    id: 'v4',
+    title: 'Safe Exercises: Diastasis Recti Recovery',
+    duration: '14:30',
+    category: 'Physical Recovery',
+    youtubeId: 'kAUBBwj2GxA',
+    thumbnail: '/VIDEOS/TheChoice.jpg',
+  },
+  {
+    id: 'v5',
+    title: 'Breastfeeding Basics & Latching Tips',
+    duration: '9:47',
+    category: 'Newborn Care',
+    youtubeId: 'kAUBBwj2GxA',
+    thumbnail: 'https://picsum.photos/seed/postpartum5/600/400',
+  },
+  {
+    id: 'v6',
+    title: 'Managing Postpartum Anxiety & Mood',
+    duration: '12:18',
+    category: 'Mental Health',
+    youtubeId: 'kAUBBwj2GxA',
+    thumbnail: 'https://picsum.photos/seed/postpartum6/600/400',
+  },
+];
+export const TRUSTED_PICKS = [
+  { brand: "Mamaearth", product: "Plant-Based Baby Wipes", reason: "Toxin-free & Biodegradable", tag: "Editor's Choice" },
+  { brand: "FirstCry", product: "Organic Nursing Pads", reason: "Super absorbent, naturally breathable", tag: "Best Seller" },
+  { brand: "Himalaya", product: "Ayurvedic Diaper Cream", reason: "Gentle healing since 1930", tag: "Trusted Heritage" }
+];
+export const ARTICLES = [
+  { title: "Understanding the 'Fourth Trimester'", category: "Mental Health", readTime: "5 min", summary: "The transition from pregnancy to motherhood requires a different kind of clinical grace and internal patience." },
+  { title: "C-Section Incision Care 101", category: "Physical Recovery", readTime: "8 min", summary: "Gentle techniques to ensure a smooth scar healing process and identifying early warning signs of infection." },
+  { title: "Nutrients for Iron Recovery", category: "Nutrition", readTime: "4 min", summary: "Traditional Indian superfoods to rebuild your vitality after blood loss, optimized for modern lifestyles." },
+  { title: "Diastasis Recti Self-Check", category: "Physical Recovery", readTime: "6 min", summary: "A step-by-step clinical guide to assessing abdominal separation and safe restorative exercises." },
+];
+export const COMMUNITY_INSIGHTS = [
+  {
+    category: "Emotional Resilience",
+    stat: "78%",
+    insight: "of mothers in our community found that daily 5-minute grounding loops significantly reduced evening anxiety.",
+    tag: "Mental Wellness"
+  },
+  {
+    category: "Physical Recovery",
+    stat: "92%",
+    insight: "of postpartum users reported feeling more empowered after their first guided pelvic floor session.",
+    tag: "Care Journey"
+  },
+  {
+    category: "Peer Support",
+    stat: "1,200+",
+    insight: "Sisters Circles formed this month, connecting women across diverse motherhood paths.",
+    tag: "Care Connect"
+  },
+  {
+    category: "Nutrition",
+    stat: "Top Choice",
+    insight: "Warm Ginger & Turmeric tea remains the most logged comfort food during the first month postpartum.",
+    tag: "Nutrition"
+  }
 ];

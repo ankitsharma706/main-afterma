@@ -10,38 +10,13 @@ import {
     Users,
     X
 } from 'lucide-react';
-import { useState } from 'react';
-import { COLORS } from '../constants';
+import { useEffect, useState } from 'react';
+import { COLORS, COMMUNITY_INSIGHTS } from '../constants';
 
-const COMMUNITY_INSIGHTS = [
-  {
-    category: "Emotional Resilience",
-    stat: "78%",
-    insight: "of mothers in our community found that daily 5-minute grounding loops significantly reduced evening anxiety.",
-    tag: "Mental Wellness"
-  },
-  {
-    category: "Physical Recovery",
-    stat: "92%",
-    insight: "of postpartum users reported feeling more empowered after their first guided pelvic floor session.",
-    tag: "Care Journey"
-  },
-  {
-    category: "Peer Support",
-    stat: "1,200+",
-    insight: "Sisters Circles formed this month, connecting women across diverse motherhood paths.",
-    tag: "Care Connect"
-  },
-  {
-    category: "Nutrition",
-    stat: "Top Choice",
-    insight: "Warm Ginger & Turmeric tea remains the most logged comfort food during the first month postpartum.",
-    tag: "Nutrition"
-  }
-];
+
 
 const SurveyCommunityData = ({ profile }) => {
-  const theme = COLORS[profile.accent] || COLORS.PINK;
+  const theme = COLORS?.[profile?.accent] || COLORS.PINK;
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyStep, setSurveyStep] = useState(1);
   const [surveyData, setSurveyData] = useState({
@@ -56,6 +31,9 @@ const SurveyCommunityData = ({ profile }) => {
     setShowSurvey(false);
     setSurveyStep(1);
   };
+  useEffect(() => {
+    document.body.style.overflow = showSurvey ? "hidden" : "auto";
+  }, [showSurvey]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 lg:space-y-20 pb-32 animate-in fade-in duration-700">
@@ -65,7 +43,7 @@ const SurveyCommunityData = ({ profile }) => {
           <span className="text-[10px] font-bold uppercase tracking-widest">Community Wisdom</span>
         </div>
         <h2 className="text-4xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-          Voices of Motherhood — Real Experiences, Real Wisdom.
+          Voices of Motherhood <br/>  Real Experiences, Real Wisdom.
         </h2>
         <p className="text-slate-400 font-medium text-lg lg:text-xl leading-relaxed italic">
           Anonymized, curated insights from thousands of unique journeys, helping us all heal together.
@@ -74,7 +52,7 @@ const SurveyCommunityData = ({ profile }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {COMMUNITY_INSIGHTS.map((item, idx) => (
-          <div key={idx} className="bg-white p-10 rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+          <div key={item.category} className="bg-white p-10 rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
             <div className="relative z-10 space-y-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
