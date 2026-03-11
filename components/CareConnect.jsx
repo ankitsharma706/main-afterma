@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { COLORS, EXPERT_DATA, HELPLINES, INSURANCE_PLANS, NGO_DATA } from '../constants';
-import { communitiesAPI, doctorsAPI } from '../services/api';
+import { communitiesAPI, doctorsAPI, insuranceAPI, ngoAPI } from '../services/api';
 import { translations } from '../translations';
 import ExpertDashboard from './ExpertDashboard';
 import VerificationFlow from './VerificationFlow';
@@ -26,7 +26,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
   const lang = profile?.journeySettings?.language || 'english';
   const t = translations[lang];
   const [activeSubTab, setActiveSubTab] = useState('Community');
-  const [expertFilter, setExpertFilter] = useState('Physiotherapy');
+  const [expertFilter, setExpertFilter] = useState('All');
   const [showVerification, setShowVerification] = useState(false);
   const [verificationRole, setVerificationRole] = useState('expert');
   const theme = COLORS[profile?.accent] || COLORS.PINK;
@@ -39,6 +39,10 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
   const [liveExperts, setLiveExperts] = useState([]);
   const [expertsLoading, setExpertsLoading] = useState(false);
   const [commLoading, setCommLoading] = useState(false);
+  const [liveNgos, setLiveNgos] = useState([]);
+  const [ngosLoading, setNgosLoading] = useState(false);
+  const [liveInsurance, setLiveInsurance] = useState([]);
+  const [insuranceLoading, setInsuranceLoading] = useState(false);
 
   // Fetch doctors from backend on mount
   useEffect(() => {
@@ -94,6 +98,61 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
       }
     };
     loadCommunities();
+  }, []);
+
+  // Fetch NGOs from backend on mount
+  useEffect(() => {
+    const loadNgos = async () => {
+      setNgosLoading(true);
+      try {
+        const res = await ngoAPI.getAll();
+        const ngos = res?.data?.ngos || res?.ngos || (Array.isArray(res?.data) ? res.data : []);
+        if (Array.isArray(ngos) && ngos.length > 0) {
+          setLiveNgos(ngos.map(n => ({
+            name: n.name || n.title,
+            area: n.area || n.location || 'Pan India',
+            contact: n.contact || n.helpline || 'Verified',
+            description: n.description || '',
+            link: n.link || '#'
+          })));
+        }
+      } catch (err) {
+        console.warn('NGO fetch failed:', err?.message);
+      } finally {
+        setNgosLoading(false);
+      }
+    };
+    loadNgos();
+  }, []);
+
+  // Fetch Insurance from backend on mount
+  useEffect(() => {
+    const loadInsurance = async () => {
+      setInsuranceLoading(true);
+      try {
+        const res = await insuranceAPI.getAll();
+        const plans = res?.data?.plans || res?.plans || (Array.isArray(res?.data) ? res.data : []);
+        if (Array.isArray(plans) && plans.length > 0) {
+          setLiveInsurance(plans.map(p => ({
+            bank: p.provider || p.name,
+            logo: (p.provider || p.name || 'A')[0],
+            plan: p.plan_name || 'Standard Plan',
+            eligibility: p.eligibility || 'All New Mothers',
+            approval: p.approval_rate || '95%',
+            processing: p.processing_time || '48 hrs',
+            count: p.client_count || '10k+',
+            range: p.coverage_range || '₹5L - ₹50L',
+            highlights: p.features || ['Maternity Coverage', 'Cashless Claims', 'Newborn Care'],
+            theme: p.theme_color || 'BLUE'
+          })));
+        }
+      } catch (err) {
+        console.warn('Insurance fetch failed:', err?.message);
+      } finally {
+        setInsuranceLoading(false);
+      }
+    };
+    loadInsurance();
   }, []);
 
   const displayExperts = liveExperts?.length ? liveExperts : EXPERT_DATA;
@@ -206,7 +265,13 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     }
   };
 
+  const categories = useMemo(() => {
+    const cats = new Set(displayExperts.map(e => e.category));
+    return ['All', ...Array.from(cats)];
+  }, [displayExperts]);
+
   const filteredExperts = useMemo(() => {
+    if (expertFilter === 'All') return displayExperts;
     return displayExperts.filter(e => e.category === expertFilter);
   }, [displayExperts, expertFilter]);
 
@@ -288,9 +353,15 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
         {activeSubTab === 'Experts' && (
           <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100 w-fit">
-                {['Physiotherapy', 'OB-GYN', 'Lactation'].map((cat) => (
-                  <button key={cat} onClick={() => setExpertFilter(cat)} className={`px-8 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all ${expertFilter === cat ? 'bg-white shadow-md text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}>{cat}</button>
+              <div className="flex flex-wrap gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100 w-fit">
+                {categories.map((cat) => (
+                  <button 
+                    key={cat} 
+                    onClick={() => setExpertFilter(cat)} 
+                    className={`px-6 md:px-8 py-2.5 rounded-xl font-bold text-[10px] md:text-[11px] uppercase tracking-widest transition-all ${expertFilter === cat ? 'bg-white shadow-md text-slate-900 border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    {cat}
+                  </button>
                 ))}
               </div>
               {!isPending && (
@@ -337,7 +408,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
         {activeSubTab === 'NGOs' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-500">
-            {NGO_DATA.map(ngo => (
+            {(liveNgos.length ? liveNgos : NGO_DATA).map(ngo => (
               <div key={ngo.name} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between group hover:translate-y-[-6px] h-full">
                 <div className="space-y-8">
                   <div className="p-5 bg-pink-50/50 text-pink-500 rounded-[1.75rem] w-fit border border-pink-100 shadow-inner"><Heart size={28} strokeWidth={2.5} /></div>
@@ -362,7 +433,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
         {activeSubTab === 'Insurance' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 animate-in fade-in duration-500">
-            {INSURANCE_PLANS.map((plan) => {
+            {(liveInsurance.length ? liveInsurance : INSURANCE_PLANS).map((plan) => {
               const pTheme = COLORS[plan.theme] || theme;
               return (
                 <div key={plan.bank} className="bg-white p-10 lg:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col group h-full">

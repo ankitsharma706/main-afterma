@@ -46,6 +46,19 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
   const scrollRef = useRef(null);
   const [checkedRituals, setCheckedRituals] = useState({});
   const [showReward, setShowReward] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const theme = COLORS[profile.accent] || COLORS.PINK;
+
+  useEffect(() => {
+    let timer;
+    if (showSuccess) {
+      timer = setTimeout(() => {
+        setShowSuccess(false);
+      }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccess]);
 
   // Boundary check states
   const [showBoundaryCheck, setShowBoundaryCheck] = useState(false);
@@ -98,7 +111,14 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
           })
         });
         setShowBoundaryCheck(false);
-        alert("Boundary check-in completed and saved!");
+        const bQuotes = [
+          "Setting boundaries is an act of self-love and emotional preservation.",
+          "Your inner peace is a priority, and today you've honored it well.",
+          "Healthy boundaries create healthy hearts. Well done on checking in.",
+          "Your emotional well-being matters. Thank you for making space for it."
+        ];
+        window._lastSuccessQuote = bQuotes[Math.floor(Math.random() * bQuotes.length)];
+        setShowSuccess(true);
       } catch (e) {
         console.error(e);
       }
@@ -174,8 +194,6 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
     const s = Math.floor(timeInSeconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
-
-  const theme = COLORS[profile.accent] || COLORS.PINK;
   const isPostpartum = profile.maternityStage === 'Postpartum';
 
   const suggestions = isPostpartum
@@ -225,10 +243,15 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
       setCurrentQuestion(prev => prev + 1);
       setAnswers(newAnswers);
     } else {
-      setShowCheckin(false);
-      setCurrentQuestion(0);
       setAnswers([]);
-      alert("Self-reflection saved. You're doing great.");
+      const epdsQuotes = [
+        "Self-reflection is the first step toward profound emotional healing.",
+        "Your feelings are valid, and your courage to express them is inspiring.",
+        "Nurturing your mind is just as important as nurturing your body.",
+        "You're doing excellent work in honoring your emotional journey."
+      ];
+      window._lastSuccessQuote = epdsQuotes[Math.floor(Math.random() * epdsQuotes.length)];
+      setShowSuccess(true);
     }
   };
 
@@ -240,6 +263,53 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
       setTimeout(() => setShowReward(false), 3000);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-white animate-in fade-in duration-700">
+        <div className="relative max-w-2xl w-full bg-white rounded-[4rem] overflow-hidden animate-in zoom-in-95 duration-700">
+          <div className="h-[35vh] relative bg-slate-50 border-b border-slate-100 overflow-hidden">
+            <img
+              src="/wellness_celebration_figure.png"
+              alt="Wellness Figure"
+              className="w-full h-full object-cover opacity-90"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+          </div>
+
+          <div className="p-10 lg:p-14 text-center space-y-8">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-5 py-2 bg-rose-50 text-rose-600 rounded-full text-xs font-black uppercase tracking-widest border border-rose-100 mb-2">
+                <Heart size={14} /> Sanctuary Updated
+              </div>
+              <h3 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                Reflection <span style={{ color: theme.primary }}>Complete!</span>
+              </h3>
+            </div>
+
+            <div className="relative p-7 bg-slate-50/80 rounded-[2.5rem] border border-slate-100 max-w-sm mx-auto">
+              <p className="text-sm font-bold text-slate-500 italic leading-relaxed">
+                "{window._lastSuccessQuote || "Consistency in mental care is the foundation of lasting health."}"
+              </p>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-white border border-slate-100 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                Support Insight
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowSuccess(false)}
+                className="w-full max-w-xs py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all outline-none"
+              >
+                Return to Sanctuary
+              </button>
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest animate-pulse">Returning in 5 seconds...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 lg:space-y-16 pb-32 animate-in relative">

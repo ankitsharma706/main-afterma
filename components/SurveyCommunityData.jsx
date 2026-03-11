@@ -43,7 +43,7 @@ const SurveyCommunityData = ({ profile }) => {
           <span className="text-[10px] font-bold uppercase tracking-widest">Community Wisdom</span>
         </div>
         <h2 className="text-4xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-          Voices of Motherhood <br/>  Real Experiences, Real Wisdom.
+          Sisterhood of Mothers; By Mothers & Sisters, For You.
         </h2>
         <p className="text-slate-400 font-medium text-lg lg:text-xl leading-relaxed italic">
           Anonymized, curated insights from thousands of unique journeys, helping us all heal together.

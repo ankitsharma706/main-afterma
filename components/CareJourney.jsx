@@ -3,6 +3,7 @@ import {
   Activity,
   Baby,
   BarChart3,
+  Bed,
   Calculator,
   CheckCircle2,
   Clock,
@@ -14,13 +15,15 @@ import {
   Gauge,
   Laugh,
   Moon,
+  Pill,
   Play,
   Smile,
   Target,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { COLORS } from '../constants';
 import { periodAPI } from '../services/api';
 import { translations } from '../translations';
@@ -29,9 +32,13 @@ import LactationLog from './LactationLog';
 
 const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerciseLogs, setExerciseLogs, logs, onAddLog }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
-  const [activeTab, setActiveTab] = useState('Journey');
+
+  // Read ?tab= from URL to auto-select tab (e.g. from Dashboard "Log Moment")
+  const urlTab = new URLSearchParams(location.search).get('tab');
+  const [activeTab, setActiveTab] = useState(urlTab || 'Journey');
   const [showReport, setShowReport] = useState(false);
 
   const [showTTCLogic, setShowTTCLogic] = useState(false);
@@ -39,6 +46,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   const [lastPeriod, setLastPeriod] = useState('');
   const [ttcResult, setTtcResult] = useState(null);
   const [periodLogs, setPeriodLogs] = useState([]);
+  const [showCommitSuccess, setShowCommitSuccess] = useState(false);
 
   useEffect(() => {
     const fetchPeriodLogs = async () => {
@@ -61,13 +69,29 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
     if (profile.authenticated) fetchPeriodLogs();
   }, [profile.authenticated]);
 
+  useEffect(() => {
+    let timer;
+    if (showCommitSuccess) {
+      timer = setTimeout(() => {
+        setShowCommitSuccess(false);
+      }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [showCommitSuccess]);
+
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isTTC = profile.maternityStage === 'TTC';
 
   const [quickLog, setQuickLog] = useState({
     date: new Date().toISOString().split('T')[0],
-    periodFlow: 'None', isOvulating: false, crampsLevel: 0, moodLevel: 5, symptoms: [], notes: ''
+    periodFlow: 'None', isOvulating: false, crampsLevel: 0, moodLevel: 5,
+    painLevel: 0, energyLevel: 5, waterIntake: '',
+    symptoms: [], notes: '', sleepPattern: '', ovulationWindow: false, medications: false
   });
+
+  const WATER_RANGES = ['250 ml', '500 ml', '750 ml', '1L', '1.5L', '2L','3L','4L','5L+'];
+
+  const SLEEP_RANGES = ['4-5 hrs', '5-7 hrs', '7-9 hrs', '9-12 hrs','12-15 hrs','15+ hrs'];
 
   const SYMPTOMS = ['Nausea', 'Aching', 'Swelling', 'Insomnia', 'Cramps', 'Bloating', 'Headache', 'Fatigue', 'Spotting', 'Tender Breasts'];
 
@@ -135,13 +159,31 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   };
 
   const handleCommitEntry = async () => {
+    const successQuotes = [
+      "Your consistency today is building a stronger, healthier tomorrow.",
+      "Tracking your cycle is a powerful act of self-care and medical awareness.",
+      "Every choice you make to track your health is a step toward profound self-wisdom.",
+      "Nurturing your body is the highest form of clinical and personal excellence.",
+      "Your data today helps create a clearer picture of your long-term wellness."
+    ];
+    const randomQuote = successQuotes[Math.floor(Math.random() * successQuotes.length)];
+    window._lastSuccessQuote = randomQuote;
+
     try {
       if (!quickLog.date) { alert('Please select a date.'); return; }
       const payload = {
         cycle_start: quickLog.date,
         flow_pattern: quickLog.periodFlow === 'None' ? null : quickLog.periodFlow.toLowerCase(),
         symptoms: quickLog.symptoms,
-        notes: quickLog.notes
+        notes: quickLog.notes,
+        sleep_pattern: quickLog.sleepPattern || null,
+        ovulation_window: quickLog.ovulationWindow,
+        medications: quickLog.medications,
+        mood_level: quickLog.moodLevel,
+        pain_level: quickLog.painLevel,
+        energy_level: quickLog.energyLevel,
+        water_intake: quickLog.waterIntake || null,
+        cramps_level: quickLog.crampsLevel
       };
       const res = await periodAPI.create(payload);
       const newBackendLog = res.data?.log || payload;
@@ -153,10 +195,12 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
         notes: quickLog.notes
       };
       setPeriodLogs(prev => [...prev, newMappedLog].sort((a, b) => a.timestamp - b.timestamp));
-      alert('Period log saved successfully!');
+      setShowCommitSuccess(true);
       setQuickLog({
         date: new Date().toISOString().split('T')[0],
-        periodFlow: 'None', isOvulating: false, crampsLevel: 0, moodLevel: 5, symptoms: [], notes: ''
+        periodFlow: 'None', isOvulating: false, crampsLevel: 0, moodLevel: 5,
+        painLevel: 0, energyLevel: 5, waterIntake: '',
+        symptoms: [], notes: '', sleepPattern: '', ovulationWindow: false, medications: false
       });
     } catch (err) {
       console.error(err);
@@ -165,6 +209,60 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   };
 
   const progress = activities.length > 0 ? (profile.completedActivities.length / activities.length) * 100 : 0;
+
+  if (showCommitSuccess) {
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-white animate-in fade-in duration-700">
+        <div className="relative max-w-2xl w-full bg-white rounded-[4rem] overflow-hidden animate-in zoom-in-95 duration-700">
+          <div className="h-[40vh] relative bg-slate-50 border-b border-slate-100 overflow-hidden">
+            <img
+              src="/wellness_celebration_figure.png"
+              alt="Wellness Figure"
+              className="w-full h-full object-cover opacity-90"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+          </div>
+
+          <div className="p-10 lg:p-16 text-center space-y-10">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black uppercase tracking-widest border border-emerald-100 mb-2">
+                <CheckCircle2 size={14} /> Journey Updated
+              </div>
+              <h3 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                You have filled today's <br/><span style={{ color: theme.primary }}>Period Log!</span>
+              </h3>
+            </div>
+
+            <div className="relative p-8 bg-slate-50/80 rounded-[3rem] border border-slate-100 max-w-md mx-auto">
+              <p className="text-base font-bold text-slate-500 italic leading-relaxed">
+                "{window._lastSuccessQuote || "Consistency in care is the foundation of lasting health."}"
+              </p>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Clinical Insight
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowCommitSuccess(false)}
+                className="w-full max-w-sm py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl hover:shadow-emerald-100/50 hover:-translate-y-1 active:scale-95 transition-all outline-none"
+              >
+                Continue Journey
+              </button>
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest animate-pulse">Returning in 5 seconds...</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowCommitSuccess(false)}
+            className="absolute top-8 right-8 p-4 bg-white/80 backdrop-blur-md rounded-2xl text-slate-400 hover:text-slate-900 shadow-sm border border-slate-100 transition-all active:scale-90"
+          >
+            <X size={24} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 lg:space-y-12 pb-32 animate-in relative">
@@ -222,21 +320,32 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                   />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Mood Profile</label>
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Mood Profile</label>
+                    <button
+                      onClick={() => navigate('/mood-check')}
+                      className="text-xs font-bold italic transition-all hover:scale-105 active:scale-95"
+                      style={{ color: theme.primary }}
+                    >
+                      check Your Mood →
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
                     {[
-                      { val: 2, icon: <Frown size={22} />, activeColor: 'bg-rose-100 border-rose-400 text-rose-500', textColor: 'text-rose-500', label: 'Low' },
-                      { val: 5, icon: <Smile size={22} />, activeColor: 'bg-amber-100 border-amber-400 text-amber-500', textColor: 'text-amber-500', label: 'Balanced' },
-                      { val: 8, icon: <Laugh size={22} />, activeColor: 'bg-emerald-100 border-emerald-400 text-emerald-500', textColor: 'text-emerald-500', label: 'Radiant' }
+                      { val: 2, icon: <Frown size={18} />, activeColor: 'bg-rose-100 border-rose-400 text-rose-500', textColor: 'text-rose-500', label: 'Very Low' },
+                      { val: 4, icon: <Smile size={18} />, activeColor: 'bg-amber-100 border-amber-400 text-amber-500', textColor: 'text-amber-500', label: 'Low' },
+                      { val: 6, icon: <Smile size={18} />, activeColor: 'bg-emerald-50 border-emerald-400 text-emerald-500', textColor: 'text-emerald-500', label: 'Balanced' },
+                      { val: 8, icon: <Laugh size={18} />, activeColor: 'bg-emerald-100 border-emerald-400 text-emerald-500', textColor: 'text-emerald-500', label: 'Good' },
+                      { val: 10, icon: <Laugh size={18} />, activeColor: 'bg-emerald-500 border-emerald-600 text-white', textColor: 'text-emerald-600', label: 'Radiant' }
                     ].map(({ val, icon, activeColor, textColor, label }) => {
                       const isActive = quickLog.moodLevel === val;
                       return (
                         <button key={val}
                           onClick={() => setQuickLog(p => ({ ...p, moodLevel: val }))}
-                          className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border-2 transition-all duration-200 min-w-[72px] ${isActive ? `${activeColor} shadow-md scale-105` : `bg-white border-slate-100 ${textColor} hover:scale-105 hover:border-slate-200`}`}
+                          className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl border-2 transition-all duration-300 ${isActive ? `${activeColor} shadow-md scale-105 z-10` : `bg-white border-slate-100 ${textColor} hover:border-slate-200`}`}
                         >
-                          {icon}
-                          <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${isActive ? '' : 'text-slate-400'}`}>{label}</span>
+                          <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>{icon}</div>
+                          <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-tighter text-center leading-[1] px-0.5 transition-colors ${isActive ? '' : 'text-slate-400'}`}>{label}</span>
                         </button>
                       );
                     })}
@@ -253,6 +362,150 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                       className={`px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest border transition-all ${quickLog.periodFlow === f ? 'bg-rose-500 border-rose-500 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
                     >{f}</button>
                   ))}
+                </div>
+              </div>
+
+              {/* Sleep Pattern */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Bed size={12} /> Sleep Pattern</label>
+                <div className="flex flex-wrap gap-2.5">
+                  {SLEEP_RANGES.map(r => (
+                    <button key={r}
+                      onClick={() => setQuickLog(p => ({ ...p, sleepPattern: r }))}
+                      className={`px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest border transition-all active:scale-95 ${quickLog.sleepPattern === r ? 'bg-indigo-500 border-indigo-500 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                    >{r}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ovulation Window + Medication Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Ovulation Window Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-50 rounded-xl text-amber-500"><Target size={16} /></div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">Ovulation Window</span>
+                      <span className="text-[9px] font-medium text-slate-400">{quickLog.ovulationWindow ? 'Active' : 'Inactive'}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setQuickLog(p => ({ ...p, ovulationWindow: !p.ovulationWindow }))}
+                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${quickLog.ovulationWindow ? 'bg-amber-400' : 'bg-slate-200'}`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${quickLog.ovulationWindow ? 'left-[26px]' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
+                {/* Medication Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-50 rounded-xl text-emerald-500"><Pill size={16} /></div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">Medications</span>
+                      <span className="text-[9px] font-medium text-slate-400">{quickLog.medications ? 'Taken' : 'Not Taken'}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setQuickLog(p => ({ ...p, medications: !p.medications }))}
+                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${quickLog.medications ? 'bg-emerald-400' : 'bg-slate-200'}`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${quickLog.medications ? 'left-[26px]' : 'left-0.5'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pain Intensity Slider */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Activity size={12} /> Pain Intensity</label>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">Level</span>
+                    <span className="text-xl font-black tabular-nums" style={{ color: quickLog.painLevel > 6 ? '#ef4444' : quickLog.painLevel > 3 ? '#f97316' : theme.primary }}>{quickLog.painLevel}</span>
+                  </div>
+                  <div className="relative">
+                    <div className="h-1.5 rounded-full bg-slate-200 relative overflow-visible">
+                      <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-200" style={{ width: `${quickLog.painLevel * 10}%`, background: quickLog.painLevel > 6 ? 'linear-gradient(90deg, #fb7185, #ef4444)' : `linear-gradient(90deg, ${theme.primary}88, ${theme.primary})` }} />
+                    </div>
+                    <input type="range" min="0" max="10" value={quickLog.painLevel}
+                      onChange={e => setQuickLog(p => ({ ...p, painLevel: parseInt(e.target.value) }))}
+                      className="absolute inset-0 w-full opacity-0 cursor-pointer h-1.5" style={{ margin: 0 }}
+                    />
+                    <div
+                      className="absolute top-1/2 w-4 h-4 rounded-full bg-white border-2 shadow-md -translate-y-1/2 pointer-events-none transition-all"
+                      style={{ left: `calc(${quickLog.painLevel * 10}% - 8px)`, borderColor: quickLog.painLevel > 6 ? '#ef4444' : theme.primary, boxShadow: `0 2px 8px ${quickLog.painLevel > 6 ? 'rgba(239,68,68,0.3)' : theme.primary + '44'}` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                    <span>None</span><span>Severe</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Energy Vitality Slider */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Zap size={12} /> Energy Vitality</label>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">Level</span>
+                    <span className="text-xl font-black tabular-nums" style={{ color: quickLog.energyLevel > 6 ? '#10b981' : theme.primary }}>{quickLog.energyLevel}</span>
+                  </div>
+                  <div className="relative">
+                    <div className="h-1.5 rounded-full bg-slate-200 relative overflow-visible">
+                      <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-200" style={{ width: `${quickLog.energyLevel * 10}%`, background: quickLog.energyLevel > 6 ? 'linear-gradient(90deg, #34d399, #10b981)' : `linear-gradient(90deg, ${theme.primary}88, ${theme.primary})` }} />
+                    </div>
+                    <input type="range" min="0" max="10" value={quickLog.energyLevel}
+                      onChange={e => setQuickLog(p => ({ ...p, energyLevel: parseInt(e.target.value) }))}
+                      className="absolute inset-0 w-full opacity-0 cursor-pointer h-1.5" style={{ margin: 0 }}
+                    />
+                    <div
+                      className="absolute top-1/2 w-4 h-4 rounded-full bg-white border-2 shadow-md -translate-y-1/2 pointer-events-none transition-all"
+                      style={{ left: `calc(${quickLog.energyLevel * 10}% - 8px)`, borderColor: quickLog.energyLevel > 6 ? '#10b981' : theme.primary, boxShadow: `0 2px 8px ${quickLog.energyLevel > 6 ? 'rgba(16,185,129,0.3)' : theme.primary + '44'}` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                    <span>Drained</span><span>Vibrant</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Water Intake */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Droplet size={12} /> Water Intake</label>
+                <div className="flex flex-wrap gap-2.5">
+                  {WATER_RANGES.map(r => (
+                    <button key={r}
+                      onClick={() => setQuickLog(p => ({ ...p, waterIntake: r }))}
+                      className={`px-4 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest border transition-all active:scale-95 ${quickLog.waterIntake === r ? 'bg-blue-500 border-blue-500 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                    >{r}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cramps Severity */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Cramps Severity</label>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">Severity</span>
+                    <span className="text-xl font-black text-rose-500 tabular-nums">{quickLog.crampsLevel}</span>
+                  </div>
+                  <div className="relative">
+                    <div className="h-1.5 rounded-full bg-slate-200 relative overflow-visible">
+                      <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-200" style={{ width: `${quickLog.crampsLevel * 10}%`, background: quickLog.crampsLevel > 6 ? 'linear-gradient(90deg, #fb7185, #ef4444)' : 'linear-gradient(90deg, #fda4af, #f43f5e)' }} />
+                    </div>
+                    <input type="range" min="0" max="10" value={quickLog.crampsLevel}
+                      onChange={e => setQuickLog(p => ({ ...p, crampsLevel: parseInt(e.target.value) }))}
+                      className="absolute inset-0 w-full opacity-0 cursor-pointer h-1.5" style={{ margin: 0 }}
+                    />
+                    <div
+                      className="absolute top-1/2 w-4 h-4 rounded-full bg-white border-2 border-rose-400 shadow-md -translate-y-1/2 pointer-events-none transition-all"
+                      style={{ left: `calc(${quickLog.crampsLevel * 10}% - 8px)`, boxShadow: '0 2px 8px rgba(244,63,94,0.3)' }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                    <span>None</span><span>Severe</span>
+                  </div>
                 </div>
               </div>
 
@@ -320,7 +573,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                 <div className="space-y-3">
                   <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cycle Variance</p>
-                    <p className="text-2xl font-black text-slate-900">±{profile.periodActiveDays || 2} Days</p>
+                    <p className="text-2xl font-black text-slate-900">{profile.periodActiveDays || 6} Days</p>
                     <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Clinical Stability</p>
                   </div>
                   <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">

@@ -275,7 +275,7 @@ const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
                 </div>
               ))}
           </div>
-          <button className="w-full py-5 border-2 border-dashed border-slate-200 rounded-3xl font-bold text-sm text-slate-500 hover:border-emerald-200 hover:text-emerald-600 transition-all active:scale-95">{t.dashboard.recipes}</button>
+          <button className="w-full py-5 border-2 border-dashed border-slate-200 rounded-3xl font-bold text-sm text-slate-500 hover:border-emerald-200 hover:text-emerald-600 transition-all active:scale-95" onClick={() => navigate('/recipes')}>{t.dashboard.recipes}</button>
         </div>
       </div>
     </div>

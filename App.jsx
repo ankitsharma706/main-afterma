@@ -10,13 +10,13 @@ import Education from './components/Education';
 import ExpertAnalytics from './components/ExpertAnalytics';
 import ExpertDashboard from './components/ExpertDashboard';
 import ExpertSettings from './components/ExpertSettings';
-import HealthLogModal from './components/HealthLogModal';
 import HealthLogs from './components/HealthLogs';
 import HealthReportModal from './components/HealthReportModal';
 import Journal from './components/Journal';
 import LactationLog from './components/LactationLog';
 import ArticlePage from './components/LearningCenter/ArticlePage';
 import LocationPage from './components/LocationPage';
+import LogMomentModal from './components/LogMomentModal';
 import Membership from './components/Membership';
 import MentalWellness from './components/MentalWellness';
 import Navigation from './components/Navigation';
@@ -31,6 +31,7 @@ import MomKart from './components/Store';
 import SurveyCommunityData from './components/SurveyCommunityData';
 import { COLORS, RECOVERY_DATABASE } from './constants';
 import JourneySessionPage from './pages/JourneySessionPage';
+import MoodCheckPage from './pages/MoodCheckPage';
 import { authAPI, setUserId } from './services/api';
 import { translations } from './translations';
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -93,11 +94,15 @@ const App = () => {
   const isArticlePage = location.pathname.startsWith('/learning-center/');
   // Handle /care-journey/session/:activityId — full-page, no nav chrome
   const isSessionPage = location.pathname.startsWith('/care-journey/session');
+  // Handle /mood-check — full-page mood quiz
+  const isMoodCheckPage = location.pathname === '/mood-check';
   const currentView = isSessionPage
     ? 'journey-session'
-    : isArticlePage
-      ? 'learning-center'
-      : (path || (profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified' ? 'expert-dashboard' : (profile.authenticated ? 'dashboard' : 'education')));
+    : isMoodCheckPage
+      ? 'mood-check'
+      : isArticlePage
+        ? 'learning-center'
+        : (path || (profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified' ? 'expert-dashboard' : (profile.authenticated ? 'dashboard' : 'education')));
 
   const setView = (viewPath) => {
     navigate(`/${viewPath}`);
@@ -111,6 +116,7 @@ const App = () => {
   const [showJournal, setShowJournal] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   // const lastClickRef = useRef(0);
   const sosTimerRef = useRef(null);
 
@@ -386,6 +392,11 @@ const App = () => {
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
   const triageMessagesMemo = useMemo(() => triageMessages, [triageMessages]);
 
+  // ── Mood Check Page: standalone, no sidebar/header chrome ──
+  if (isMoodCheckPage) {
+    return <MoodCheckPage profile={profile} />;
+  }
+
   // ── Journey Session: render standalone, no sidebar/header chrome ──
   if (isSessionPage) {
     return (
@@ -413,10 +424,12 @@ const App = () => {
           onClose={() => setIsMobileMenuOpen(false)}
           onOpenLocation={() => setShowLocationPage(true)}
           onOpenLactation={() => setShowLactationLog(true)}
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={setIsSidebarCollapsed}
         />
       </div>
 
-      <main className="flex-1 lg:ml-64 min-h-screen relative flex flex-col">
+      <main className={`flex-1 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out min-h-screen relative flex flex-col`}>
         <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between border-b border-slate-100 shadow-sm transition-all duration-300">
           <div className="flex items-center gap-3 lg:gap-6 flex-1 max-w-2xl">
             <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 lg:hidden text-gray-500 hover:bg-gray-100 rounded-lg"><Menu size={20} /></button>
@@ -473,7 +486,7 @@ const App = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-x-hidden">
+        <div className="flex-1">
           <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
             {/* Expert Views */}
             {isExpert && currentView === 'expert-dashboard' && <ExpertDashboard profile={profile} onViewReport={() => setShowExpertReport(true)} />}
@@ -483,7 +496,7 @@ const App = () => {
             {/* Mother Views - Restricted for Experts */}
             {!isExpert && (
               <>
-                {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => setShowLogModal(true)} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />}
+                {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => navigate('/carejourney?tab=PeriodLog')} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />}
                 {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
                 {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
                 {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
@@ -534,7 +547,7 @@ const App = () => {
         {showNotifications && <NotificationPanel notifications={notifications} onClose={() => setShowNotifications(false)} onClear={() => setNotifications([])} />}
       </main>
       {showSOS && <SOSOverlay profile={profile} onClose={() => setShowSOS(false)} />}
-      {showLogModal && <HealthLogModal profile={profile} onClose={() => setShowLogModal(false)} onSave={handleSaveLog} />}
+      {showLogModal && <LogMomentModal profile={profile} onClose={() => setShowLogModal(false)} onSave={handleSaveLog} />}
       {showHistoryModal && <RecordsHistoryModal profile={profile} logs={logs} onClose={() => setShowHistoryModal(false)} />}
       {showJournal && <Journal profile={profile} setProfile={setProfile} onClose={() => setShowJournal(false)} />}
       {showLactationLog && <LactationLog profile={profile} onClose={() => setShowLactationLog(false)} />}

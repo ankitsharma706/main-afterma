@@ -37,10 +37,10 @@ const request = async (method, path, body, auth = false) => {
   });
   const json = await res.json().catch(() => null);
 
-  // if (res.status === 401) {
-  //   removeToken();
-  //   window.location.href = "/login";
-  // }
+  if (res.status === 401) {
+    removeToken();
+    window.location.href = "/signin";
+  }
   if (!res.ok) {
     throw new Error(json?.message || `Request failed (${res.status})`);
   }
@@ -366,11 +366,14 @@ export const chatbotAPI = {
     const res = await fetch(`${CHAT_BASE}/api/ai`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, userContext }),
+      body: JSON.stringify({ question, message: question, userContext }),
     });
-    if (!res.ok) throw new Error(`AI request failed: ${res.status}`); if (res.status === 401) {
-      removeToken();
-      window.location.href = "/login";
+    if (!res.ok) {
+      if (res.status === 401) {
+        removeToken();
+        window.location.href = "/signin";
+      }
+      throw new Error(`AI request failed: ${res.status}`);
     }
     return res.json();
   },

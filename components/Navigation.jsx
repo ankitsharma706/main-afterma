@@ -23,8 +23,7 @@ import { useState } from 'react';
 import { COLORS, SLOGAN } from '../constants';
 import { translations } from '../translations';
 
-const Navigation = ({ currentView, setView, profile, logout, onClose, onOpenLocation }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const Navigation = ({ currentView, setView, profile, logout, onClose, onOpenLocation, isCollapsed, setIsCollapsed }) => {
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
@@ -53,7 +52,7 @@ const Navigation = ({ currentView, setView, profile, logout, onClose, onOpenLoca
 
   return (
     <div 
-      className={`bg-white h-screen border-r border-gray-100 flex flex-col shadow-sm relative z-50 overflow-hidden transition-all duration-500 ${
+      className={`bg-white h-screen border-r border-gray-100 flex flex-col shadow-sm relative z-50 overflow-hidden transition-all duration-300 ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
@@ -70,7 +69,7 @@ const Navigation = ({ currentView, setView, profile, logout, onClose, onOpenLoca
         )}
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`p-2 rounded-xl hover:bg-slate-50 text-slate-400 transition-all shrink-0 ${isCollapsed ? 'mx-auto' : ''}`}
+          className={`p-2 rounded-xl hover:bg-slate-50 text-slate-400 transition-all shrink-0 ${isCollapsed ? 'mx-auto py-4 mt-2' : ''}`}
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>

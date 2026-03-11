@@ -15,7 +15,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
   }, [activeCategory]);
 
   return (
-    <div className="animate-in w-full -mt-4 lg:-mt-8 pb-32 relative">
+    <div className="w-full pb-32 relative">
 
       {/* Mobile Floating Cart Button */}
       <button
@@ -30,9 +30,9 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
         )}
       </button>
 
-      {/* Floating Curation Pill — long, non-stretching, always sticky at top */}
-      <div className="sticky top-[80px] z-[50] flex justify-center pointer-events-none mt-2">
-        <div className="pointer-events-auto flex items-center gap-6 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-lg px-8 py-3 rounded-full transition-all duration-300 w-[90%] max-w-5xl">
+      {/* Floating Curation Pill — always sticky below main header */}
+      <div className="sticky top-[64px] lg:top-[80px] z-[50] flex justify-center pointer-events-none py-6">
+        <div className="pointer-events-auto flex items-center gap-6 bg-white/95 backdrop-blur-2xl border border-slate-200 shadow-[0_20px_40px_rgba(0,0,0,0.1)] px-8 py-3 rounded-full transition-all duration-300 w-[94%] max-w-5xl">
           
           {/* Curations label */}
           <div className="hidden sm:flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-r border-slate-100 pr-6 shrink-0">

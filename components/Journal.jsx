@@ -1,6 +1,7 @@
 
 import {
     Calendar,
+    CheckCircle2,
     Heart,
     History,
     PenTool,
@@ -10,7 +11,7 @@ import {
     Trash2,
     X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { COLORS } from '../constants';
 
 const JOURNAL_PROMPTS = [
@@ -28,15 +29,25 @@ const Journal = ({ profile, setProfile, onClose }) => {
   const [view, setView] = useState('write');
   const [promptIndex, setPromptIndex] = useState(0);
   const [entry, setEntry] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [response, setResponse] = useState("");
 
   const theme = COLORS[profile.accent] || COLORS.PINK;
 
+  useEffect(() => {
+    let timer;
+    if (showSuccess) {
+      timer = setTimeout(() => {
+        setShowSuccess(false);
+        setView('history');
+      }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccess]);
+
   const handleNextPrompt = () => {
     setPromptIndex((prev) => (prev + 1) % JOURNAL_PROMPTS.length);
     setEntry("");
-    setIsSubmitted(false);
   };
 
   const handleSubmit = async () => {
@@ -74,7 +85,14 @@ const Journal = ({ profile, setProfile, onClose }) => {
     } else {
       setResponse("Thank you for sharing that piece of your heart. Every word you write is a step toward deeper healing. You are heard, you are seen, and you are doing so well.");
     }
-    setIsSubmitted(true);
+    const journalQuotes = [
+      "Your vulnerability is your strength. Each entry is a milestone in your growth.",
+      "Writing your truth is a powerful medicine. Well done on taking this time for yourself.",
+      "The seeds of healing are found in your reflections. Your heart is in safe hands.",
+      "Expressing your inner world creates clarity for your outer world."
+    ];
+    window._lastSuccessQuote = journalQuotes[Math.floor(Math.random() * journalQuotes.length)];
+    setShowSuccess(true);
   };
 
   const deleteEntry = (id) => {
@@ -83,6 +101,53 @@ const Journal = ({ profile, setProfile, onClose }) => {
       journalEntries: (prev.journalEntries || []).filter(e => e.id !== id)
     }));
   };
+
+  if (showSuccess) {
+    return (
+      <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-white animate-in fade-in duration-700">
+        <div className="relative max-w-2xl w-full bg-white rounded-[4rem] overflow-hidden animate-in zoom-in-95 duration-700">
+          <div className="h-[35vh] relative bg-slate-50 border-b border-slate-100 overflow-hidden">
+            <img
+              src="/wellness_celebration_figure.png"
+              alt="Wellness Figure"
+              className="w-full h-full object-cover opacity-90"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+          </div>
+
+          <div className="p-10 lg:p-14 text-center space-y-8">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-5 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase tracking-widest border border-indigo-100 mb-2">
+                <CheckCircle2 size={14} /> Reflection Saved
+              </div>
+              <h3 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                Your Soul's <span style={{ color: theme.primary }}>Reflection!</span>
+              </h3>
+            </div>
+
+            <div className="relative p-7 bg-slate-50/80 rounded-[2.5rem] border border-slate-100 max-w-sm mx-auto">
+              <p className="text-sm font-bold text-slate-500 italic leading-relaxed">
+                "{window._lastSuccessQuote || "Your private thoughts are safely held in this compassionate space."}"
+              </p>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-white border border-slate-100 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                Safe Space Insight
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => { setShowSuccess(false); setView('history'); }}
+                className="w-full max-w-xs py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all outline-none"
+              >
+                View History
+              </button>
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest animate-pulse">Returning in 5 seconds...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[150] bg-white/95 backdrop-blur-2xl flex flex-col animate-in slide-in-from-bottom duration-700">
@@ -107,77 +172,48 @@ const Journal = ({ profile, setProfile, onClose }) => {
 
       <div className="flex-1 overflow-y-auto p-8 lg:p-20 flex flex-col items-center">
         {view === 'write' ? (
-          !isSubmitted ? (
-            <div className="max-w-2xl w-full space-y-12 animate-in fade-in zoom-in-95 duration-500">
-              <div className="text-center space-y-6">
-                <div className="inline-flex p-4 bg-indigo-50 rounded-3xl text-indigo-500 mb-4">
-                  <Sparkles size={32} />
-                </div>
-                <h2 className="text-3xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-                  {JOURNAL_PROMPTS[promptIndex]}
-                </h2>
-                <p className="text-slate-400 font-medium italic text-lg">
-                  Take your time. There are no wrong answers here.
-                </p>
+          <div className="max-w-2xl w-full space-y-12 animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center space-y-6">
+              <div className="inline-flex p-4 bg-indigo-50 rounded-3xl text-indigo-500 mb-4">
+                <Sparkles size={32} />
               </div>
-
-              <div className="relative group">
-                <textarea 
-                  value={entry}
-                  onChange={(e) => setEntry(e.target.value)}
-                  placeholder="Start typing your heart out..."
-                  className="w-full h-64 p-10 bg-slate-50 border border-slate-100 rounded-[3rem] font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:bg-white transition-all shadow-inner text-lg resize-none"
-                />
-                <div className="absolute bottom-6 right-6 flex gap-3">
-                  <button 
-                    onClick={handleNextPrompt}
-                    className="p-4 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:text-slate-900 hover:border-slate-200 transition-all shadow-sm"
-                    title="Change Prompt"
-                  >
-                    <RefreshCw size={20} />
-                  </button>
-                  <button 
-                    onClick={handleSubmit}
-                    className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
-                  >
-                    Save Reflection <Send size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-8 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-                <div className="flex items-center gap-2"><ShieldCheck size={14} /> End-to-End Private</div>
-                <div className="flex items-center gap-2"><Heart size={14} /> Compassionate Space</div>
-              </div>
+              <h2 className="text-3xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                {JOURNAL_PROMPTS[promptIndex]}
+              </h2>
+              <p className="text-slate-400 font-medium italic text-lg">
+                Take your time. There are no wrong answers here.
+              </p>
             </div>
-          ) : (
-            <div className="max-w-xl w-full text-center space-y-10 animate-in zoom-in-95 duration-500 my-auto">
-              <div className="relative inline-block">
-                <div className="text-8xl mb-6">✨</div>
-                <div className="absolute -top-4 -right-4 animate-pulse">🌸</div>
-              </div>
-              <div className="space-y-6">
-                <h3 className="text-3xl font-bold text-slate-900 tracking-tight">A Moment of Peace</h3>
-                <p className="text-lg text-slate-600 font-medium leading-relaxed italic">
-                  "{response}"
-                </p>
-              </div>
-              <div className="pt-10 flex flex-col sm:flex-row gap-4 justify-center">
+
+            <div className="relative group">
+              <textarea 
+                value={entry}
+                onChange={(e) => setEntry(e.target.value)}
+                placeholder="Start typing your heart out..."
+                className="w-full h-64 p-10 bg-slate-50 border border-slate-100 rounded-[3rem] font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:bg-white transition-all shadow-inner text-lg resize-none"
+              />
+              <div className="absolute bottom-6 right-6 flex gap-3">
                 <button 
                   onClick={handleNextPrompt}
-                  className="px-10 py-5 bg-slate-50 text-slate-600 rounded-3xl font-bold text-sm hover:bg-slate-100 transition-all"
+                  className="p-4 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:text-slate-900 hover:border-slate-200 transition-all shadow-sm"
+                  title="Change Prompt"
                 >
-                  Reflect More
+                  <RefreshCw size={20} />
                 </button>
                 <button 
-                  onClick={() => setView('history')}
-                  className="px-10 py-5 bg-slate-900 text-white rounded-3xl font-bold text-sm shadow-xl hover:scale-105 transition-all"
+                  onClick={handleSubmit}
+                  className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
                 >
-                  View History
+                  Save Reflection <Send size={18} />
                 </button>
               </div>
             </div>
-          )
+
+            <div className="flex items-center justify-center gap-8 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+              <div className="flex items-center gap-2"><ShieldCheck size={14} /> End-to-End Private</div>
+              <div className="flex items-center gap-2"><Heart size={14} /> Compassionate Space</div>
+            </div>
+          </div>
         ) : (
           <div className="max-w-4xl w-full space-y-10 animate-in fade-in duration-500">
             <div className="text-center space-y-2">

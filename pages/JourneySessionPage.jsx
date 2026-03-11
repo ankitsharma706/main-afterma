@@ -90,7 +90,7 @@ const JourneySessionPage = ({
     }
 
     // Redirect back after short success delay
-    setTimeout(() => navigate('/carejourney'), 1800);
+    setTimeout(() => navigate('/carejourney'), 5000);
   };
 
   const handleCancel = () => {
@@ -123,26 +123,53 @@ const JourneySessionPage = ({
 /* ── Success overlay ────────────────────────── */
 if (completed) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/95 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="text-center space-y-6 animate-in zoom-in-95 duration-500">
-
-        <div className="w-24 h-24 rounded-full bg-emerald-50 border-4 border-[#00d084] flex items-center justify-center mx-auto shadow-[0_0_60px_rgba(0,208,132,0.35)]">
-          <CheckCircle2 size={48} className="text-[#00d084]" />
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-white animate-in fade-in duration-700">
+      <div className="relative max-w-2xl w-full bg-white rounded-[4rem] overflow-hidden animate-in zoom-in-95 duration-700">
+        <div className="h-[40vh] relative bg-slate-50 border-b border-slate-100 overflow-hidden">
+          <img
+            src="/wellness_celebration_figure.png"
+            alt="Wellness Figure"
+            className="w-full h-full object-cover opacity-90"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         </div>
 
-        <h2 className="text-3xl font-black text-slate-900">
-          Session Complete! 🌸
-        </h2>
+        <div className="p-10 lg:p-16 text-center space-y-10">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black uppercase tracking-widest border border-emerald-100 mb-2">
+              <CheckCircle2 size={14} /> Session Complete
+            </div>
+            <h3 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+              Excellent Work! <br/><span style={{ color: theme.primary }}>{activity.title}</span>
+            </h3>
+          </div>
 
-        <p className="text-slate-600 font-medium">
-          You completed <span className="text-slate-900 font-bold">{activity.title}</span> in{' '}
-          {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
-        </p>
+          <div className="relative p-8 bg-slate-50/80 rounded-[3rem] border border-slate-100 max-w-md mx-auto">
+            <p className="text-base font-bold text-slate-500 italic leading-relaxed">
+              "Every moment you dedicate to your recovery is an investment in your lifelong vitality."
+            </p>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-white border border-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Recovery Insight
+            </div>
+          </div>
 
-        <p className="text-slate-400 text-sm">
-          Returning to Care Journey…
-        </p>
+          <div className="space-y-4">
+            <button
+              onClick={() => navigate('/carejourney')}
+              className="w-full max-w-sm py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl hover:shadow-emerald-100/50 hover:-translate-y-1 active:scale-95 transition-all outline-none"
+            >
+              Continue Journey
+            </button>
+            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest animate-pulse">Returning in 5 seconds...</p>
+          </div>
+        </div>
 
+        <button
+          onClick={() => navigate('/carejourney')}
+          className="absolute top-8 right-8 p-4 bg-white/80 backdrop-blur-md rounded-2xl text-slate-400 hover:text-slate-900 shadow-sm border border-slate-100 transition-all active:scale-90"
+        >
+          <X size={24} />
+        </button>
       </div>
     </div>
   );

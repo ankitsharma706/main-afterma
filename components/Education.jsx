@@ -68,7 +68,7 @@ const LearningCenterBackground = () => {
       {/* The background image – positioned absolute so transform origin is center */}
       <img
         ref={imgRef}
-        src="/AfterMaLoginPic.png"
+        src="/AfterMaAppPics.png"
         alt=""
         style={{
           position: 'absolute',
