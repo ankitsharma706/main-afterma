@@ -147,13 +147,15 @@ const Navigation = ({ currentView, setView, profile, logout, onClose, onOpenLoca
       </nav>
 
       <div className="p-4 border-t border-slate-50 space-y-2">
-        <button 
-          onClick={() => { if (onOpenLocation) onOpenLocation(); if (onClose) onClose(); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all text-sm font-bold ${isCollapsed ? 'justify-center' : ''}`}
-        >
-          <MapPin size={18} />
-          {!isCollapsed && <span>Nearby Care</span>}
-        </button>
+        {!profile.authenticated && (
+          <button 
+            onClick={() => { if (onOpenLocation) onOpenLocation(); if (onClose) onClose(); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all text-sm font-bold ${isCollapsed ? 'justify-center' : ''}`}
+          >
+            <MapPin size={18} />
+            {!isCollapsed && <span>Nearby Care</span>}
+          </button>
+        )}
         {profile.authenticated && (
           <button 
             onClick={logout}

@@ -1,9 +1,29 @@
 export const COLORS = {
-  PINK: { primary: '#EC4899', bg: '#FFF5F7', border: '#F9A8D4', text: '#831843', ring: 'ring-pink-200', light: '#FFF5F7' },
-  GREEN: { primary: '#10B981', bg: '#F0FDF4', border: '#A7F3D0', text: '#064E3B', ring: 'ring-emerald-200', light: '#F0FDF4' },
-  BLUE: { primary: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD', text: '#0C4A6E', ring: 'ring-sky-200', light: '#F0F9FF' },
-  PURPLE: { primary: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE', text: '#4C1D95', ring: 'ring-purple-200', light: '#F5F3FF' },
-  YELLOW: { primary: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', text: '#78350F', ring: 'ring-amber-200', light: '#FFFBEB' }
+  PINK: { 
+    primary: '#EC4899', bg: '#FFF5F7', border: '#F9A8D4', text: '#831843', ring: 'ring-pink-200', light: '#FFF5F7',
+    heroGradient: 'linear-gradient(165deg, #EC4899 0%, #DB2777 50%, #9D174D 100%)',
+    cardGradient: 'linear-gradient(135deg, #FFF5F7 0%, #FCE7F3 100%)'
+  },
+  GREEN: { 
+    primary: '#10B981', bg: '#F0FDF4', border: '#A7F3D0', text: '#064E3B', ring: 'ring-emerald-200', light: '#F0FDF4',
+    heroGradient: 'linear-gradient(165deg, #10B981 0%, #059669 50%, #064E3B 100%)',
+    cardGradient: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)'
+  },
+  BLUE: { 
+    primary: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD', text: '#0C4A6E', ring: 'ring-sky-200', light: '#F0F9FF',
+    heroGradient: 'linear-gradient(165deg, #0EA5E9 0%, #0284C7 50%, #0369A1 100%)',
+    cardGradient: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)'
+  },
+  PURPLE: { 
+    primary: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE', text: '#4C1D95', ring: 'ring-purple-200', light: '#F5F3FF',
+    heroGradient: 'linear-gradient(165deg, #8B5CF6 0%, #7C3AED 50%, #5B21B6 100%)',
+    cardGradient: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)'
+  },
+  YELLOW: { 
+    primary: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', text: '#78350F', ring: 'ring-amber-200', light: '#FFFBEB',
+    heroGradient: 'linear-gradient(165deg, #F59E0B 0%, #D97706 50%, #92400E 100%)',
+    cardGradient: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)'
+  }
 };
 
 export const PRICING = { plus: 399 };
@@ -57,11 +77,35 @@ export const NUTRITION_GUIDE = [
 ];
 
 export const EPDS_QUESTIONS = [
-  { id: 1, question: "I have been able to laugh and see the funny side of things", options: ["As much as I always could", "Not quite so much now", "Definitely not so much now", "Not at all"] },
-  { id: 2, question: "I have looked forward with enjoyment to things", options: ["As much as I ever did", "Rather less than I used to", "Definitely less than I used to", "Hardly at all"] },
-  { id: 3, question: "I have blamed myself unnecessarily when things went wrong", options: ["Yes, most of the time", "Yes, some of the time", "Not very often", "No, never"] },
-  { id: 4, question: "I have been anxious or worried for no good reason", options: ["No, not at all", "Hardly ever", "Yes, sometimes", "Yes, very often"] },
-  { id: 5, question: "I have felt scared or panicky for no very good reason", options: ["Yes, quite a lot", "Yes, sometimes", "No, not much", "No, not at all"] }
+  // Emotional Well-being (Q1–Q5)
+  { id: 1, section: 'Emotional Well-being', question: "I have been able to laugh and see the funny side of things", options: ["As much as I always could", "Not quite so much now", "Definitely not so much now", "Not at all"] },
+  { id: 2, section: 'Emotional Well-being', question: "I have looked forward with enjoyment to things", options: ["As much as I ever did", "Rather less than I used to", "Definitely less than I used to", "Hardly at all"] },
+  { id: 3, section: 'Emotional Well-being', question: "I have blamed myself unnecessarily when things went wrong", options: ["Yes, most of the time", "Yes, some of the time", "Not very often", "No, never"] },
+  { id: 4, section: 'Emotional Well-being', question: "I have felt sad, low, or miserable in the past week", options: ["Not at all", "Only occasionally", "Quite often", "Most of the time"] },
+  { id: 5, section: 'Emotional Well-being', question: "I have been so unhappy that I have been crying", options: ["No, never", "Only occasionally", "Yes, quite often", "Yes, most of the time"] },
+
+  // Anxiety & Fear (Q6–Q8)
+  { id: 6, section: 'Anxiety & Fear', question: "I have been anxious or worried for no good reason", options: ["No, not at all", "Hardly ever", "Yes, sometimes", "Yes, very often"] },
+  { id: 7, section: 'Anxiety & Fear', question: "I have felt scared or panicky for no very good reason", options: ["Yes, quite a lot", "Yes, sometimes", "No, not much", "No, not at all"] },
+  { id: 8, section: 'Anxiety & Fear', question: "Things have been getting on top of me and I've felt overwhelmed", options: ["No, I've been coping well", "Occasionally I haven't coped as well", "Sometimes I can't cope at all", "Most of the time I can't cope"] },
+
+  // Sleep & Energy (Q9–Q11)
+  { id: 9, section: 'Sleep & Energy', question: "I have had difficulty sleeping, even when my baby is asleep or I have the chance to rest", options: ["No, not at all", "Not very often", "Yes, sometimes", "Yes, most of the time"] },
+  { id: 10, section: 'Sleep & Energy', question: "I feel physically exhausted even after resting", options: ["Rarely or never", "Once or twice a week", "Several times a week", "Every single day"] },
+  { id: 11, section: 'Sleep & Energy', question: "My energy levels feel adequate for daily activities", options: ["Yes, I feel energetic", "Mostly, but I tire easily", "I often feel drained", "I have almost no energy at all"] },
+
+  // Bonding & Connection (Q12–Q14)
+  { id: 12, section: 'Bonding & Connection', question: "I feel emotionally connected and bonded with my baby", options: ["Very strongly bonded", "Bonded most of the time", "I struggle to feel connected sometimes", "I feel emotionally distant"] },
+  { id: 13, section: 'Bonding & Connection', question: "I feel supported by my partner, family, or close friends", options: ["Very well supported", "Somewhat supported", "I don't feel enough support", "I feel completely alone"] },
+  { id: 14, section: 'Bonding & Connection', question: "I have someone to talk to when I feel stressed or upset", options: ["Yes, always", "Most of the time", "Rarely", "No, I have nobody"] },
+
+  // Physical Recovery (Q15–Q16)
+  { id: 15, section: 'Physical Recovery', question: "I experience physical discomfort or pain from childbirth recovery", options: ["No pain at all", "Mild manageable pain", "Moderate pain that limits me", "Severe pain that affects daily life"] },
+  { id: 16, section: 'Physical Recovery', question: "I am taking care of my own health (eating well, hydrating, basic self-care)", options: ["Yes, consistently", "Most days", "I often forget or skip", "I rarely care for myself"] },
+
+  // Self-Harm Ideation & Safety (Q17–Q18)
+  { id: 17, section: 'Safety & Support', question: "The thought of harming myself has occurred to me", options: ["Never", "Hardly ever", "Sometimes", "Yes, quite often"] },
+  { id: 18, section: 'Safety & Support', question: "I feel hopeful about the future and my role as a mother", options: ["Very hopeful and positive", "Mostly hopeful", "I struggle to feel hopeful", "I feel no hope at all"] }
 ];
 
 export const STORE_ITEMS = [
@@ -463,16 +507,15 @@ export const VIDEO_LIBRARY = [
     title: 'Understanding the Fourth Trimester',
     duration: '8:24',
     category: 'Mental Health',
-    youtubeId: 'scRQR-FRfIo',
+    youtubeId: '_dVuHFdUN0c',
     thumbnail: '/VIDEOS/MaaMummyAurAchaar.jpg',
   },
   {
-
     id: 'v2',
     title: 'Postpartum Physical Recovery Guide',
     duration: '11:02',
     category: 'Physical Recovery',
-    youtubeId: 'scRQR-FRfIo',
+    youtubeId: '7GoUGFEKimI',
     thumbnail: '/VIDEOS/MomViddseecom.jpg',
   },
   {
@@ -480,7 +523,7 @@ export const VIDEO_LIBRARY = [
     title: 'Nutrition & Iron Recovery After Birth',
     duration: '6:15',
     category: 'Nutrition',
-    youtubeId: '2NnN9N3kK1A',
+    youtubeId: 'JZ3QielMPZM',
     thumbnail: '/VIDEOS/TheChoice.jpg',
   },
   {
@@ -488,7 +531,7 @@ export const VIDEO_LIBRARY = [
     title: 'Safe Exercises: Diastasis Recti Recovery',
     duration: '14:30',
     category: 'Physical Recovery',
-    youtubeId: 'kAUBBwj2GxA',
+    youtubeId: 'HpoVwhSVI38',
     thumbnail: '/VIDEOS/TheChoice.jpg',
   },
   {
@@ -496,7 +539,7 @@ export const VIDEO_LIBRARY = [
     title: 'Breastfeeding Basics & Latching Tips',
     duration: '9:47',
     category: 'Newborn Care',
-    youtubeId: 'kAUBBwj2GxA',
+    youtubeId: 'bEi1i6V7dxA',
     thumbnail: 'https://picsum.photos/seed/postpartum5/600/400',
   },
   {
@@ -504,7 +547,7 @@ export const VIDEO_LIBRARY = [
     title: 'Managing Postpartum Anxiety & Mood',
     duration: '12:18',
     category: 'Mental Health',
-    youtubeId: 'kAUBBwj2GxA',
+    youtubeId: 'k_V8axPqI34',
     thumbnail: 'https://picsum.photos/seed/postpartum6/600/400',
   },
 ];
@@ -543,5 +586,90 @@ export const COMMUNITY_INSIGHTS = [
     stat: "Top Choice",
     insight: "Warm Ginger & Turmeric tea remains the most logged comfort food during the first month postpartum.",
     tag: "Nutrition"
+  }
+];
+
+export const COMMUNITY_QUESTIONS = [
+  {
+    id: 'q1',
+    title: 'How to manage sleep deprivation with a newborn?',
+    excerpt: "My 2-week old is waking up every 2 hours. I'm feeling exhausted. Any tips from experienced...",
+    author: 'NewMom2024',
+    authorInitial: 'N',
+    timeAgo: '2h ago',
+    tags: ['POSTPARTUM', 'SLEEP'],
+    commentsCount: 2,
+    likesCount: 5,
+    category: 'Sisters Circles',
+    image: 'https://images.unsplash.com/photo-1544126592-807daa2b565b?auto=format&fit=crop&w=800&q=80',
+    comments: [
+      { id: 'c1', author: 'MamaToBe', text: "Try to sleep whenever the baby sleeps. The dishes can wait!", likes: 12, time: '1h ago', avatar: 'M' },
+      { id: 'c2', author: 'HealthSeeker', text: "Shift sleeping with your partner helped me survive the first month.", likes: 8, time: '30m ago', avatar: 'H' }
+    ]
+  },
+  {
+    id: 'q2',
+    title: 'Best exercises for PCOS management?',
+    excerpt: 'I was recently diagnosed and want to start a sustainable routine. What worked for you?',
+    author: 'HealthSeeker',
+    authorInitial: 'H',
+    timeAgo: '5h ago',
+    tags: ['PCOS', 'FITNESS'],
+    commentsCount: 1,
+    likesCount: 3,
+    category: 'Wellness',
+    image: 'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80',
+    comments: [
+      { id: 'c3', author: 'NewMom2024', text: "Strength training combined with walking was a game changer for me.", likes: 5, time: '2h ago', avatar: 'N' }
+    ]
+  },
+  {
+    id: 'q3',
+    title: 'Dealing with prenatal anxiety',
+    excerpt: "I'm in my second trimester and feeling overwhelmed with worry about the birth. Is this...",
+    author: 'MamaToBe',
+    authorInitial: 'M',
+    timeAgo: '1d ago',
+    tags: ['PREGNANCY', 'MENTAL WELLNESS'],
+    commentsCount: 0,
+    likesCount: 1,
+    category: 'Mental Wellness',
+    image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80',
+    comments: []
+  },
+  {
+    id: 'q4',
+    title: 'Getting pregnant after a pregnancy loss: Do you have a story to share?',
+    excerpt: "I've had 3 miscarriages all early around 6 weeks. We decided to not use contraception since our last miscarriage...",
+    author: 'HopefulSoul',
+    authorInitial: 'H',
+    timeAgo: '3d ago',
+    tags: ['RECOVERY', 'SUPPORT'],
+    commentsCount: 21500,
+    likesCount: 3900,
+    category: 'Support',
+    image: 'https://images.unsplash.com/photo-1494145904049-0dca59b4bbad?auto=format&fit=crop&w=800&q=80',
+    comments: [
+      { id: 'c4', author: 'MamaToBe', text: "Your story is so brave. Sending you so much love and strength.", likes: 496, time: '1y', avatar: 'M' }
+    ]
+  },
+  {
+    id: 'q5',
+    title: 'When did your baby bump start to show?',
+    excerpt: "Just curious about the answers. I've had a full on round belly from 5 weeks...",
+    author: 'CuriousMom',
+    authorInitial: 'C',
+    timeAgo: '4d ago',
+    tags: ['PREGNANCY', 'MILESTONES'],
+    commentsCount: 81,
+    likesCount: 3700,
+    category: 'Milestones',
+    image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=800&q=80',
+    isPoll: true,
+    pollResult: 52,
+    comments: [
+      { id: 'c5', author: 'PandaMom', text: "I've had a full on round belly from 5 weeks. Booked an early scan and it's twins!!", likes: 496, time: '1y', avatar: 'P' },
+      { id: 'c6', author: 'Birdie', text: "oh my gosh, this is my third pregnancy too i'm 4 weeks and look like i'm at least 13-14 weeks.", likes: 1, time: '2w', avatar: 'B' }
+    ]
   }
 ];

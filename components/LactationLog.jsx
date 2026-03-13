@@ -14,6 +14,18 @@ const LactationLog = ({ profile, onClose, inline = false }) => {
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+
+  const fetchLogs = async () => {
+    try {
+      setLogsLoading(true);
+      const res = await lactationAPI.getMyLogs();
+      setLogs(res?.data?.logs || []);
+    } catch { setLogs([]); } finally { setLogsLoading(false); }
+  };
+
+  useEffect(() => { fetchLogs(); }, []);
 
   const theme = COLORS[profile?.accent] || COLORS.PINK;
 
@@ -38,13 +50,14 @@ const LactationLog = ({ profile, onClose, inline = false }) => {
     setSaving(true);
     setError('');
     try {
-      await lactationAPI.create(profile._id, {
+      await lactationAPI.create({
         feeding_type: form.feeding_type,
         side: form.side,
-        milk_quantity: parseFloat(form.milk_quantity),
+        milk_quantity_ml: parseFloat(form.milk_quantity),
         duration_minutes: parseInt(form.duration, 10),
         baby_response: form.baby_response,
       });
+      fetchLogs();
       setShowSuccess(true);
     } catch (err) {
       setError(err.message || 'Failed to save. Please try again.');
@@ -211,14 +224,30 @@ const LactationLog = ({ profile, onClose, inline = false }) => {
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Baby Response Notes</label>
-                <textarea
-                  value={form.baby_response}
-                  onChange={e => up({ baby_response: e.target.value })}
-                  placeholder="e.g. Baby stops feeding calmly, latched well..."
-                  rows={3}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-[1.5rem] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none text-sm placeholder:text-slate-300"
-                />
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Baby Response</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'happy',   label: '😊 Happy',   desc: 'Content & calm' },
+                    { value: 'sleepy',  label: '😴 Sleepy',  desc: 'Fell asleep' },
+                    { value: 'fussy',   label: '😣 Fussy',   desc: 'Restless / crying' },
+                    { value: 'refused', label: '🙅 Refused', desc: 'Did not latch' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => up({ baby_response: opt.value })}
+                      className={`flex flex-col items-center px-4 py-3 rounded-2xl border-2 transition-all text-center min-w-[90px] ${
+                        form.baby_response === opt.value
+                          ? 'bg-slate-900 border-slate-900 text-white shadow-md scale-[1.04]'
+                          : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="text-lg leading-none mb-1">{opt.label.split(' ')[0]}</span>
+                      <span className="text-[11px] font-black uppercase tracking-wide leading-none">{opt.label.split(' ')[1]}</span>
+                      <span className={`text-[9px] font-medium mt-0.5 ${form.baby_response === opt.value ? 'text-white/60' : 'text-slate-400'}`}>{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {error && (
@@ -242,6 +271,54 @@ const LactationLog = ({ profile, onClose, inline = false }) => {
                   <><Save size={17} /> Commit Feeding Log</>
                 )}
               </button>
+            </div>
+
+            {/* ── FEEDING HISTORY ── */}
+            <div className="px-8 pb-8 pt-2">
+              <div className="text-[10px] font-black tracking-widest uppercase text-slate-400 mb-4">Feeding History</div>
+              {logsLoading ? (
+                <div className="flex items-center gap-2 text-slate-300 text-xs font-bold py-4">
+                  <Loader2 size={14} className="animate-spin" /> Loading history...
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="text-[11px] text-slate-300 font-bold text-center py-6">No logs yet. Commit your first session above!</div>
+              ) : (
+                <div className="flex flex-col gap-3 max-h-[260px] overflow-y-auto pr-1">
+                  {logs.map((log, i) => {
+                    const dt = new Date(log.timestamp);
+                    const dateStr = dt.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+                    const timeStr = dt.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+                    const isToday = new Date().toDateString() === dt.toDateString();
+                    const responseEmoji = { happy:'😊', sleepy:'😴', fussy:'😣', refused:'🙅' }[log.baby_response] || '';
+                    return (
+                      <div key={log._id || i} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/30 transition-all">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-500">
+                          <Droplets size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-black text-slate-800 leading-none">
+                            {isToday ? 'Today' : dateStr}, {timeStr}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                            {log.feeding_type}{log.side ? ` • ${log.side}` : ''}{log.duration_minutes ? ` • ${log.duration_minutes}m` : ''}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          {log.baby_response ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-wide">
+                              {responseEmoji} {log.baby_response}
+                            </span>
+                          ) : log.milk_quantity_ml ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-black bg-blue-50 text-blue-600 border border-blue-100">
+                              {log.milk_quantity_ml}ml
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,20 +1,20 @@
 import {
-    Baby,
-    Bell,
-    CalendarDays,
-    Check,
-    Clock,
-    Eye,
-    Globe,
-    Lock,
-    Monitor,
-    Palette,
-    Shield,
-    Target,
-    ToggleLeft,
-    ToggleRight,
-    User,
-    Users
+  Baby,
+  Bell,
+  CalendarDays,
+  Check,
+  Clock,
+  Eye,
+  Globe,
+  Lock,
+  Monitor,
+  Palette,
+  Shield,
+  Target,
+  ToggleLeft,
+  ToggleRight,
+  User,
+  Users
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { COLORS } from '../constants';
@@ -379,9 +379,9 @@ const Settings = ({ profile, setProfile }) => {
                      </button>
                      <div className="absolute right-[-10%] top-[-50%] opacity-10 pointer-events-none group-hover:rotate-12 transition-transform duration-1000"><Lock size={200} /></div>
                   </div>
-               </div>
-            </div>
-          )}
+                </div>
+             </div>
+           )}
         </div>
       </div>
     </div>

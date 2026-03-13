@@ -537,6 +537,51 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
               >
                 <Edit3 size={17} /> Commit Entry
               </button>
+
+              {/* ── PERIOD HISTORY ── */}
+              <div className="pt-4">
+                <div className="text-[10px] font-black tracking-widest uppercase text-slate-400 mb-4">Period History</div>
+                {periodLogs.length === 0 ? (
+                  <div className="text-[11px] text-slate-300 font-bold text-center py-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    No logs yet — commit your first entry above!
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-1">
+                    {[...periodLogs].reverse().map((log, i) => {
+                      const dt = new Date(log.timestamp);
+                      const isToday = new Date().toDateString() === dt.toDateString();
+                      const dateLabel = isToday
+                        ? `Today, ${dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                        : dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                      const flowColor = {
+                        Heavy: 'bg-rose-100 text-rose-600 border-rose-200',
+                        Medium: 'bg-orange-100 text-orange-600 border-orange-200',
+                        Light: 'bg-amber-100 text-amber-600 border-amber-200',
+                        Spotting: 'bg-pink-100 text-pink-600 border-pink-200',
+                        None: 'bg-slate-100 text-slate-400 border-slate-200',
+                      }[log.periodFlow] || 'bg-slate-100 text-slate-400 border-slate-200';
+                      return (
+                        <div key={log.id || i} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-rose-50/30 hover:border-rose-100 transition-all">
+                          <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0 text-rose-500">
+                            <Droplet size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-black text-slate-800 leading-none">{dateLabel}</div>
+                            {log.symptoms?.length > 0 && (
+                              <div className="text-[10px] text-slate-400 font-medium mt-1 truncate">
+                                {log.symptoms.slice(0, 3).join(' • ')}{log.symptoms.length > 3 ? ` +${log.symptoms.length - 3}` : ''}
+                              </div>
+                            )}
+                          </div>
+                          <span className={`shrink-0 text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full border ${flowColor}`}>
+                            {log.periodFlow || 'None'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Column */}

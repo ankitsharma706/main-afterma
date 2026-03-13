@@ -1,27 +1,27 @@
 
 import {
-    Activity,
-    ArrowRight,
-    BarChart2,
-    Calendar as CalIcon,
-    Droplet,
-    Leaf,
-    Moon, Pill,
-    Play,
-    Plus,
-    ShieldCheck,
-    Zap
+  Activity,
+  ArrowRight,
+  BarChart2,
+  Calendar as CalIcon,
+  Droplet,
+  Leaf,
+  Moon, Pill,
+  Play,
+  Plus,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Area,
-    AreaChart,
-    CartesianGrid,
-    Line,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis, YAxis
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis, YAxis
 } from 'recharts';
 import { COLORS, NUTRITION_GUIDE, RECOVERY_DATABASE, SLOGAN } from '../constants';
 import { getDailyInspiration } from '../services/geminiService';

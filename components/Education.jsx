@@ -1,11 +1,12 @@
 
-import { ArrowRight, Book, ChevronRight, ExternalLink, FileText, HeartPulse, Pause, Play, PlayCircle, ShieldCheck, Star, Users, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowRight, Book, ChevronRight, ExternalLink, FileText, HeartPulse, Play, PlayCircle, ShieldCheck, Star, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { ARTICLES, GOVT_SCHEMES, TRUSTED_PICKS, VIDEO_LIBRARY } from '../constants';
 import { translations } from '../translations';
 import SurveyCommunityData from './SurveyCommunityData';
+import Footer from './Footer';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Background Portal + Parallax
@@ -108,26 +109,14 @@ const GLASS = 'bg-white/75 backdrop-blur-md border border-white/60 shadow-lg sha
 
 /* ─── Inline Video Player Component ─────────────────────────────────── */
 const VideoPlayerModal = ({ video, onClose }) => {
-  const videoRef = useRef(null);
-  const progressRef = useRef(null);
-  const containerRef = useRef(null);
-
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [volume, setVolume] = useState(1);
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [usingYT, setUsingYT] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const playerRef = useRef(null);
   const hideTimer = useRef(null);
-
-  useEffect(() => {
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setUsingYT(false);
-    setShowControls(true);
-  }, [video]);
 
   const resetHideTimer = () => {
     clearTimeout(hideTimer.current);
@@ -137,38 +126,31 @@ const VideoPlayerModal = ({ video, onClose }) => {
     }
   };
 
-  useEffect(() => { return () => clearTimeout(hideTimer.current); }, []);
+  useEffect(() => {
+    return () => clearTimeout(hideTimer.current);
+  }, [isPlaying]);
 
-  const togglePlay = () => {
-    if (usingYT) return;
-    const v = videoRef.current;
-    if (!v) return;
-    if (isPlaying) { v.pause(); setIsPlaying(false); }
-    else { v.play().catch(() => setUsingYT(true)); setIsPlaying(true); }
+  const handlePlayPause = (e) => {
+    if (e) e.stopPropagation();
+    setIsPlaying(!isPlaying);
     resetHideTimer();
   };
 
-  const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
-  };
-
-  const handleLoadedMetadata = () => {
-    if (!videoRef.current) return;
-    setDuration(videoRef.current.duration);
-  };
-
-  const handleProgressClick = (e) => {
-    if (!videoRef.current || usingYT) return;
-    const rect = progressRef.current.getBoundingClientRect();
+  const handleSeekChange = (e) => {
+    if (e) e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
-    videoRef.current.currentTime = pct * duration;
-    setCurrentTime(pct * duration);
+    if (playerRef.current) playerRef.current.seekTo(pct);
   };
 
-  const toggleMute = () => {
-    if (videoRef.current) videoRef.current.muted = !isMuted;
-    setIsMuted(m => !m);
+  const handleVolumeChange = (e) => {
+    setVolume(parseFloat(e.target.value));
+    if (isMuted && parseFloat(e.target.value) > 0) setIsMuted(false);
+  };
+
+  const handleToggleMute = (e) => {
+    if (e) e.stopPropagation();
+    setIsMuted(!isMuted);
   };
 
   const fmt = (s) => {
@@ -178,99 +160,45 @@ const VideoPlayerModal = ({ video, onClose }) => {
     return `${m}:${sec}`;
   };
 
-  const progressPct = duration ? (currentTime / duration) * 100 : 0;
-  const ytSrc = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`;
+  const handleFullscreen = (e) => {
+    if (e) e.stopPropagation();
+    const el = document.getElementById('vid-player-wrapper');
+    if (el) {
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch((err) => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  // Determine YouTube src
+  let videoId = video.youtubeId || '';
+  if (!videoId && video.youtubeUrl) {
+    const m = video.youtubeUrl.match(/(?:v=|youtu\.be\/)([^&]+)/);
+    if (m) videoId = m[1];
+  }
+  if (!videoId) videoId = 'dQw4w9WgXcQ';
+  const ytSrc = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&controls=1`;
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in duration-300 p-4 md:p-8"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in p-4 md:p-8"
+      onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-6xl aspect-video rounded-xl md:rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-black border border-white/10 flex items-center justify-center"
-        onMouseMove={resetHideTimer}
-      >
-        <button onClick={onClose} className="absolute top-4 right-4 md:top-6 md:right-6 z-[60] p-2 bg-black/50 hover:bg-black/80 text-white rounded-full transition-all backdrop-blur-sm border border-white/10">
-          <X size={20} />
+      <div className="relative w-full max-w-6xl aspect-video rounded-xl md:rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-black border border-white/10 group flex flex-col justify-center">
+        <button onClick={onClose} className="absolute top-4 right-4 md:top-6 md:right-6 z-[60] p-2 bg-black/50 hover:bg-black/80 text-white rounded-full transition-all backdrop-blur-sm border border-white/10 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:rotate-90">
+          <X size={24} strokeWidth={2.5} />
         </button>
-
-        {usingYT ? (
-          <div className="w-full h-full relative">
-            <iframe src={ytSrc} title={video.title} allow="autoplay; fullscreen" allowFullScreen className="absolute inset-0 w-full h-full" style={{ border: 'none' }} />
-          </div>
-        ) : (
-          <>
-            {!isPlaying && (
-              <div className="absolute inset-0 w-full h-full">
-                <img src={video.thumbnail} alt={video.title} loading="lazy" className="w-full h-full object-cover opacity-80" />
-                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-4">
-                  <button onClick={togglePlay} className="w-24 h-24 bg-white/20 hover:bg-white/40 border-2 border-white/60 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 backdrop-blur-sm shadow-[0_0_60px_rgba(255,255,255,0.3)]" aria-label="Play video">
-                    <Play size={44} className="text-white ml-2" fill="white" />
-                  </button>
-                  <div className="text-center">
-                    <p className="text-white font-black text-lg">{video.title}</p>
-                    <p className="text-white/60 text-sm">{video.category} · {video.duration}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <video
-              ref={videoRef}
-              className={`absolute inset-0 w-full h-full object-contain bg-black ${isPlaying ? 'block' : 'hidden'}`}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onEnded={() => { setIsPlaying(false); setShowControls(true); }}
-              onWaiting={() => setIsBuffering(true)}
-              onCanPlay={() => setIsBuffering(false)}
-              poster={video.thumbnail}
-              muted={isMuted}
-              playsInline
-              src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-            />
-
-            {isBuffering && isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-14 h-14 rounded-full border-4 border-white/30 border-t-white animate-spin" />
-              </div>
-            )}
-
-            {isPlaying && (
-              <div
-                className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}
-                onClick={e => e.stopPropagation()}
-              >
-                <div ref={progressRef} className="h-2 bg-white/30 rounded-full cursor-pointer mb-6 group/bar relative" onClick={handleProgressClick}>
-                  <div className="h-full bg-blue-500 rounded-full relative group-hover/bar:h-3 transition-all" style={{ width: `${progressPct}%` }}>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] opacity-0 group-hover/bar:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <button onClick={togglePlay} className="p-3 bg-white/10 hover:bg-white/25 rounded-full text-white transition-all shadow-md">
-                    {isPlaying ? <Pause size={24} /> : <Play size={24} fill="white" />}
-                  </button>
-                  <div className="flex items-center gap-3">
-                    <button onClick={toggleMute} className="p-3 bg-white/10 hover:bg-white/25 rounded-full text-white transition-all">
-                      {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                    </button>
-                    {!isMuted && (
-                      <input type="range" min="0" max="1" step="0.05" defaultValue="1" className="w-20 md:w-28 accent-blue-500 cursor-pointer"
-                        onChange={(e) => { if (videoRef.current) videoRef.current.volume = parseFloat(e.target.value); }}
-                      />
-                    )}
-                  </div>
-                  <span className="text-white/80 text-sm font-mono ml-2 font-medium tracking-wide">{fmt(currentTime)} / {fmt(duration)}</span>
-                  <p className="ml-auto text-white font-bold text-base truncate max-w-[40%]" title={video.title}>{video.title}</p>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center">
-        <span className="text-white/40 text-xs uppercase tracking-widest">Press ESC or click outside to close</span>
+        <div className="absolute inset-0 w-full h-full">
+          <iframe 
+            src={ytSrc} 
+            title={video.title} 
+            className="w-full h-full border-none"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowFullScreen 
+          />
+        </div>
       </div>
     </div>
   );
@@ -459,7 +387,7 @@ const Education = ({ profile }) => {
 
   /* ── Main landing view ── */
   return (
-    <>
+    <div className="overflow-x-hidden w-full min-h-screen">
       {/* The background is rendered via portal directly into <body> */}
       <LearningCenterBackground />
 
@@ -592,8 +520,12 @@ const Education = ({ profile }) => {
             ))}
           </div>
         </section>
+
       </div>
-    </>
+
+      {/* ─── AFTERMA FOOTER ─────────────────────────────────────────────── */}
+      <Footer />
+    </div>
   );
 };
 

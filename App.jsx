@@ -28,6 +28,7 @@ import Settings from './components/Settings';
 import SignIn from './components/SignIn';
 import SOSOverlay from './components/SOSOverlay';
 import MomKart from './components/Store';
+import CommunityQA from './components/CommunityQA';
 import SurveyCommunityData from './components/SurveyCommunityData';
 import { COLORS, RECOVERY_DATABASE } from './constants';
 import JourneySessionPage from './pages/JourneySessionPage';
@@ -135,7 +136,15 @@ const App = () => {
 
   const [logs, setLogs] = useState([]);
   const [exerciseLogs, setExerciseLogs] = useState([]);
-  const [triageMessages, setTriageMessages] = useState([]);
+  const [triageMessages, setTriageMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('afterma_triage_v4');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load triage messages", e);
+      return [];
+    }
+  });
   const [cart, setCart] = useState([]);
   const [orderSummary, setOrderSummary] = useState(null);
   useEffect(() => {
@@ -146,6 +155,10 @@ const App = () => {
 
     return () => clearTimeout(save);
   }, [profile, lang]);
+
+  useEffect(() => {
+    localStorage.setItem('afterma_triage_v4', JSON.stringify(triageMessages));
+  }, [triageMessages]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -506,6 +519,7 @@ const App = () => {
                 {currentView === 'recipes' && <SafeRecipes profile={profile} />}
                 {currentView === 'learning-center' && <ArticlePage profile={profile} />}
                 {currentView === 'community-wisdom' && <SurveyCommunityData profile={profile} />}
+                {currentView === 'community' && profile.authenticated && <CommunityQA profile={profile} />}
                 {currentView === 'momkart' && profile.authenticated && (
                   <MomKart
                     profile={profile}

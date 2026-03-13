@@ -358,7 +358,7 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
 
       {/* Right panel – form */}
       <div className="signin-right-panel">
-        {onOpenLocation && (
+        {onOpenLocation && !profile.authenticated && (
           <button
             onClick={() => { if (onClose) onClose(); onOpenLocation(); }}
             className="absolute top-6 right-6 lg:top-8 lg:right-10 flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200 transition-all hover:bg-white shadow-sm z-50 cursor-pointer"
@@ -391,8 +391,8 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">
                   {mode === 'signin' 
-                    ? (role === 'expert' ? 'Welcome Doctor 👋' : 'Welcome Back 👋') 
-                    : (role === 'expert' ? 'Join as Doctor 👨‍⚕️' : 'Join AfterMa 🌸')}
+                    ? (role === 'expert' ? 'Welcome Doctor 👋' : 'Welcome Back Mama👋') 
+                    : (role === 'expert' ? 'Join as Doctor 👨‍⚕️' : 'Join AfterMa Mama🌸')}
                 </h2>
                 <p className="text-slate-400 text-sm font-medium">
                   {mode === 'signin'

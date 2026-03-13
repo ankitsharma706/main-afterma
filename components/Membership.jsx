@@ -29,7 +29,10 @@ const Membership = ({ profile, setProfile }) => {
 
       <div className="grid md:grid-cols-2 gap-10">
         {/* Free Plan */}
-        <div className="p-12 rounded-[3.5rem] bg-white border border-gray-100 shadow-sm space-y-8 flex flex-col">
+        <div 
+          className="p-12 rounded-[3.5rem] border border-gray-100 shadow-sm space-y-8 flex flex-col"
+          style={{ background: theme.cardGradient }}
+        >
            <div className="space-y-2">
               <h3 className="text-2xl font-bold">Essential Care</h3>
               <p className="text-gray-400 text-sm">Everything needed for a standard recovery.</p>
@@ -51,39 +54,50 @@ const Membership = ({ profile, setProfile }) => {
            </button>
         </div>
 
-        {/* Plus Plan - Theme Adaptive */}
+        {/* Plus Plan - Theme Adaptive Premium */}
         <div 
-          className={`p-12 rounded-[3.5rem] border-4 space-y-8 flex flex-col relative overflow-hidden transition-all shadow-2xl`}
+          className={`p-12 rounded-[3.5rem] space-y-10 flex flex-col relative overflow-hidden transition-all shadow-2xl border-0`}
           style={{ 
             borderColor: theme.primary,
-            backgroundColor: isPlus ? 'white' : theme.primary,
-            color: isPlus ? 'inherit' : theme.text
+            background: isPlus ? theme.cardGradient : theme.heroGradient,
+            color: isPlus ? theme.text : 'white'
           }}
         >
-           {!isPlus && <div className="absolute top-8 right-[-35px] rotate-45 bg-amber-300 text-amber-900 px-12 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm">Recommended</div>}
+           {!isPlus && (
+             <div className="absolute top-10 right-[-40px] rotate-45 bg-[#FFD700] text-[#8B6508] px-14 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-lg z-20">
+               Recommended
+             </div>
+           )}
            
-           <div className="space-y-2">
-              <h3 className="text-2xl font-black flex items-center gap-3">AfterMa Plus <Crown size={24} /></h3>
-              <p className={`text-sm opacity-80 ${isPlus ? 'text-gray-400' : ''}`}>The gold standard in postpartum wellness.</p>
+           <div className="space-y-3">
+              <h3 className="text-3xl font-black flex items-center gap-3 tracking-tight">
+                AfterMa Plus <Crown size={28} className={isPlus ? 'text-amber-400' : 'text-white'} />
+              </h3>
+              <p className={`text-sm font-medium opacity-90 ${isPlus ? 'text-gray-400' : ''}`}>
+                The gold standard in postpartum wellness.
+              </p>
            </div>
            
-           <div className="text-4xl font-black">₹{PRICING.plus} <span className={`text-sm font-bold opacity-60`}>/ month</span></div>
-
-           <div className="flex-1 space-y-4">
-              <Benefit icon={<Zap style={{ color: isPlus ? theme.primary : 'white' }} />} label="Priority Care Connect Appointments" inverted={!isPlus} />
-              <Benefit icon={<Activity style={{ color: isPlus ? theme.primary : 'white' }} />} label="Advanced Recovery Analytics" inverted={!isPlus} />
-              <Benefit icon={<Heart style={{ color: isPlus ? theme.primary : 'white' }} />} label="Exclusive Peer Support Circles" inverted={!isPlus} />
-              <Benefit icon={<ShieldCheck style={{ color: isPlus ? theme.primary : 'white' }} />} label="Downloadable Clinical Reports" inverted={!isPlus} />
-              <Benefit icon={<Zap style={{ color: isPlus ? theme.primary : 'white' }} />} label="Unlimited AI Triage Assistant" inverted={!isPlus} />
+           <div className="flex items-baseline gap-2">
+             <span className="text-5xl font-black tracking-tighter">₹{PRICING.plus}</span>
+             <span className={`text-base font-bold opacity-60`}>/ month</span>
            </div>
-
+ 
+           <div className="flex-1 space-y-6 pt-4">
+              <Benefit icon={<Zap size={22} />} label="Priority Care Connect Appointments" active={!isPlus} />
+              <Benefit icon={<Activity size={22} />} label="Advanced Recovery Analytics" active={!isPlus} />
+              <Benefit icon={<Heart size={22} />} label="Exclusive Peer Support Circles" active={!isPlus} />
+              <Benefit icon={<ShieldCheck size={22} />} label="Downloadable Clinical Reports" active={!isPlus} />
+              <Benefit icon={<Zap size={22} />} label="Unlimited AI Triage Assistant" active={!isPlus} />
+           </div>
+ 
            <button 
              onClick={!isPlus ? handleUpgrade : undefined}
-             className={`w-full py-5 rounded-3xl font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95`}
+             className={`w-full py-6 rounded-[2rem] font-black text-base transition-all shadow-xl hover:scale-105 active:scale-95`}
              style={{ 
                backgroundColor: isPlus ? theme.bg : 'white',
-               color: isPlus ? theme.text : theme.text,
-               border: isPlus ? `1px solid ${theme.primary}` : 'none'
+               color: theme.text,
+               border: isPlus ? `2px solid ${theme.primary}` : 'none'
              }}
            >
              {isPlus ? 'Active Plus Member' : 'Upgrade to Plus Now'}
@@ -93,13 +107,13 @@ const Membership = ({ profile, setProfile }) => {
     </div>
   );
 };
-
-const Benefit = ({ icon, label, inverted }) => (
-  <div className="flex items-center gap-3">
-    <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${inverted ? 'bg-black/5' : 'bg-slate-50'}`}>
+ 
+const Benefit = ({ icon, label, active }) => (
+  <div className="flex items-center gap-4">
+    <div className={`shrink-0 flex items-center justify-center ${active ? 'text-white' : 'text-slate-400'}`}>
       {icon}
     </div>
-    <span className={`text-sm font-bold ${inverted ? 'opacity-90' : 'text-gray-700'}`}>{label}</span>
+    <span className={`text-base font-bold tracking-tight ${active ? 'text-white' : 'text-gray-700'}`}>{label}</span>
   </div>
 );
 

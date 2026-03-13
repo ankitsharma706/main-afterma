@@ -218,6 +218,9 @@ export const communityAPI = {
 
   /** Decrement member count (leave community). */
   leave: (id) => patch(`/api/communities/${id}/leave`, {}, true),
+
+  /** Create a new community (Sister Circle). */
+  create: (data) => post('/api/communities', data, true),
 };
 
 // ─── NGO API ──────────────────────────────────────────────────────────────────
@@ -237,6 +240,33 @@ export const insuranceAPI = {
   /** Get all insurance/scheme plans. */
   getAll: () => get('/api/insurance'),
 };
+
+// ─── Question / Community Q&A API ─────────────────────────────────────────────
+export const questionAPI = {
+  /** Get all questions (with optional filters). */
+  getAll: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return get(`/api/questions${qs ? '?' + qs : ''}`);
+  },
+
+  /** Get a single question by ID (includes answers). */
+  getById: (id) => get(`/api/questions/${id}`),
+
+  /** Create a new question (auth required). */
+  create: (data) => post('/api/questions', data, true),
+
+  /** Post an answer to a question (auth required). */
+  addAnswer: (questionId, text) => post(`/api/questions/${questionId}/answer`, { text }, true),
+
+  /** Upvote a question (auth required). */
+  upvote: (id) => patch(`/api/questions/${id}/upvote`, {}, true),
+
+  /** Delete a question (auth required, owner only). */
+  remove: (id) => del(`/api/questions/${id}`, true),
+};
+
+/** Alias for questionAPI */
+export const questionsAPI = questionAPI;
 
 // ─── Backward-compatible aliases ──────────────────────────────────────────────
 // These match the old import names used throughout the existing components.
