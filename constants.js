@@ -1,25 +1,25 @@
 export const COLORS = {
-  PINK: { 
+  PINK: {
     primary: '#EC4899', bg: '#FFF5F7', border: '#F9A8D4', text: '#831843', ring: 'ring-pink-200', light: '#FFF5F7',
     heroGradient: 'linear-gradient(165deg, #EC4899 0%, #DB2777 50%, #9D174D 100%)',
     cardGradient: 'linear-gradient(135deg, #FFF5F7 0%, #FCE7F3 100%)'
   },
-  GREEN: { 
+  GREEN: {
     primary: '#10B981', bg: '#F0FDF4', border: '#A7F3D0', text: '#064E3B', ring: 'ring-emerald-200', light: '#F0FDF4',
     heroGradient: 'linear-gradient(165deg, #10B981 0%, #059669 50%, #064E3B 100%)',
     cardGradient: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)'
   },
-  BLUE: { 
+  BLUE: {
     primary: '#0EA5E9', bg: '#F0F9FF', border: '#BAE6FD', text: '#0C4A6E', ring: 'ring-sky-200', light: '#F0F9FF',
     heroGradient: 'linear-gradient(165deg, #0EA5E9 0%, #0284C7 50%, #0369A1 100%)',
     cardGradient: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)'
   },
-  PURPLE: { 
+  PURPLE: {
     primary: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE', text: '#4C1D95', ring: 'ring-purple-200', light: '#F5F3FF',
     heroGradient: 'linear-gradient(165deg, #8B5CF6 0%, #7C3AED 50%, #5B21B6 100%)',
     cardGradient: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)'
   },
-  YELLOW: { 
+  YELLOW: {
     primary: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', text: '#78350F', ring: 'ring-amber-200', light: '#FFFBEB',
     heroGradient: 'linear-gradient(165deg, #F59E0B 0%, #D97706 50%, #92400E 100%)',
     cardGradient: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)'

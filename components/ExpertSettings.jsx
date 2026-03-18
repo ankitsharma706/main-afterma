@@ -1,6 +1,8 @@
 import { Bell, ChevronRight, Clock, FileText, Lock, ShieldCheck, UserCog } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { expertAPI } from '../services/api';
+import { AlertsModal, CredentialsModal, DPAModal, IndemnityModal, SessionSlotsModal } from './ExpertModals';
+import ExpertProfileEditModal from './ExpertProfileEditModal';
 
 const ExpertSettings = ({ profile, logout }) => {
   const [data, setData] = useState(null);
@@ -24,36 +26,20 @@ const ExpertSettings = ({ profile, logout }) => {
     fetchProfile();
   }, []);
 
-  const handleEditProfile = async () => {
-    if (!data) return;
-    const newName = prompt('Enter your name:', data.name);
-    if (!newName) return;
-    const newDesignation = prompt('Enter designation:', data.designation);
-    if (!newDesignation) return;
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
 
-    try {
-      const res = await expertAPI.updateProfile({ name: newName, designation: newDesignation });
-      if (res?.data?.doctor) {
-        setData(res.data.doctor);
-        alert('Profile updated successfully.');
-      }
-    } catch (err) {
-      alert('Failed to update profile: ' + err.message);
-    }
+  const handleEditProfile = () => {
+    setIsEditModalOpen(true);
   };
 
-  const handleToggleAlerts = async () => {
-    if (!data) return;
-    try {
-      const newState = !data.urgent_alerts_enabled;
-      const res = await expertAPI.updateSettings({ urgent_alerts_enabled: newState });
-      if (res?.data?.doctor) {
-        setData(res.data.doctor);
-        alert(`Urgent alerts ${newState ? 'enabled' : 'disabled'}`);
-      }
-    } catch (err) {
-      alert('Failed to update settings: ' + err.message);
-    }
+  const handleSaveSuccess = (updatedData) => {
+    setData(prev => ({ ...prev, ...updatedData }));
+    setIsEditModalOpen(false);
+  };
+
+  const handleToggleAlerts = () => {
+    setActiveModal('alerts');
   };
 
   const nameDisplay = data?.name || profile.name || 'Expert';
@@ -71,30 +57,39 @@ const ExpertSettings = ({ profile, logout }) => {
          <div className="text-center py-20 text-slate-400 animate-pulse">Loading settings...</div>
       ) : (
       <div className="space-y-6">
-        <section className="bg-white rounded-[3rem] border border-slate-50 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-slate-50 bg-slate-50/30">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
-              <UserCog size={20} className="text-blue-500" /> Professional Profile
-            </h3>
-          </div>
-          <div className="p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-              <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center text-3xl font-black text-slate-400 shrink-0">
-                {nameDisplay[0]}
-              </div>
-              <div className="space-y-1 text-center sm:text-left flex-1">
-                <p className="text-xl font-bold text-slate-900">{nameDisplay}</p>
-                <p className="text-sm text-slate-400 font-medium">{designationDisplay}</p>
-                {data?.facility_name && (
-                   <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2">{data.facility_name}</p>
-                )}
-              </div>
-              <button onClick={handleEditProfile} className="px-6 py-2 bg-slate-900 hover:bg-slate-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-colors shrink-0">
-                 Edit
-              </button>
+        {isEditModalOpen ? (
+          <ExpertProfileEditModal 
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            initialData={data}
+            onSaveSuccess={handleSaveSuccess}
+          />
+        ) : (
+          <section className="bg-white rounded-[3rem] border border-slate-50 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50 bg-slate-50/30">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                <UserCog size={20} className="text-blue-500" /> Professional Profile
+              </h3>
             </div>
-          </div>
-        </section>
+            <div className="p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center text-3xl font-black text-slate-400 shrink-0">
+                  {nameDisplay[0]}
+                </div>
+                <div className="space-y-1 text-center sm:text-left flex-1">
+                  <p className="text-xl font-bold text-slate-900">{nameDisplay}</p>
+                  <p className="text-sm text-slate-400 font-medium">{designationDisplay}</p>
+                  {data?.facility_name && (
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2">{data.facility_name}</p>
+                  )}
+                </div>
+                <button onClick={handleEditProfile} className="px-8 py-3 bg-slate-900 hover:bg-slate-700 text-white rounded-[1.5rem] font-bold text-xs uppercase tracking-widest transition-colors shrink-0 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
+                  Edit
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="bg-white rounded-[3rem] border border-slate-50 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-slate-50 bg-slate-50/30">
@@ -103,10 +98,9 @@ const ExpertSettings = ({ profile, logout }) => {
             </h3>
           </div>
           <div className="p-8 space-y-2">
-             {/* Read-only compliance fields assumed verified by admin during onboarding */}
-            <SettingsRow icon={<FileText size={18} />} label="Credentials &amp; Licenses" value={data?.verified ? "Verified" : "Pending"} />
-            <SettingsRow icon={<Lock size={18} />} label="Data Processing Agreement" value="Signed" />
-            <SettingsRow icon={<ShieldCheck size={18} />} label="Professional Indemnity" value="Active" />
+            <SettingsRow icon={<FileText size={18} />} label="Credentials &amp; Licenses" value={data?.verified ? "Verified" : "Pending"} onClick={() => setActiveModal('credentials')} />
+            <SettingsRow icon={<Lock size={18} />} label="Data Processing Agreement" value="Signed" onClick={() => setActiveModal('dpa')} />
+            <SettingsRow icon={<ShieldCheck size={18} />} label="Professional Indemnity" value="Active" onClick={() => setActiveModal('indemnity')} />
           </div>
         </section>
 
@@ -121,13 +115,13 @@ const ExpertSettings = ({ profile, logout }) => {
               icon={<Clock size={18} />} 
               label="Session Slots" 
               value="Manage" 
-              onClick={() => alert('Slot management functionality coming soon.')} 
+              onClick={() => setActiveModal('slots')} 
             />
             <SettingsRow 
               icon={<Bell className={data?.urgent_alerts_enabled ? "text-amber-500" : ""} size={18} />} 
               label="Urgent Patient Alerts" 
               value={urgentAlertDisplay} 
-              onClick={handleToggleAlerts} 
+              onClick={() => setActiveModal('alerts')} 
             />
           </div>
         </section>
@@ -139,6 +133,12 @@ const ExpertSettings = ({ profile, logout }) => {
         </section>
       </div>
       )}
+
+      <CredentialsModal isOpen={activeModal === 'credentials'} onClose={() => setActiveModal(null)} />
+      <DPAModal isOpen={activeModal === 'dpa'} onClose={() => setActiveModal(null)} />
+      <IndemnityModal isOpen={activeModal === 'indemnity'} onClose={() => setActiveModal(null)} />
+      <SessionSlotsModal isOpen={activeModal === 'slots'} onClose={() => setActiveModal(null)} />
+      <AlertsModal isOpen={activeModal === 'alerts'} onClose={() => setActiveModal(null)} />
     </div>
   );
 };

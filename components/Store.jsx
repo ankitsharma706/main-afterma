@@ -6,7 +6,7 @@ import {
   ShoppingBag, Sparkles, Star,
   Users
 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { COLORS, STORE_ITEMS } from '../constants';
 
 const CATEGORIES = [
@@ -40,18 +40,26 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
   }, [profile?.maternityStage]);
 
   const filteredItems = useMemo(() => {
-    // Map UI categories to dataset categories if needed
-    const categoryMap = {
-      'Postpartum Recovery': 'Recovery',
-      'Lactation Support': 'Nutrition', // Assuming based on data
-      'Nutrition': 'Nutrition',
-      'Baby Essentials': 'Baby Care',
-      'Comfort Care': 'Maternity Care',
-      'Wellness Tools': 'Devices'
-    };
+    if (activeCategory === 'Lactation Support') {
+      return STORE_ITEMS.filter(item => ['p1', 'mat3', 'n2', 'd1'].includes(item.id));
+    }
+    if (activeCategory === 'Postpartum Recovery') {
+      return STORE_ITEMS.filter(item => item.category === 'Recovery' && item.id !== 'p1');
+    }
+    if (activeCategory === 'Comfort Care') {
+      return STORE_ITEMS.filter(item => item.category === 'Maternity Care' && item.id !== 'mat3');
+    }
+    if (activeCategory === 'Wellness Tools') {
+      return STORE_ITEMS.filter(item => item.category === 'Devices' && item.id !== 'd1');
+    }
+    if (activeCategory === 'Nutrition') {
+      return STORE_ITEMS.filter(item => item.category === 'Nutrition' && item.id !== 'n2');
+    }
+    if (activeCategory === 'Baby Essentials') {
+      return STORE_ITEMS.filter(item => item.category === 'Baby Care');
+    }
     
-    const targetCat = categoryMap[activeCategory] || activeCategory;
-    return STORE_ITEMS.filter(item => item.category === targetCat);
+    return STORE_ITEMS;
   }, [activeCategory]);
 
   return (
@@ -184,7 +192,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
   );
 };
 
-const ProductFocusRow = ({ items, cart, theme, onAddToCart, onUpdateQuantity, onRemoveItem }) => {
+const  ProductFocusRow = ({ items, cart, theme, onAddToCart, onUpdateQuantity, onRemoveItem }) => {
   const scrollRef = useRef(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
@@ -252,10 +260,33 @@ const ProductFocusRow = ({ items, cart, theme, onAddToCart, onUpdateQuantity, on
 };
 
 const ProductCard = ({ item, isFocused, cartItem, theme, onAddToCart, onUpdateQuantity, onRemoveItem }) => {
+  const [isVisibleHalf, setIsVisibleHalf] = useState(false);
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    if (!cardRef.current) return;
+    
+    const container = cardRef.current.closest('.overflow-x-auto');
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisibleHalf(entry.intersectionRatio < 0.95);
+      },
+      {
+        root: container || null,
+        threshold: 0.95 
+      }
+    );
+
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div 
+      ref={cardRef}
       className={`min-w-[280px] md:min-w-[320px] rounded-[2.5rem] border border-slate-100 shadow-sm transition-all duration-500 group flex flex-col h-full overflow-hidden relative 
         ${isFocused ? 'scale-100 opacity-100' : 'scale-95 opacity-70'}
+        ${isVisibleHalf ? 'blur-[2px]' : 'blur-0'}
         hover:shadow-[0_25px_60px_rgba(0,0,0,0.06)] hover:scale-100 hover:opacity-100 hover:-translate-y-2`}
       style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)' }}
     >
