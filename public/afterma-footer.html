@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AfterMa Footer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-page:     #FDF0F0;
+      --bg-card:     #FFFFFF;
+      --pink-hero:   #D63E82;
+      --pink-mid:    #E05090;
+      --pink-light:  #F472B0;
+      --pink-soft:   #FCE8F3;
+      --pink-nav:    #E8438C;
+      --yellow-sos:  #F5C842;
+      --green-soft:  #E8F5EE;
+      --green:       #3DB87A;
+      --blue-soft:   #E8F1FC;
+      --blue:        #4E8FD4;
+      --purple-soft: #EEE8F9;
+      --purple:      #8B6FD4;
+      --text-dark:   #1A1A2E;
+      --text-mid:    #4A4560;
+      --text-light:  #9490A8;
+      --border:      rgba(220,200,215,0.45);
+      --shadow-card: 0 2px 16px rgba(180,80,130,0.07);
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg-page);
+    }
+
+    .afterma-footer {
+      background: var(--bg-page);
+      padding-top: 8px;
+      position: relative;
+    }
+
+    .footer-card {
+      background: var(--bg-card);
+      border-radius: 24px 24px 0 0;
+      padding: 52px 56px 0;
+      box-shadow: 0 -4px 32px rgba(180,80,130,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .footer-card::before {
+      content: '';
+      position: absolute;
+      width: 340px; height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,67,140,.07) 0%, transparent 70%);
+      top: -80px; right: -60px;
+      pointer-events: none;
+    }
+    .footer-card::after {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(78,143,212,.06) 0%, transparent 70%);
+      bottom: 80px; left: -40px;
+      pointer-events: none;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr 1fr 1.1fr;
+      gap: 52px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* BRAND */
+    .brand-wordmark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .brand-logo-dot {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--pink-nav), var(--pink-hero));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(214,62,130,.3);
+      font-size: 18px;
+    }
+
+    .brand-name { font-size: 20px; font-weight: 800; color: var(--text-dark); letter-spacing: -.3px; line-height: 1; }
+    .brand-sub  { font-size: 9.5px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-light); margin-top: 1px; }
+
+    .brand-tagline {
+      font-size: 13.5px; font-weight: 400; color: var(--text-mid);
+      line-height: 1.8; max-width: 270px; margin-bottom: 22px;
+    }
+
+    .trust-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 24px; }
+    .trust-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 50px;
+      font-size: 11px; font-weight: 600; letter-spacing: .2px;
+    }
+    .tp-pink   { background: var(--pink-soft);  color: var(--pink-hero); }
+    .tp-green  { background: var(--green-soft); color: #2A8A58; }
+    .tp-blue   { background: var(--blue-soft);  color: #2E6CB0; }
+    .tp-yellow { background: #FEF8DC;           color: #9A7810; }
+
+    /* ABOUT CARD */
+    .about-card {
+      background: linear-gradient(135deg, var(--pink-soft), #FDF0F8);
+      border: 1px solid rgba(232,67,140,.15);
+      border-radius: 16px;
+      padding: 16px 18px;
+    }
+    .about-card-title {
+      font-size: 10.5px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--pink-hero); margin-bottom: 14px;
+    }
+    .dev-list { display: flex; flex-direction: column; gap: 11px; }
+    .dev-item { display: flex; align-items: center; gap: 10px; }
+    .dev-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: white;
+      flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .av-1 { background: linear-gradient(135deg, #E8438C, #D63E82); }
+    .av-2 { background: linear-gradient(135deg, #4E8FD4, #3A74C0); }
+    .av-3 { background: linear-gradient(135deg, #3DB87A, #2A9E64); }
+    .dev-name { font-size: 13px; font-weight: 700; color: var(--text-dark); line-height: 1; }
+    .dev-role { font-size: 11px; color: var(--text-light); font-weight: 400; margin-top: 1px; }
+
+    /* LINK COLS */
+    .col-eyebrow {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--text-light); margin-bottom: 6px;
+    }
+    .eyebrow-bar { width: 16px; height: 2.5px; border-radius: 2px; }
+    .col-title { font-size: 15px; font-weight: 800; color: var(--text-dark); margin-bottom: 18px; }
+
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-links li a {
+      font-size: 13.5px; font-weight: 500; color: var(--text-mid);
+      text-decoration: none; display: flex; align-items: center; gap: 7px;
+      transition: color .2s;
+    }
+    .footer-links li a:hover { color: var(--pink-nav); }
+    .link-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0; transition: background .2s;
+    }
+    .footer-links li a:hover .link-dot { background: var(--pink-light); }
+    .plus-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: var(--yellow-sos); color: #7A5800;
+      font-size: 9.5px; font-weight: 800;
+      padding: 2px 7px; border-radius: 50px; letter-spacing: .3px;
+    }
+
+    /* SOCIAL */
+    .social-chips { display: flex; flex-direction: column; gap: 8px; }
+    .social-chip {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 14px; background: #FAFAFA;
+      border: 1px solid var(--border); border-radius: 12px;
+      text-decoration: none;
+      transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+    }
+    .social-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+    .social-chip:hover.sc-ig    { border-color: var(--pink-light); background: var(--pink-soft); }
+    .social-chip:hover.sc-yt    { border-color: #FFADAD;           background: #FFF0F0; }
+    .social-chip:hover.sc-li    { border-color: var(--blue);       background: var(--blue-soft); }
+    .social-chip:hover.sc-email { border-color: var(--green);      background: var(--green-soft); }
+
+    .chip-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: white; flex-shrink: 0;
+    }
+    .ci-ig    { background: linear-gradient(135deg, var(--pink-nav), var(--pink-hero)); }
+    .ci-yt    { background: linear-gradient(135deg, #FF7070, #E03030); }
+    .ci-li    { background: linear-gradient(135deg, var(--blue), #2E6CB0); font-size: 11px; font-weight: 900; }
+    .ci-email { background: linear-gradient(135deg, var(--green), #2A9E64); }
+
+    .chip-name   { font-size: 13px; font-weight: 700; color: var(--text-dark); line-height: 1; }
+    .chip-handle { font-size: 11px; font-weight: 400; color: var(--text-light); margin-top: 1px; }
+
+    /* DIVIDER */
+    .footer-divider {
+      margin: 40px 0 0; height: 1px; position: relative; z-index: 1;
+      background: linear-gradient(90deg, transparent, var(--border) 15%, rgba(232,67,140,.2) 50%, var(--border) 85%, transparent);
+    }
+
+    /* BOTTOM */
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; padding: 20px 0 28px;
+      position: relative; z-index: 1;
+    }
+    .copyright-row { display: flex; align-items: center; gap: 9px; }
+    .copyright-heart {
+      width: 26px; height: 26px;
+      background: linear-gradient(135deg, var(--pink-nav), var(--pink-hero));
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; box-shadow: 0 2px 8px rgba(214,62,130,.25);
+    }
+    .copyright-text { font-size: 12.5px; color: var(--text-light); font-weight: 500; }
+    .copyright-text strong { color: var(--text-mid); font-weight: 700; }
+
+    .legal-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .legal-link {
+      font-size: 12px; font-weight: 600; color: var(--text-light);
+      text-decoration: none; padding: 4px 10px; border-radius: 50px;
+      transition: background .18s, color .18s;
+    }
+    .legal-link:hover { background: var(--pink-soft); color: var(--pink-hero); }
+    .legal-sep { width: 3px; height: 3px; background: var(--border); border-radius: 50%; }
+
+    /* RESPONSIVE */
+    @media (max-width: 1000px) {
+      .footer-card { padding: 44px 36px 0; }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+      .brand-col   { grid-column: 1 / -1; }
+      .brand-tagline { max-width: 100%; }
+    }
+    @media (max-width: 640px) {
+      .footer-card { padding: 36px 20px 0; border-radius: 20px 20px 0 0; }
+      .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+      .footer-bottom { flex-direction: column; align-items: flex-start; }
+      .social-chips { flex-direction: row; flex-wrap: wrap; }
+      .social-chip  { flex: 1 1 calc(50% - 4px); }
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .footer-grid > * { animation: riseIn .55s cubic-bezier(.22,1,.36,1) both; }
+    .footer-grid > *:nth-child(1) { animation-delay: .04s; }
+    .footer-grid > *:nth-child(2) { animation-delay: .11s; }
+    .footer-grid > *:nth-child(3) { animation-delay: .18s; }
+    .footer-grid > *:nth-child(4) { animation-delay: .25s; }
+  </style>
+</head>
+<body>
+
+<footer class="afterma-footer">
+  <div class="footer-card">
+
+    <div class="footer-grid">
+
+      <!-- 1 · BRAND + ABOUT -->
+      <div class="brand-col">
+        <div class="brand-wordmark">
+          <div class="brand-logo-dot">🌸</div>
+          <div>
+            <div class="brand-name">AfterMa</div>
+            <div class="brand-sub">Safe Healing Journey</div>
+          </div>
+        </div>
+
+        <p class="brand-tagline">
+          Supporting women through every stage of motherhood with care, trust, and community. You are never alone on this journey.
+        </p>
+
+        <div class="trust-pills">
+          <span class="trust-pill tp-pink">🛡️ Clinically Guided</span>
+          <span class="trust-pill tp-green">🌿 Community Driven</span>
+          <span class="trust-pill tp-blue">🔒 Data Safe</span>
+          <span class="trust-pill tp-yellow">⚡ Always With You</span>
+        </div>
+
+        <div class="about-card">
+          <div class="about-card-title">💙 Built with love by</div>
+          <div class="dev-list">
+            <div class="dev-item">
+              <div class="dev-avatar av-1">A</div>
+              <div>
+                <div class="dev-name">Akash</div>
+                <div class="dev-role">Lead Developer · Platform Architect</div>
+              </div>
+            </div>
+            <div class="dev-item">
+              <div class="dev-avatar av-2">A</div>
+              <div>
+                <div class="dev-name">Ankit</div>
+                <div class="dev-role">Full Stack Developer · Care Systems</div>
+              </div>
+            </div>
+            <div class="dev-item">
+              <div class="dev-avatar av-3">A</div>
+              <div>
+                <div class="dev-name">Ayush</div>
+                <div class="dev-role">UI/UX Engineer · Design Systems</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 · QUICK LINKS -->
+      <div class="link-col">
+        <div class="col-eyebrow"><div class="eyebrow-bar" style="background:var(--pink-nav)"></div>Navigate</div>
+        <div class="col-title">Quick Links</div>
+        <ul class="footer-links">
+          <li><a href="#"><span class="link-dot"></span>Dashboard</a></li>
+          <li><a href="#"><span class="link-dot"></span>Care Journey</a></li>
+          <li><a href="#"><span class="link-dot"></span>Mental Wellness</a></li>
+          <li><a href="#"><span class="link-dot"></span>Care Connect</a></li>
+          <li><a href="#"><span class="link-dot"></span>MomKart</a></li>
+          <li><a href="#"><span class="link-dot"></span>Safe Recipes</a></li>
+          <li><a href="#"><span class="link-dot"></span>Learning Centre</a></li>
+          <li><a href="#"><span class="link-dot"></span>AfterMa Plus &nbsp;<span class="plus-badge">✦ PLUS</span></a></li>
+        </ul>
+      </div>
+
+      <!-- 3 · SUPPORT -->
+      <div class="link-col">
+        <div class="col-eyebrow"><div class="eyebrow-bar" style="background:var(--green)"></div>Resources</div>
+        <div class="col-title">Support & Resources</div>
+        <ul class="footer-links">
+          <li><a href="#"><span class="link-dot"></span>Help Center</a></li>
+          <li><a href="#"><span class="link-dot"></span>Safety &amp; Privacy</a></li>
+          <li><a href="#"><span class="link-dot"></span>Community Guidelines</a></li>
+          <li><a href="#"><span class="link-dot"></span>Clinical Compliance</a></li>
+          <li><a href="#"><span class="link-dot"></span>Data Protection Policy</a></li>
+          <li><a href="#"><span class="link-dot"></span>Contact Support</a></li>
+          <li><a href="#"><span class="link-dot"></span>Nearby Care</a></li>
+        </ul>
+      </div>
+
+      <!-- 4 · SOCIAL -->
+      <div class="link-col">
+        <div class="col-eyebrow"><div class="eyebrow-bar" style="background:var(--blue)"></div>Community</div>
+        <div class="col-title">Stay Connected</div>
+        <div class="social-chips">
+          <a href="#" class="social-chip sc-ig">
+            <div class="chip-icon ci-ig">📸</div>
+            <div><div class="chip-name">Instagram</div><div class="chip-handle">@afterma.care</div></div>
+          </a>
+          <a href="#" class="social-chip sc-yt">
+            <div class="chip-icon ci-yt">▶</div>
+            <div><div class="chip-name">YouTube</div><div class="chip-handle">AfterMa Channel</div></div>
+          </a>
+          <a href="#" class="social-chip sc-li">
+            <div class="chip-icon ci-li">in</div>
+            <div><div class="chip-name">LinkedIn</div><div class="chip-handle">AfterMa Official</div></div>
+          </a>
+          <a href="mailto:hello@afterma.care" class="social-chip sc-email">
+            <div class="chip-icon ci-email">✉</div>
+            <div><div class="chip-name">Email Support</div><div class="chip-handle">hello@afterma.care</div></div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-bottom">
+      <div class="copyright-row">
+        <div class="copyright-heart">💗</div>
+        <span class="copyright-text">
+          <strong>© 2026 AfterMa.</strong> Built with care for mothers and sisters everywhere.
+        </span>
+      </div>
+      <nav class="legal-links">
+        <a class="legal-link" href="#">Terms of Service</a>
+        <span class="legal-sep"></span>
+        <a class="legal-link" href="#">Privacy Policy</a>
+        <span class="legal-sep"></span>
+        <a class="legal-link" href="#">Medical Disclaimer</a>
+      </nav>
+    </div>
+
+  </div>
+</footer>
+
+</body>
+</html>
