@@ -28,9 +28,10 @@ import Settings from './components/Settings';
 import SignIn from './components/SignIn';
 import SOSOverlay from './components/SOSOverlay';
 import MomKart from './components/Store';
+import CommandPalette from './components/CommandPalette';
 import CommunityQA from './components/CommunityQA';
 import SurveyCommunityData from './components/SurveyCommunityData';
-import { COLORS, RECOVERY_DATABASE } from './constants';
+import { COLORS, RECOVERY_DATABASE, SLOGAN } from './constants';
 import JourneySessionPage from './pages/JourneySessionPage';
 import MoodCheckPage from './pages/MoodCheckPage';
 import { authAPI, setUserId } from './services/api';
@@ -118,6 +119,19 @@ const App = () => {
   const [notifications, setNotifications] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // const lastClickRef = useRef(0);
   const sosTimerRef = useRef(null);
 
@@ -423,48 +437,57 @@ const App = () => {
   }
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[55] lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
-      )}
-
-      <div className={`fixed inset-y-0 left-0 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out z-[60] lg:z-50 h-screen`}>
-        <Navigation
-          currentView={currentView}
-          setView={setView}
-          profile={profile}
-          logout={logout}
-          onClose={() => setIsMobileMenuOpen(false)}
-          onOpenLocation={() => setShowLocationPage(true)}
-          onOpenLactation={() => setShowLactationLog(true)}
-          isCollapsed={isSidebarCollapsed}
-          setIsCollapsed={setIsSidebarCollapsed}
-        />
-      </div>
-
-      <main className={`flex-1 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out min-h-screen relative flex flex-col`}>
-        <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between border-b border-slate-100 shadow-sm transition-all duration-300">
-          <div className="flex items-center gap-3 lg:gap-6 flex-1 max-w-2xl">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 lg:hidden text-gray-500 hover:bg-gray-100 rounded-lg"><Menu size={20} /></button>
-            {isExpert ? (
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                  <ShieldCheck size={18} />
-                </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-900">Clinical Portal</span>
+    <div className={`min-h-screen flex flex-col transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
+      <main className={`flex-1 transition-all duration-300 ease-in-out min-h-screen relative flex flex-col`}>
+        <div className="sticky top-0 z-50">
+          <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md px-4 lg:px-8 flex items-center justify-between shadow-sm transition-all duration-300 border-b border-slate-100">
+            {/* Left: Brand */}
+            <div className="flex items-center flex-1">
+              <div className="group cursor-pointer">
+                <h1 className="text-xl lg:text-2xl font-black text-slate-900 group-hover:scale-105 transition-transform whitespace-nowrap">
+                  AfterMa
+                </h1>
+                <p className="text-[8px] lg:text-[10px] mt-0.5 tracking-widest font-black text-slate-400 uppercase opacity-80 whitespace-nowrap">
+                  {SLOGAN}
+                </p>
               </div>
-            ) : (
-              <div className="relative w-full hidden sm:block">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-                  <Search className={`${profile.incognito ? 'text-purple-500' : 'text-gray-400'}`} size={16} />
+            </div>
+            
+            {/* Center: Search / Clinical Portal */}
+            <div className="hidden sm:flex flex-1 items-center justify-center max-w-xl px-4">
+              {isExpert ? (
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-900">Clinical Portal</span>
                 </div>
-                <input type="text" placeholder={profile.incognito ? "GHOST Mode Active..." : t.common.searchPlaceholder} className={`w-full border rounded-full py-2 pl-10 pr-20 focus:outline-none focus:ring-2 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 border-purple-200 focus:ring-purple-100' : 'bg-white border-slate-200 focus:ring-pink-100 shadow-sm'}`} />
-                <button onClick={() => setProfile(p => ({ ...p, incognito: !p.incognito }))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="relative w-full">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                    <Search className={`${profile.incognito ? 'text-purple-500' : 'text-gray-400'}`} size={16} />
+                  </div>
+                  <button 
+                    onClick={() => setIsCommandPaletteOpen(true)}
+                    className={`w-full flex items-center justify-between border rounded-full py-2 pl-10 pr-4 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 border-purple-200 focus:ring-purple-100 text-purple-700' : 'bg-white border-slate-200 focus:ring-pink-100 shadow-sm text-slate-500 hover:border-slate-300'}`}
+                  >
+                    <span className="truncate">{profile.incognito ? "GHOST Mode Active..." : "Search commands, resources..."}</span>
+                    <div className="flex items-center gap-1 opacity-70">
+                      <kbd className="hidden lg:inline-flex items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 font-sans text-[10px] font-medium text-slate-500 shadow-sm">
+                        Ctrl
+                      </kbd>
+                      <kbd className="hidden lg:inline-flex items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 font-sans text-[10px] font-medium text-slate-500 shadow-sm">
+                        K
+                      </kbd>
+                    </div>
+                  </button>
+                  <button onClick={() => setProfile(p => ({ ...p, incognito: !p.incognito }))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
+                </div>
+              )}
+            </div>
 
-          <div className="flex items-center gap-3 lg:gap-5 ml-4">
+            {/* Right: Actions */}
+            <div className="flex items-center justify-end gap-3 lg:gap-5 flex-1 ml-auto">
             {/* Improved SOS with confirm state (from v3) */}
             <div className="relative group">
               <button
@@ -498,6 +521,17 @@ const App = () => {
             )}
           </div>
         </header>
+
+          <Navigation
+            currentView={currentView}
+            setView={setView}
+            profile={profile}
+            logout={logout}
+            onClose={() => setIsMobileMenuOpen(false)}
+            onOpenLocation={() => setShowLocationPage(true)}
+            onOpenLactation={() => setShowLactationLog(true)}
+          />
+        </div>
 
         <div className="flex-1">
           <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
@@ -570,6 +604,7 @@ const App = () => {
       {currentView === 'signin' && (
         <SignIn profile={profile} onLogin={handleLogin} onClose={() => setView('education')} onOpenLocation={() => setShowLocationPage(true)} />
       )}
+      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
     </div>
   );
 };
