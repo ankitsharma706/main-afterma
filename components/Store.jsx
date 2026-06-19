@@ -119,24 +119,24 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
       <div className="max-w-7xl mx-auto space-y-20 mt-16 px-4 lg:px-8">
         {/* Hero Section */}
         <div 
-          className="relative rounded-[3rem] overflow-hidden border border-[#F3E5D8] p-10 lg:p-16 shadow-sm"
+          className="relative rounded-[2.5rem] overflow-hidden border border-[#F3E5D8] py-6 px-8 lg:py-10 lg:px-12 shadow-sm"
           
         >
-          <div className="relative z-10 max-w-2xl space-y-6">
+          <div className="relative z-10 max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-white/50 rounded-xl border border-[#F3E5D8]">
               <Sparkles size={14} className="text-[#8B5E3C]" />
               <span className="text-[9px] font-bold uppercase text-[#8B5E3C] tracking-[0.2em]">Clinical Discovery</span>
             </div>
-            <h2 className="text-4xl lg:text-6xl font-black text-[#5D4037] tracking-tight leading-[1.1]">
+            <h2 className="text-3xl lg:text-5xl font-black text-[#5D4037] tracking-tight leading-[1.1]">
               Recommended <br />
               <span className="text-[#8B5E3C]">For You, Mama..</span>
             </h2>
-            <p className="text-[#A1887F] text-sm lg:text-lg font-medium max-w-lg leading-relaxed italic">
+            <p className="text-[#A1887F] text-sm lg:text-base font-medium max-w-lg leading-relaxed italic">
               "Hand-picked clinical grade products to support your Postpartum journey."
             </p>
           </div>
           <div className="absolute right-[-5%] top-[-10%] h-[120%] w-1/2 opacity-[0.05] pointer-events-none flex items-center justify-center">
-            <ShoppingBag size={600} className="text-[#8B5E3C] -rotate-12" />
+            <ShoppingBag size={500} className="text-[#8B5E3C] -rotate-12" />
           </div>
         </div>
 
