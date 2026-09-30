@@ -14,13 +14,12 @@ import {
     X
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { COLORS, EPDS_QUESTIONS, HELPLINES, STABILIZATION_TASKS } from '../constants';
 import { getTriageAnalysis } from '../services/aiService';
-import { translations } from '../translations';
 
 const MentalWellness = ({ profile }) => {
-  const lang = profile.journeySettings.language || 'english';
-  const t = translations[lang];
+  const { t } = useTranslation();
   const [showCheckin, setShowCheckin] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
@@ -75,27 +74,27 @@ const MentalWellness = ({ profile }) => {
       {/* Teddy Bear Reward Overlay */}
       {showReward && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none animate-in zoom-in-50 duration-500">
-           <div className="bg-white/90 backdrop-blur-xl p-12 rounded-[4rem] border-4 border-rose-100 shadow-2xl flex flex-col items-center gap-6 scale-110">
+           <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl p-12 rounded-[4rem] border-4 border-rose-100 dark:border-rose-900/50 shadow-2xl flex flex-col items-center gap-6 scale-110">
               <div className="text-8xl animate-bounce-slow">🧸</div>
               <div className="text-center space-y-2">
-                 <h4 className="text-3xl font-black text-slate-900 tracking-tight">Warm Hug!</h4>
+                 <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Warm Hug!</h4>
                  <div className="flex gap-1 justify-center">
                     {[1,2,3,4,5].map(i => <Star key={i} size={24} className="text-amber-400 fill-amber-400 animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />)}
                  </div>
-                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-4">{t.mental.ritualReward}</p>
+                 <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-4">{t('mental.ritualReward')}</p>
               </div>
            </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-14">
-        <div className="bg-white/80 backdrop-blur-2xl p-10 lg:p-14 rounded-[3.5rem] shadow-[0_10px_60px_rgba(0,0,0,0.03)] border border-white/60 col-span-1 lg:col-span-2 space-y-12">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl p-10 lg:p-14 rounded-[3.5rem] shadow-[0_10px_60px_rgba(0,0,0,0.03)] border border-white/60 dark:border-slate-700/50 col-span-1 lg:col-span-2 space-y-12">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h2 className="text-3xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-tight">{isPostpartum ? "Emotional Sanctuary" : "Prenatal Serenity"}</h2>
-              <p className="text-slate-400 font-medium italic text-base lg:text-lg opacity-80 leading-relaxed">"{isPostpartum ? t.mental.subtitle : "A safe harbor for your mind during pregnancy."}"</p>
+              <h2 className="text-3xl lg:text-5xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{isPostpartum ? "Emotional Sanctuary" : "Prenatal Serenity"}</h2>
+              <p className="text-slate-400 dark:text-slate-400 font-medium italic text-base lg:text-lg opacity-80 leading-relaxed">"{isPostpartum ? t('mental.subtitle') : "A safe harbor for your mind during pregnancy."}"</p>
             </div>
-            <div className="h-20 w-20 bg-slate-50/50 rounded-[2rem] text-slate-200 flex items-center justify-center shadow-inner border border-white">
+            <div className="h-20 w-20 bg-slate-50/50 dark:bg-slate-900/50 rounded-[2rem] text-slate-200 dark:text-slate-600 flex items-center justify-center shadow-inner border border-white dark:border-slate-700">
                <ShieldCheck size={40} />
             </div>
           </div>
@@ -108,39 +107,39 @@ const MentalWellness = ({ profile }) => {
           </div>
 
           {showTriage && (
-            <div className="fixed inset-0 z-[130] bg-white/95 backdrop-blur-xl p-8 lg:p-20 flex flex-col items-center animate-in zoom-in-95 duration-300">
-               <button onClick={() => {setShowTriage(false); setSelectedSymptoms([]); setTriageResult("");}} className="absolute top-10 right-10 p-4 text-slate-400 hover:text-slate-900 transition-colors"><X size={32} /></button>
+            <div className="fixed inset-0 z-[130] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-8 lg:p-20 flex flex-col items-center animate-in zoom-in-95 duration-300">
+               <button onClick={() => {setShowTriage(false); setSelectedSymptoms([]); setTriageResult("");}} className="absolute top-10 right-10 p-4 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"><X size={32} /></button>
                <div className="max-w-3xl w-full space-y-10">
                   <div className="text-center space-y-3">
-                    <div className="p-4 bg-emerald-50 text-emerald-500 rounded-3xl w-fit mx-auto shadow-inner mb-4"><Search size={32} /></div>
-                    <h3 className="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">AI Clinical Triage</h3>
-                    <p className="text-slate-400 font-medium italic">Select any active symptoms for an immediate supportive assessment.</p>
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 rounded-3xl w-fit mx-auto shadow-inner mb-4"><Search size={32} /></div>
+                    <h3 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">AI Clinical Triage</h3>
+                    <p className="text-slate-400 dark:text-slate-500 font-medium italic">Select any active symptoms for an immediate supportive assessment.</p>
                   </div>
 
                   {!triageResult ? (
                     <div className="space-y-8 animate-in fade-in duration-500">
                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {symptomsList.map(s => (
-                            <button key={s} onClick={() => setSelectedSymptoms(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s])} className={`p-6 rounded-3xl border-2 transition-all font-bold text-xs uppercase tracking-widest text-center h-full flex flex-col items-center justify-center gap-2 ${selectedSymptoms.includes(s) ? 'bg-slate-900 border-slate-900 text-white shadow-xl' : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300'}`}>
+                            <button key={s} onClick={() => setSelectedSymptoms(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s])} className={`p-6 rounded-3xl border-2 transition-all font-bold text-xs uppercase tracking-widest text-center h-full flex flex-col items-center justify-center gap-2 ${selectedSymptoms.includes(s) ? 'bg-slate-900 dark:bg-slate-700 border-slate-900 dark:border-slate-600 text-white shadow-xl' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'}`}>
                                {s}
                             </button>
                           ))}
                        </div>
-                       <button onClick={handleTriage} disabled={selectedSymptoms.length === 0 || triageLoading} className="w-full py-6 rounded-full bg-slate-900 text-white font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-4">
-                          {triageLoading ? <div className="animate-spin h-5 w-5 border-2 border-white/20 border-t-white rounded-full" /> : <><Shield size={20} /> Analyze Now</>}
+                       <button onClick={handleTriage} disabled={selectedSymptoms.length === 0 || triageLoading} className="w-full py-6 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-4">
+                          {triageLoading ? <div className="animate-spin h-5 w-5 border-2 border-slate-400 border-t-transparent dark:border-slate-600 dark:border-t-transparent rounded-full" /> : <><Shield size={20} /> Analyze Now</>}
                        </button>
                     </div>
                   ) : (
-                    <div className="p-10 bg-slate-50 border border-slate-100 rounded-[3.5rem] space-y-8 animate-in slide-in-from-bottom duration-500">
+                    <div className="p-10 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-[3.5rem] space-y-8 animate-in slide-in-from-bottom duration-500">
                        <div className="flex items-start gap-6">
-                          <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-50 text-emerald-500"><AlertTriangle size={24} /></div>
-                          <div className="space-y-4 prose prose-slate">
-                             <div className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">{triageResult}</div>
+                          <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-50 dark:border-slate-700 text-emerald-500 dark:text-emerald-400"><AlertTriangle size={24} /></div>
+                          <div className="space-y-4 prose prose-slate dark:prose-invert">
+                             <div className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">{triageResult}</div>
                           </div>
                        </div>
-                       <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row gap-4">
-                          <button onClick={() => {setShowTriage(false); setSelectedSymptoms([]); setTriageResult("");}} className="flex-1 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-xs uppercase tracking-widest text-slate-500">Close Triage</button>
-                          <a href={`tel:${HELPLINES.india.number}`} className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest text-center shadow-lg shadow-rose-100">Contact Emergency OB-GYN</a>
+                       <div className="pt-6 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-4">
+                          <button onClick={() => {setShowTriage(false); setSelectedSymptoms([]); setTriageResult("");}} className="flex-1 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Close Triage</button>
+                          <a href={`tel:${HELPLINES.india.number}`} className="flex-1 py-4 bg-rose-600 dark:bg-rose-500 text-white rounded-2xl font-bold text-xs uppercase tracking-widest text-center shadow-lg shadow-rose-100 dark:shadow-none hover:bg-rose-700 dark:hover:bg-rose-600">Contact Emergency OB-GYN</a>
                        </div>
                     </div>
                   )}
@@ -149,17 +148,17 @@ const MentalWellness = ({ profile }) => {
           )}
 
           {showCheckin && (
-            <div className="fixed inset-0 z-[120] bg-white/95 backdrop-blur-xl p-10 flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
-               <button onClick={() => setShowCheckin(false)} className="absolute top-10 right-10 p-4 text-slate-400 hover:text-slate-900 transition-colors"><X size={32} /></button>
+            <div className="fixed inset-0 z-[120] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-10 flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+               <button onClick={() => setShowCheckin(false)} className="absolute top-10 right-10 p-4 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"><X size={32} /></button>
                <div className="max-w-xl w-full text-center space-y-12">
                   <div className="space-y-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reflection {currentQuestion + 1} of {EPDS_QUESTIONS.length}</span>
-                    <h3 className="text-3xl font-bold text-slate-900 tracking-tight leading-tight">{EPDS_QUESTIONS[currentQuestion].question}</h3>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Reflection {currentQuestion + 1} of {EPDS_QUESTIONS.length}</span>
+                    <h3 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">{EPDS_QUESTIONS[currentQuestion].question}</h3>
                   </div>
                   <div className="grid grid-cols-1 gap-4 w-full">
                      {EPDS_QUESTIONS[currentQuestion].options.map((choice, idx) => (
-                       <button key={choice} onClick={() => handleAnswer(idx)} className="p-6 bg-white rounded-3xl border-2 border-slate-100 hover:border-slate-900 hover:shadow-lg transition-all font-bold text-slate-700 text-left flex items-center justify-between group">
-                         {choice} <ChevronRight size={18} className="text-slate-200 group-hover:text-slate-900 transition-colors" />
+                       <button key={choice} onClick={() => handleAnswer(idx)} className="p-6 bg-white dark:bg-slate-800 rounded-3xl border-2 border-slate-100 dark:border-slate-700 hover:border-slate-900 dark:hover:border-slate-500 hover:shadow-lg transition-all font-bold text-slate-700 dark:text-slate-300 text-left flex items-center justify-between group">
+                         {choice} <ChevronRight size={18} className="text-slate-200 dark:text-slate-600 group-hover:text-slate-900 dark:group-hover:text-white transition-colors" />
                        </button>
                      ))}
                   </div>
@@ -188,19 +187,19 @@ const MentalWellness = ({ profile }) => {
               </div>
            </div>
 
-           <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900">{t.mental.ritualTitle}</h4>
+           <div className="bg-white dark:bg-slate-800 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-sm space-y-6">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white">{t('mental.ritualTitle')}</h4>
               <div className="space-y-4">
                  {STABILIZATION_TASKS.map((task, i) => (
                    <button 
                     key={i} 
                     onClick={() => toggleRitual(i)}
-                    className="w-full flex gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 items-center text-left hover:bg-slate-100 transition-colors group active:scale-[0.98]"
+                    className="w-full flex gap-4 p-5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 items-center text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group active:scale-[0.98]"
                    >
-                      <div className={`p-2.5 rounded-xl shadow-sm border transition-all ${checkedRituals[i] ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-50 text-slate-100'}`}>
+                      <div className={`p-2.5 rounded-xl shadow-sm border transition-all ${checkedRituals[i] ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-50 dark:border-slate-700 text-slate-100 dark:text-slate-700'}`}>
                          {checkedRituals[i] ? <CheckSquare size={16} /> : <div className="w-4 h-4" />}
                       </div>
-                      <p className={`text-xs font-bold leading-tight transition-all ${checkedRituals[i] ? 'text-slate-400 line-through italic' : 'text-slate-700'}`}>"{task}"</p>
+                      <p className={`text-xs font-bold leading-tight transition-all ${checkedRituals[i] ? 'text-slate-400 dark:text-slate-500 line-through italic' : 'text-slate-700 dark:text-slate-300'}`}>"{task}"</p>
                    </button>
                  ))}
               </div>
@@ -212,10 +211,10 @@ const MentalWellness = ({ profile }) => {
 };
 
 const MentalAction = ({ icon, title, subtitle, onClick, theme }) => (
-  <button onClick={onClick} className="flex flex-col items-center p-10 bg-white/50 backdrop-blur-xl border border-white/40 rounded-[3rem] hover:border-white shadow-sm hover:shadow-2xl transition-all duration-500 text-center group active:scale-[0.98]">
-    <div className="p-6 bg-slate-50 rounded-[1.75rem] mb-6 group-hover:bg-white group-hover:scale-110 transition-all shadow-inner border border-transparent group-hover:border-slate-100">{React.cloneElement(icon, { size: 32, strokeWidth: 2.5 })}</div>
-    <span className="font-bold text-slate-900 text-xl mb-1.5 tracking-tight leading-none">{title}</span>
-    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{subtitle}</span>
+  <button onClick={onClick} className="flex flex-col items-center p-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-white/40 dark:border-slate-700/50 rounded-[3rem] hover:border-white dark:hover:border-slate-600 shadow-sm hover:shadow-2xl transition-all duration-500 text-center group active:scale-[0.98]">
+    <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[1.75rem] mb-6 group-hover:bg-white dark:group-hover:bg-slate-800 group-hover:scale-110 transition-all shadow-inner border border-transparent group-hover:border-slate-100 dark:group-hover:border-slate-700">{React.cloneElement(icon, { size: 32, strokeWidth: 2.5 })}</div>
+    <span className="font-bold text-slate-900 dark:text-white text-xl mb-1.5 tracking-tight leading-none">{title}</span>
+    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{subtitle}</span>
   </button>
 );
 

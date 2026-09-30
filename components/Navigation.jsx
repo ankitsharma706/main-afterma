@@ -14,36 +14,35 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useTranslation } from 'react-i18next';
 import { COLORS, SLOGAN } from '../constants';
-import { translations } from '../translations';
 
 const Navigation = ({ profile, logout, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = COLORS[profile.accent] || COLORS.PINK;
-  const lang = profile.journeySettings.language || 'english';
-  const t = translations[lang];
+  const { t } = useTranslation();
   
   const navItems = [
-    { id: 'dashboard', label: t.nav.dashboard, icon: Home, private: true },
-    { id: 'physical', label: t.nav.physical, icon: Activity, private: true },
-    { id: 'mental', label: t.nav.mental, icon: Heart, private: true },
-    { id: 'care-connect', label: t.nav.care, icon: Users, private: true },
-    { id: 'momkart', label: t.nav.momkart, icon: ShoppingBag, private: true },
-    { id: 'education', label: t.nav.education, icon: BookOpen, private: false },
-    { id: 'settings', label: t.nav.settings, icon: Settings, private: true },
-    { id: 'membership', label: t.nav.membership, icon: Star, private: true },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: Home, private: true },
+    { id: 'physical', label: t('nav.physical'), icon: Activity, private: true },
+    { id: 'mental', label: t('nav.mental'), icon: Heart, private: true },
+    { id: 'care-connect', label: t('nav.care'), icon: Users, private: true },
+    { id: 'momkart', label: t('nav.momkart'), icon: ShoppingBag, private: true },
+    { id: 'education', label: t('nav.education'), icon: BookOpen, private: false },
+    { id: 'settings', label: t('nav.settings'), icon: Settings, private: true },
+    { id: 'membership', label: t('nav.membership'), icon: Star, private: true },
   ];
 
   if (profile.role === 'caregiver') {
-    navItems.unshift({ id: 'caregiver', label: t.nav.caregiver, icon: UserCheck, private: true });
+    navItems.unshift({ id: 'caregiver', label: t('nav.caregiver'), icon: UserCheck, private: true });
   }
 
   return (
-    <div className="w-64 bg-white h-screen border-r border-gray-100 flex flex-col shadow-sm relative z-50 overflow-hidden">
+    <div className="w-64 bg-white dark:bg-slate-900 h-screen border-r border-gray-100 dark:border-slate-800 flex flex-col shadow-sm relative z-50 overflow-hidden">
       <div className="p-8 flex items-center justify-between">
         <div className="group cursor-pointer">
-          <h1 className="text-2xl font-black text-slate-900 group-hover:scale-105 transition-transform">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white group-hover:scale-105 transition-transform">
             AfterMa
           </h1>
           <p className="text-[10px] mt-1 tracking-widest font-black text-slate-400 uppercase opacity-80">
@@ -76,14 +75,14 @@ const Navigation = ({ profile, logout, onClose }) => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                 isActive 
                   ? 'text-white shadow-lg' 
-                  : 'text-slate-500 hover:bg-slate-50'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
               }`}
               style={{ 
                 backgroundColor: isActive ? theme.primary : '', 
                 color: isActive ? 'white' : ''
               }}
             >
-              <Icon size={18} className={isActive ? '' : 'text-slate-400'} />
+              <Icon size={18} className={isActive ? '' : 'text-slate-400 dark:text-slate-500'} />
               <span className={`font-bold text-sm tracking-tight`}>{item.label}</span>
               {item.id === 'membership' && profile.membershipPlan === 'plus' && <Star size={12} fill="currentColor" className="ml-auto text-amber-300" />}
             </button>
@@ -91,14 +90,14 @@ const Navigation = ({ profile, logout, onClose }) => {
         })}
       </nav>
 
-      <div className="p-6 border-t border-slate-50">
+      <div className="p-6 border-t border-slate-50 dark:border-slate-800">
         {profile.authenticated && (
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all text-sm font-bold"
+            className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all text-sm font-bold"
           >
             <LogOut size={18} />
-            <span>{t.common.signOut}</span>
+            <span>{t('common.signOut')}</span>
           </button>
         )}
       </div>

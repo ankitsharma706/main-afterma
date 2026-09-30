@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Base background transitions for dark mode */
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
+@layer utilities {
+  .bg-grid-white {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.04)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+  }
+
+  .glow-orb-primary {
+    background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0) 70%);
+  }
+
+  .glow-orb-secondary {
+    background: radial-gradient(circle, rgba(236,72,153,0.1) 0%, rgba(236,72,153,0) 70%);
+  }
+
+  /* Glassmorphism panel styling for Dashboard Cards */
+  .dark-glass-panel {
+    @apply bg-[#13111C]/80 backdrop-blur-xl border border-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.4)];
+  }
+}

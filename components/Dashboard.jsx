@@ -14,6 +14,7 @@ import {
     Zap
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Area,
     AreaChart,
@@ -25,12 +26,10 @@ import {
 } from 'recharts';
 import { COLORS, NUTRITION_GUIDE, RECOVERY_DATABASE, SLOGAN } from '../constants';
 import { getDailyInspiration } from '../services/aiService';
-import { translations } from '../translations';
 
 const Dashboard = ({ profile, logs, onAddLog }) => {
-  const lang = profile.journeySettings.language || 'english';
-  const t = translations[lang];
-  const [inspiration, setInspiration] = useState(t.dashboard.inspiration);
+  const { t, i18n } = useTranslation();
+  const [inspiration, setInspiration] = useState(t('dashboard.inspiration'));
   const lastLog = logs[logs.length - 1];
   const theme = COLORS[profile.accent] || COLORS.PINK;
 
@@ -40,7 +39,7 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
       setInspiration(msg);
     };
     fetchInspiration();
-  }, [lastLog, lang]);
+  }, [lastLog, i18n.language]);
 
   const chartData = useMemo(() => {
     if (logs.length === 0) return [{ time: 'Today', mood: 5, pain: 2 }];
@@ -133,7 +132,7 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white">{t.common.welcome}, {profile.name}</h2>
+              <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white">{t('common.welcome')}, {profile.name}</h2>
               <p className="opacity-90 max-w-lg italic text-base lg:text-xl leading-relaxed font-medium text-white/90">"{inspiration}"</p>
               <div className="pt-4 flex flex-wrap gap-3 justify-center lg:justify-start">
                  <div className="flex items-center gap-2.5 bg-white/15 px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-sm">
@@ -142,7 +141,7 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
                  </div>
                  <div className="flex items-center gap-2.5 bg-white/15 px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-sm">
                    <Zap size={16} className="text-amber-300" fill="currentColor" />
-                   <span className="font-bold text-[10px] lg:text-xs text-white uppercase tracking-widest">{profile.streakCount} {t.dashboard.streakSuffix}</span>
+                   <span className="font-bold text-[10px] lg:text-xs text-white uppercase tracking-widest">{profile.streakCount} {t('dashboard.streakSuffix')}</span>
                  </div>
               </div>
             </div>
@@ -152,66 +151,72 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
               <Download size={20} /> Report
             </button>
             <button onClick={onAddLog} className="bg-white/95 backdrop-blur-md px-10 py-5 rounded-full font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shrink-0 text-slate-900 text-sm lg:text-base border border-white">
-              <Plus size={20} strokeWidth={3} /> {t.dashboard.logMoment}
+              <Plus size={20} strokeWidth={3} /> {t('dashboard.logMoment')}
             </button>
           </div>
         </div>
       </div>
 
       {nextActivity && !profile.journeySettings.isPaused && (
-        <div className="bg-white/70 backdrop-blur-xl p-8 lg:p-10 rounded-[2.5rem] border border-white/60 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8 group hover:shadow-lg transition-all duration-500 cursor-pointer">
+        <div className="bg-white/70 dark:bg-[#13111C]/80 backdrop-blur-xl p-8 lg:p-10 rounded-[2.5rem] border border-white/60 dark:border-white/[0.05] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-center justify-between gap-8 group hover:shadow-lg transition-all duration-500 cursor-pointer">
            <div className="flex items-center gap-8 w-full lg:w-auto">
               <div className="h-16 w-16 lg:h-20 lg:w-20 rounded-[1.75rem] flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform shrink-0" style={{ backgroundColor: theme.bg, color: theme.primary }}><Play fill="currentColor" size={24} className="ml-1" /></div>
               <div className="space-y-2">
-                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50" style={{ color: theme.primary }}>{t.dashboard.nextStep}</span>
-                 <h3 className="text-xl lg:text-3xl font-bold text-slate-900 leading-tight">{nextActivity.title}</h3>
-                 <p className="text-sm lg:text-base text-slate-400 font-medium line-clamp-1">{nextActivity.description}</p>
+                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50 dark:opacity-80" style={{ color: theme.primary }}>{t('dashboard.nextStep')}</span>
+                 <h3 className="text-xl lg:text-3xl font-bold text-slate-900 dark:text-white leading-tight">{nextActivity.title}</h3>
+                 <p className="text-sm lg:text-base text-slate-400 dark:text-slate-400 font-medium line-clamp-1">{nextActivity.description}</p>
               </div>
            </div>
-           <button className="w-full md:w-auto px-10 py-5 rounded-3xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 text-white" style={{ backgroundColor: theme.primary, background: `linear-gradient(135deg, ${theme.primary}, ${theme.text}dd)` }}>
-             {t.dashboard.startSoftly} <ArrowRight size={20} />
+           <button className="w-full md:w-auto px-10 py-5 rounded-3xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-purple-900/40 active:scale-95 text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 dark:border-t dark:border-white/20">
+             {t('dashboard.startSoftly')} <ArrowRight size={20} />
            </button>
         </div>
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        <StatCard icon={<Droplet className="text-blue-500" />} label={t.dashboard.stats.hydration} value={`${lastLog?.waterIntake || 0}/10`} color="bg-blue-50/40" />
-        <StatCard icon={<Moon className="text-indigo-400" />} label={t.dashboard.stats.rest} value={`${lastLog?.sleepHours || 0}`} unit="hrs" color="bg-indigo-50/40" />
-        <StatCard icon={<Pill className="text-emerald-500" />} label={t.dashboard.stats.selfcare} value={lastLog?.medicationsTaken ? "Done" : "1 Task"} color="bg-emerald-50/40" />
-        <StatCard icon={<Activity className="text-rose-500" />} label={t.dashboard.stats.kegel} value={`${lastLog?.kegelCount || 0}`} unit="sets" color="bg-rose-50/40" />
+        <StatCard icon={<Droplet className="text-blue-500" />} label={t('dashboard.stats.hydration')} value={`${lastLog?.waterIntake || 0}/10`} color="bg-blue-50/40 dark:bg-slate-800/40" />
+        <StatCard icon={<Moon className="text-indigo-400" />} label={t('dashboard.stats.rest')} value={`${lastLog?.sleepHours || 0}`} unit="hrs" color="bg-indigo-50/40 dark:bg-slate-800/40" />
+        <StatCard icon={<Pill className="text-emerald-500" />} label={t('dashboard.stats.selfcare')} value={lastLog?.medicationsTaken ? "Done" : "1 Task"} color="bg-emerald-50/40 dark:bg-slate-800/40" />
+        <StatCard icon={<Activity className="text-rose-500" />} label={t('dashboard.stats.kegel')} value={`${lastLog?.kegelCount || 0}`} unit="sets" color="bg-rose-50/40 dark:bg-slate-800/40" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl p-8 lg:p-12 rounded-[2.5rem] shadow-[0_10px_50px_rgba(0,0,0,0.02)] border border-white/60">
-          <div className="mb-8 lg:mb-12"><h3 className="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">{t.dashboard.healingPulse}</h3><p className="text-sm lg:text-base text-slate-400 font-medium opacity-80 mt-1">{t.dashboard.healingPulseSub}</p></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 relative z-10">
+        <div className="lg:col-span-2 bg-white/70 dark:bg-[#13111C]/80 backdrop-blur-xl p-8 lg:p-12 rounded-[2.5rem] shadow-[0_10px_50px_rgba(0,0,0,0.02)] border border-white/60 dark:border-white/[0.05] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+          <div className="mb-8 lg:mb-12"><h3 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t('dashboard.healingPulse')}</h3><p className="text-sm lg:text-base text-slate-400 dark:text-slate-400 font-medium opacity-80 mt-1">{t('dashboard.healingPulseSub')}</p></div>
           <div className="h-56 lg:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
-                <defs><linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={theme.primary} stopOpacity={0.2}/><stop offset="95%" stopColor={theme.primary} stopOpacity={0}/></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.5} />
+                <defs>
+                  <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#c084fc" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#c084fc" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.15} />
                 <XAxis dataKey="time" hide /><YAxis hide domain={[0, 10]} />
-                <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }} />
-                <Area type="monotone" dataKey="mood" stroke={theme.primary} strokeWidth={4} fillOpacity={1} fill="url(#colorMood)" /><Line type="monotone" dataKey="pain" stroke="#94A3B8" strokeWidth={2} strokeDasharray="6 6" />
+                <Tooltip contentStyle={{ borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(19, 17, 28, 0.9)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', color: '#fff' }} itemStyle={{ color: '#e879f9' }} />
+                <Area type="monotone" dataKey="mood" stroke="#c084fc" strokeWidth={4} fillOpacity={1} fill="url(#colorMood)" />
+                <Line type="monotone" dataKey="pain" stroke="#fb923c" strokeWidth={3} strokeDasharray="6 6" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl p-8 lg:p-12 rounded-[2.5rem] shadow-sm border border-white/60 flex flex-col justify-between group">
+        <div className="bg-white/70 dark:bg-[#13111C]/80 backdrop-blur-xl p-8 lg:p-12 rounded-[2.5rem] shadow-sm border border-white/60 dark:border-white/[0.05] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
            <div className="space-y-4">
-             <h3 className="text-xl lg:text-2xl font-bold text-slate-900 flex items-center gap-4"><div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:rotate-12 transition-transform shadow-inner"><Leaf size={24} /></div>{t.dashboard.warmNutrition}</h3>
+             <h3 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-4"><div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-2xl group-hover:rotate-12 transition-transform shadow-inner"><Leaf size={24} /></div>{t('dashboard.warmNutrition')}</h3>
              <p className="text-sm text-slate-400 font-medium leading-relaxed">Fueling your recovery with traditional Ayurvedic principles.</p>
            </div>
            <div className="space-y-6 my-10">
               {NUTRITION_GUIDE.slice(0, 2).map((item, idx) => (
-                <div key={idx} className="p-6 bg-slate-50/50 rounded-[1.75rem] border border-white/80 space-y-4 hover:border-emerald-100 transition-colors">
-                   <h4 className="font-bold text-slate-400 text-[10px] uppercase tracking-[0.2em]">{item.title}</h4>
-                   <div className="flex flex-wrap gap-2">{item.items.map(i => <span key={i} className="text-[10px] bg-white px-3 py-1 rounded-full font-bold text-slate-600 shadow-sm border border-slate-100/50">{i}</span>)}</div>
-                   <p className="text-xs text-emerald-600 font-bold italic opacity-90 leading-tight">"{item.benefit}"</p>
+                <div key={idx} className="p-6 bg-slate-50/50 dark:bg-slate-700/50 rounded-[1.75rem] border border-white/80 dark:border-slate-600 space-y-4 hover:border-emerald-100 transition-colors">
+                   <h4 className="font-bold text-slate-400 dark:text-slate-300 text-[10px] uppercase tracking-[0.2em]">{item.title}</h4>
+                   <div className="flex flex-wrap gap-2">{item.items.map(i => <span key={i} className="text-[10px] bg-white dark:bg-slate-800 px-3 py-1 rounded-full font-bold text-slate-600 dark:text-slate-300 shadow-sm border border-slate-100/50 dark:border-slate-700">{i}</span>)}</div>
+                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold italic opacity-90 leading-tight">"{item.benefit}"</p>
                 </div>
               ))}
            </div>
-           <button className="w-full py-5 border-2 border-dashed border-slate-200 rounded-3xl font-bold text-sm text-slate-500 hover:border-emerald-200 hover:text-emerald-600 transition-all active:scale-95">{t.dashboard.recipes}</button>
+           <button className="w-full py-5 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-3xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:border-emerald-200 dark:hover:border-emerald-500 hover:text-emerald-600 transition-all active:scale-95">{t('dashboard.recipes')}</button>
         </div>
       </div>
     </div>
@@ -219,9 +224,9 @@ const Dashboard = ({ profile, logs, onAddLog }) => {
 };
 
 const StatCard = ({ icon, label, value, unit = "", color }) => (
-  <div className={`p-8 lg:p-10 rounded-[2.5rem] shadow-sm border border-white/60 flex flex-col justify-between hover:translate-y-[-6px] transition-all duration-500 cursor-default group ${color} backdrop-blur-sm`}>
-    <div className="flex items-center gap-4 text-slate-500 font-bold mb-8"><div className="p-3 bg-white/80 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">{icon}</div><span className="text-[10px] uppercase tracking-[0.2em] line-clamp-1 opacity-60">{label}</span></div>
-    <div className="flex items-baseline gap-2"><span className="text-3xl lg:text-5xl font-bold text-slate-900 tracking-tighter">{value}</span>{unit && <span className="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-widest">{unit}</span>}</div>
+  <div className={`p-8 lg:p-10 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-white/60 dark:border-white/[0.05] flex flex-col justify-between hover:translate-y-[-6px] transition-all duration-500 cursor-default group ${color.replace('dark:bg-slate-800/40', 'dark:bg-[#13111C]/60 dark:backdrop-blur-xl')} backdrop-blur-sm`}>
+    <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 font-bold mb-8"><div className="p-3 bg-white/80 dark:bg-[#201D2E] border dark:border-white/10 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">{icon}</div><span className="text-[10px] uppercase tracking-[0.2em] line-clamp-1 opacity-60 dark:opacity-80">{label}</span></div>
+    <div className="flex items-baseline gap-2"><span className="text-3xl lg:text-5xl font-bold text-slate-900 dark:text-white tracking-tighter">{value}</span>{unit && <span className="text-[10px] lg:text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{unit}</span>}</div>
   </div>
 );
 
