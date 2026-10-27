@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "seo:generate": "node scripts/generate-seo-assets.js",
+    "build": "node scripts/generate-seo-assets.js && vite build",
     "preview": "vite preview",
     "lint": "vite build --mode development"
   },

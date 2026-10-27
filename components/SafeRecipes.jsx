@@ -9,8 +9,8 @@ import {
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { COLORS, RECIPES } from '../constants';
-
-
+import SEOHead from './seo/SEOHead';
+import Breadcrumbs from './seo/Breadcrumbs';
 
 const SafeRecipes = ({ profile }) => {
   const navigate = useNavigate();
@@ -25,7 +25,15 @@ const SafeRecipes = ({ profile }) => {
   }, [query]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 lg:space-y-16 pb-32 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto space-y-8 lg:space-y-12 pb-32 animate-in fade-in duration-700">
+      <SEOHead
+        title="Safe Recipes & Restorative Postpartum Nutrition"
+        description="Traditional and evidence-based postpartum recipes designed for tissue healing, lactation support, and digestive warmth."
+        pathname="/recipes"
+      />
+
+      <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Safe Recipes' }]} />
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div className="space-y-2">
           <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">Safe Recipes</h2>

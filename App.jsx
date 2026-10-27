@@ -1,6 +1,6 @@
 
 import { Bell, Menu, Search, ShieldCheck } from 'lucide-react';
-import { lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CareConnect from './components/CareConnect';
 import CaregiverView from './components/CaregiverView';
@@ -36,7 +36,20 @@ import JourneySessionPage from './pages/JourneySessionPage';
 import MoodCheckPage from './pages/MoodCheckPage';
 import { authAPI, setUserId } from './services/api';
 import { translations } from './translations';
-const Dashboard = lazy(() => import('./components/Dashboard'));
+import Footer from './components/Footer';
+import SEOHead from './components/seo/SEOHead';
+import SEOGuardrail from './components/seo/SEOGuardrail';
+import { buildWebSiteSchema, buildOrganizationSchema, buildWebApplicationSchema } from './services/seo/schemaBuilder';
+
+// Resilient lazy imports for compliance and monetization views (protected against client-side ad-blockers)
+const Dashboard = lazy(() => import('./components/Dashboard').catch(() => ({ default: () => null })));
+const PolicyView = lazy(() => import('./components/compliance/PolicyView').catch(() => ({ default: () => null })));
+const TermsView = lazy(() => import('./components/compliance/TermsView').catch(() => ({ default: () => null })));
+const DisclaimerView = lazy(() => import('./components/compliance/DisclaimerView').catch(() => ({ default: () => null })));
+const AboutView = lazy(() => import('./components/compliance/AboutView').catch(() => ({ default: () => null })));
+const SupportView = lazy(() => import('./components/compliance/SupportView').catch(() => ({ default: () => null })));
+const NotFoundView = lazy(() => import('./components/compliance/NotFoundView').catch(() => ({ default: () => null })));
+const PromotionManager = lazy(() => import('./components/promotions/PromotionManager').catch(() => ({ default: () => null })));
 
 const App = () => {
   const [profile, setProfile] = useState(() => {
@@ -418,26 +431,47 @@ const App = () => {
       });
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
   const triageMessagesMemo = useMemo(() => triageMessages, [triageMessages]);
+  const globalSchemas = useMemo(() => [
+    buildWebSiteSchema(),
+    buildOrganizationSchema(),
+    buildWebApplicationSchema(),
+  ], []);
 
   // ── Mood Check Page: standalone, no sidebar/header chrome ──
   if (isMoodCheckPage) {
-    return <MoodCheckPage profile={profile} />;
+    return (
+      <>
+        <SEOGuardrail />
+        <MoodCheckPage profile={profile} />
+      </>
+    );
   }
 
   // ── Journey Session: render standalone, no sidebar/header chrome ──
   if (isSessionPage) {
     return (
-      <JourneySessionPage
-        profile={profile}
-        activities={filteredActivities}
-        onToggleActivity={toggleActivity}
-        setExerciseLogs={setExerciseLogs}
-      />
+      <>
+        <SEOGuardrail />
+        <JourneySessionPage
+          profile={profile}
+          activities={filteredActivities}
+          onToggleActivity={toggleActivity}
+          setExerciseLogs={setExerciseLogs}
+        />
+      </>
     );
   }
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
+      {/* Declarative SEO Head & Schema.org JSON-LD */}
+      <SEOHead schemas={globalSchemas} />
+      {/* Route-level Verification Guardrail: strictly forces noindex & blocks AdSense on utility/restricted views */}
+      <SEOGuardrail />
+      {/* Route-aware promotion controller: strictly disables ads on non-content/utility screens */}
+      <Suspense fallback={null}>
+        <PromotionManager />
+      </Suspense>
       <main className={`flex-1 transition-all duration-300 ease-in-out min-h-screen relative flex flex-col`}>
         <div className="sticky top-0 z-50">
           <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md px-4 lg:px-8 flex items-center justify-between shadow-sm transition-all duration-300 border-b border-slate-100">
@@ -543,7 +577,11 @@ const App = () => {
             {/* Mother Views - Restricted for Experts */}
             {!isExpert && (
               <>
-                {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => navigate('/carejourney?tab=PeriodLog')} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />}
+                {currentView === 'dashboard' && profile.authenticated && (
+                  <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading Dashboard...</div>}>
+                    <Dashboard profile={profile} logs={logs} onAddLog={() => navigate('/carejourney?tab=PeriodLog')} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />
+                  </Suspense>
+                )}
                 {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
                 {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
                 {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
@@ -587,10 +625,32 @@ const App = () => {
                 {currentView === 'settings' && profile.authenticated && <Settings profile={profile} setProfile={setProfile} />}
                 {currentView === 'careconnect' && profile.authenticated && <CareConnect profile={profile} setProfile={setProfile} appointments={appointments} setAppointments={setAppointments} setCircles={setCircles} circles={circles} addNotification={addNotification} />}
                 {currentView === 'caregiver' && profile.authenticated && <CaregiverView profile={profile} logs={logs} />}
+
+                {/* Legal & Trust Compliance Views (Publicly Accessible) */}
+                <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading document...</div>}>
+                  {['privacy', 'privacy-policy'].includes(currentView) && <PolicyView />}
+                  {['terms', 'terms-of-service'].includes(currentView) && <TermsView />}
+                  {['disclaimer', 'medical-disclaimer'].includes(currentView) && <DisclaimerView />}
+                  {['about', 'about-us'].includes(currentView) && <AboutView />}
+                  {['contact', 'support', 'help'].includes(currentView) && <SupportView />}
+
+                  {/* 404 Fallback: Prevents empty white screens on broken routes */}
+                  {![
+                    'dashboard', 'carejourney', 'healthlogs', 'lactationlogs', 'healthsummary',
+                    'mentalwellness', 'education', 'recipes', 'learning-center', 'community-wisdom',
+                    'community', 'momkart', 'momkart-cart', 'momkart-payment', 'aftermaplus',
+                    'settings', 'careconnect', 'caregiver', 'expert-dashboard', 'expert-analytics',
+                    'expert-settings', 'signin', 'privacy', 'privacy-policy', 'terms', 'terms-of-service',
+                    'disclaimer', 'medical-disclaimer', 'about', 'about-us', 'contact', 'support', 'help'
+                  ].includes(currentView) && <NotFoundView />}
+                </Suspense>
               </>
             )}
           </div>
         </div>
+
+        {/* Global Footer rendered across all platform & content pages */}
+        <Footer />
 
         {showNotifications && <NotificationPanel notifications={notifications} onClose={() => setShowNotifications(false)} onClear={() => setNotifications([])} />}
       </main>
