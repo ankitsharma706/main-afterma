@@ -258,35 +258,39 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
   // Load Google GSI script and initialize Google Auth on mount/view change
   useEffect(() => {
     const initGoogle = () => {
-      const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-      if (!CLIENT_ID || !window.google?.accounts?.id) return;
+      try {
+        const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+        if (!CLIENT_ID || !window.google?.accounts?.id) return;
 
-      window.google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: async (response) => {
-          setGoogleLoading(true);
-          setGoogleError('');
-          try {
-            const user = await authAPI.loginWithGoogle(response.credential);
-            const userData = user || await authAPI.getMe();
-            onLogin(role, userData);
-          } catch (err) {
-            setGoogleError(err?.message || 'Google sign-in failed. Please try Email or Phone.');
-          } finally {
-            setGoogleLoading(false);
-          }
-        },
-      });
-
-      // Render the hidden official Google button over our custom button to robustly capture clicks
-      const btnWrapper = document.getElementById('google-btn-wrapper');
-      if (btnWrapper) {
-        window.google.accounts.id.renderButton(btnWrapper, {
-          type: 'standard',
-          theme: 'outline',
-          size: 'large',
-          width: btnWrapper.offsetWidth || 300,
+        window.google.accounts.id.initialize({
+          client_id: CLIENT_ID,
+          callback: async (response) => {
+            setGoogleLoading(true);
+            setGoogleError('');
+            try {
+              const user = await authAPI.loginWithGoogle(response.credential);
+              const userData = user || await authAPI.getMe();
+              onLogin(role, userData);
+            } catch (err) {
+              setGoogleError(err?.message || 'Google sign-in failed. Please try Email or Phone.');
+            } finally {
+              setGoogleLoading(false);
+            }
+          },
         });
+
+        // Render the hidden official Google button over our custom button to robustly capture clicks
+        const btnWrapper = document.getElementById('google-btn-wrapper');
+        if (btnWrapper) {
+          window.google.accounts.id.renderButton(btnWrapper, {
+            type: 'standard',
+            theme: 'outline',
+            size: 'large',
+            width: btnWrapper.offsetWidth || 300,
+          });
+        }
+      } catch (err) {
+        console.warn('Google GSI initialization notice:', err?.message);
       }
     };
 

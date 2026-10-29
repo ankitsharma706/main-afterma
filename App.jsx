@@ -1,6 +1,6 @@
 
 import { Bell, Menu, Search, ShieldCheck } from 'lucide-react';
-import { lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CareConnect from './components/CareConnect';
 import CaregiverView from './components/CaregiverView';
@@ -28,14 +28,28 @@ import Settings from './components/Settings';
 import SignIn from './components/SignIn';
 import SOSOverlay from './components/SOSOverlay';
 import MomKart from './components/Store';
+import CommandPalette from './components/CommandPalette';
 import CommunityQA from './components/CommunityQA';
 import SurveyCommunityData from './components/SurveyCommunityData';
-import { COLORS, RECOVERY_DATABASE } from './constants';
+import { COLORS, RECOVERY_DATABASE, SLOGAN } from './constants';
 import JourneySessionPage from './pages/JourneySessionPage';
 import MoodCheckPage from './pages/MoodCheckPage';
 import { authAPI, setUserId } from './services/api';
 import { translations } from './translations';
-const Dashboard = lazy(() => import('./components/Dashboard'));
+import Footer from './components/Footer';
+import SEOHead from './components/seo/SEOHead';
+import SEOGuardrail from './components/seo/SEOGuardrail';
+import { buildWebSiteSchema, buildOrganizationSchema, buildWebApplicationSchema } from './services/seo/schemaBuilder';
+
+// Resilient lazy imports for compliance and monetization views (protected against client-side ad-blockers)
+const Dashboard = lazy(() => import('./components/Dashboard').catch(() => ({ default: () => null })));
+const PolicyView = lazy(() => import('./components/compliance/PolicyView').catch(() => ({ default: () => null })));
+const TermsView = lazy(() => import('./components/compliance/TermsView').catch(() => ({ default: () => null })));
+const DisclaimerView = lazy(() => import('./components/compliance/DisclaimerView').catch(() => ({ default: () => null })));
+const AboutView = lazy(() => import('./components/compliance/AboutView').catch(() => ({ default: () => null })));
+const SupportView = lazy(() => import('./components/compliance/SupportView').catch(() => ({ default: () => null })));
+const NotFoundView = lazy(() => import('./components/compliance/NotFoundView').catch(() => ({ default: () => null })));
+const PromotionManager = lazy(() => import('./components/promotions/PromotionManager').catch(() => ({ default: () => null })));
 
 const App = () => {
   const [profile, setProfile] = useState(() => {
@@ -118,6 +132,19 @@ const App = () => {
   const [notifications, setNotifications] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // const lastClickRef = useRef(0);
   const sosTimerRef = useRef(null);
 
@@ -404,67 +431,97 @@ const App = () => {
       });
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
   const triageMessagesMemo = useMemo(() => triageMessages, [triageMessages]);
+  const globalSchemas = useMemo(() => [
+    buildWebSiteSchema(),
+    buildOrganizationSchema(),
+    buildWebApplicationSchema(),
+  ], []);
 
   // ── Mood Check Page: standalone, no sidebar/header chrome ──
   if (isMoodCheckPage) {
-    return <MoodCheckPage profile={profile} />;
+    return (
+      <>
+        <SEOGuardrail />
+        <MoodCheckPage profile={profile} />
+      </>
+    );
   }
 
   // ── Journey Session: render standalone, no sidebar/header chrome ──
   if (isSessionPage) {
     return (
-      <JourneySessionPage
-        profile={profile}
-        activities={filteredActivities}
-        onToggleActivity={toggleActivity}
-        setExerciseLogs={setExerciseLogs}
-      />
+      <>
+        <SEOGuardrail />
+        <JourneySessionPage
+          profile={profile}
+          activities={filteredActivities}
+          onToggleActivity={toggleActivity}
+          setExerciseLogs={setExerciseLogs}
+        />
+      </>
     );
   }
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[55] lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
-      )}
-
-      <div className={`fixed inset-y-0 left-0 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out z-[60] lg:z-50 h-screen`}>
-        <Navigation
-          currentView={currentView}
-          setView={setView}
-          profile={profile}
-          logout={logout}
-          onClose={() => setIsMobileMenuOpen(false)}
-          onOpenLocation={() => setShowLocationPage(true)}
-          onOpenLactation={() => setShowLactationLog(true)}
-          isCollapsed={isSidebarCollapsed}
-          setIsCollapsed={setIsSidebarCollapsed}
-        />
-      </div>
-
-      <main className={`flex-1 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out min-h-screen relative flex flex-col`}>
-        <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between border-b border-slate-100 shadow-sm transition-all duration-300">
-          <div className="flex items-center gap-3 lg:gap-6 flex-1 max-w-2xl">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 lg:hidden text-gray-500 hover:bg-gray-100 rounded-lg"><Menu size={20} /></button>
-            {isExpert ? (
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                  <ShieldCheck size={18} />
-                </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-900">Clinical Portal</span>
+    <div className={`min-h-screen flex flex-col transition-colors duration-500 font-sans`} style={{ backgroundColor: theme.bg }}>
+      {/* Declarative SEO Head & Schema.org JSON-LD */}
+      <SEOHead schemas={globalSchemas} />
+      {/* Route-level Verification Guardrail: strictly forces noindex & blocks AdSense on utility/restricted views */}
+      <SEOGuardrail />
+      {/* Route-aware promotion controller: strictly disables ads on non-content/utility screens */}
+      <Suspense fallback={null}>
+        <PromotionManager />
+      </Suspense>
+      <main className={`flex-1 transition-all duration-300 ease-in-out min-h-screen relative flex flex-col`}>
+        <div className="sticky top-0 z-50">
+          <header className="h-16 lg:h-20 bg-white/95 backdrop-blur-md px-4 lg:px-8 flex items-center justify-between shadow-sm transition-all duration-300 border-b border-slate-100">
+            {/* Left: Brand */}
+            <div className="flex items-center flex-1">
+              <div className="group cursor-pointer">
+                <h1 className="text-xl lg:text-2xl font-black text-slate-900 group-hover:scale-105 transition-transform whitespace-nowrap">
+                  AfterMa
+                </h1>
+                <p className="text-[8px] lg:text-[10px] mt-0.5 tracking-widest font-black text-slate-400 uppercase opacity-80 whitespace-nowrap">
+                  {SLOGAN}
+                </p>
               </div>
-            ) : (
-              <div className="relative w-full hidden sm:block">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-                  <Search className={`${profile.incognito ? 'text-purple-500' : 'text-gray-400'}`} size={16} />
+            </div>
+            
+            {/* Center: Search / Clinical Portal */}
+            <div className="hidden sm:flex flex-1 items-center justify-center max-w-xl px-4">
+              {isExpert ? (
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-900">Clinical Portal</span>
                 </div>
-                <input type="text" placeholder={profile.incognito ? "GHOST Mode Active..." : t.common.searchPlaceholder} className={`w-full border rounded-full py-2 pl-10 pr-20 focus:outline-none focus:ring-2 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 border-purple-200 focus:ring-purple-100' : 'bg-white border-slate-200 focus:ring-pink-100 shadow-sm'}`} />
-                <button onClick={() => setProfile(p => ({ ...p, incognito: !p.incognito }))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="relative w-full">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                    <Search className={`${profile.incognito ? 'text-purple-500' : 'text-gray-400'}`} size={16} />
+                  </div>
+                  <button 
+                    onClick={() => setIsCommandPaletteOpen(true)}
+                    className={`w-full flex items-center justify-between border rounded-full py-2 pl-10 pr-4 transition-all text-sm ${profile.incognito ? 'bg-purple-50/50 border-purple-200 focus:ring-purple-100 text-purple-700' : 'bg-white border-slate-200 focus:ring-pink-100 shadow-sm text-slate-500 hover:border-slate-300'}`}
+                  >
+                    <span className="truncate">{profile.incognito ? "GHOST Mode Active..." : "Search commands, resources..."}</span>
+                    <div className="flex items-center gap-1 opacity-70">
+                      <kbd className="hidden lg:inline-flex items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 font-sans text-[10px] font-medium text-slate-500 shadow-sm">
+                        Ctrl
+                      </kbd>
+                      <kbd className="hidden lg:inline-flex items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 font-sans text-[10px] font-medium text-slate-500 shadow-sm">
+                        K
+                      </kbd>
+                    </div>
+                  </button>
+                  <button onClick={() => setProfile(p => ({ ...p, incognito: !p.incognito }))} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase px-2 py-1 rounded-full transition-all ${profile.incognito ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>GHOST</button>
+                </div>
+              )}
+            </div>
 
-          <div className="flex items-center gap-3 lg:gap-5 ml-4">
+            {/* Right: Actions */}
+            <div className="flex items-center justify-end gap-3 lg:gap-5 flex-1 ml-auto">
             {/* Improved SOS with confirm state (from v3) */}
             <div className="relative group">
               <button
@@ -499,6 +556,17 @@ const App = () => {
           </div>
         </header>
 
+          <Navigation
+            currentView={currentView}
+            setView={setView}
+            profile={profile}
+            logout={logout}
+            onClose={() => setIsMobileMenuOpen(false)}
+            onOpenLocation={() => setShowLocationPage(true)}
+            onOpenLactation={() => setShowLactationLog(true)}
+          />
+        </div>
+
         <div className="flex-1">
           <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
             {/* Expert Views */}
@@ -509,7 +577,11 @@ const App = () => {
             {/* Mother Views - Restricted for Experts */}
             {!isExpert && (
               <>
-                {currentView === 'dashboard' && profile.authenticated && <Dashboard profile={profile} logs={logs} onAddLog={() => navigate('/carejourney?tab=PeriodLog')} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />}
+                {currentView === 'dashboard' && profile.authenticated && (
+                  <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading Dashboard...</div>}>
+                    <Dashboard profile={profile} logs={logs} onAddLog={() => navigate('/carejourney?tab=PeriodLog')} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />
+                  </Suspense>
+                )}
                 {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
                 {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
                 {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
@@ -553,10 +625,32 @@ const App = () => {
                 {currentView === 'settings' && profile.authenticated && <Settings profile={profile} setProfile={setProfile} />}
                 {currentView === 'careconnect' && profile.authenticated && <CareConnect profile={profile} setProfile={setProfile} appointments={appointments} setAppointments={setAppointments} setCircles={setCircles} circles={circles} addNotification={addNotification} />}
                 {currentView === 'caregiver' && profile.authenticated && <CaregiverView profile={profile} logs={logs} />}
+
+                {/* Legal & Trust Compliance Views (Publicly Accessible) */}
+                <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading document...</div>}>
+                  {['privacy', 'privacy-policy'].includes(currentView) && <PolicyView />}
+                  {['terms', 'terms-of-service'].includes(currentView) && <TermsView />}
+                  {['disclaimer', 'medical-disclaimer'].includes(currentView) && <DisclaimerView />}
+                  {['about', 'about-us'].includes(currentView) && <AboutView />}
+                  {['contact', 'support', 'help'].includes(currentView) && <SupportView />}
+
+                  {/* 404 Fallback: Prevents empty white screens on broken routes */}
+                  {![
+                    'dashboard', 'carejourney', 'healthlogs', 'lactationlogs', 'healthsummary',
+                    'mentalwellness', 'education', 'recipes', 'learning-center', 'community-wisdom',
+                    'community', 'momkart', 'momkart-cart', 'momkart-payment', 'aftermaplus',
+                    'settings', 'careconnect', 'caregiver', 'expert-dashboard', 'expert-analytics',
+                    'expert-settings', 'signin', 'privacy', 'privacy-policy', 'terms', 'terms-of-service',
+                    'disclaimer', 'medical-disclaimer', 'about', 'about-us', 'contact', 'support', 'help'
+                  ].includes(currentView) && <NotFoundView />}
+                </Suspense>
               </>
             )}
           </div>
         </div>
+
+        {/* Global Footer rendered across all platform & content pages */}
+        <Footer />
 
         {showNotifications && <NotificationPanel notifications={notifications} onClose={() => setShowNotifications(false)} onClear={() => setNotifications([])} />}
       </main>
@@ -570,6 +664,7 @@ const App = () => {
       {currentView === 'signin' && (
         <SignIn profile={profile} onLogin={handleLogin} onClose={() => setView('education')} onOpenLocation={() => setShowLocationPage(true)} />
       )}
+      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
     </div>
   );
 };
