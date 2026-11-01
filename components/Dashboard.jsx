@@ -112,7 +112,7 @@ const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
     <div className="max-w-6xl mx-auto space-y-8 lg:space-y-12 animate-in fade-in duration-500 relative pb-20">
       <div 
         className="rounded-[2.5rem] p-8 lg:p-14 text-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] relative overflow-hidden transition-all duration-700 border border-white/20" 
-        style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.text}bb)` }}
+        style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.text}b9)` }}
       >
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-8 text-center lg:text-left">
           <div className="flex flex-col lg:flex-row items-center gap-8">

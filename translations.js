@@ -6,7 +6,7 @@ export const translations = {
       signOut: "Sign Out",
       sos: "Double tap for SOS",
       searchPlaceholder: "Safe Search...",
-      welcome: "Pranam",
+      welcome: "Namaste",
       close: "Close"
     },
     nav: {
