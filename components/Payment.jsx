@@ -1,8 +1,9 @@
 import { ArrowLeft, CreditCard, Landmark, Lock, ShieldCheck, Smartphone, Sparkles, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { COLORS } from '../constants';
+import { calculateCartSummary } from '../utils/persistence';
 
-const Payment = ({ profile, cart, orderSummary, onGoBack, onSuccess }) => {
+const Payment = ({ profile, cart, expressDelivery, onGoBack, onSuccess }) => {
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [upiId, setUpiId] = useState('');
@@ -11,7 +12,7 @@ const Payment = ({ profile, cart, orderSummary, onGoBack, onSuccess }) => {
   const [cardCvv, setCardCvv] = useState('');
   const [cardName, setCardName] = useState('');
 
-  const { total, subtotal, gst, deliveryCharge } = orderSummary;
+  const { total, subtotal, gst, deliveryCharge } = calculateCartSummary(cart, expressDelivery);
 
   const handlePay = () => {
     window.alert('Online payment is not configured. No charge was made and your cart was preserved.');

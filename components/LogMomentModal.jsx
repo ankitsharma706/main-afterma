@@ -1,5 +1,5 @@
 
-import { Activity, Award, CheckCircle2, Droplet, Flame, Loader2, Moon, Pill, ShieldCheck, Smile, Sparkles, Star, X, Zap } from 'lucide-react';
+import { Activity, Award, CheckCircle2, Droplet, Flame, Loader2, Moon, Pill, ShieldCheck, Smile, Sparkles, X, Zap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { COLORS } from '../constants';
 import { logsAPI, mapLogToBackend } from '../services/api';
@@ -18,13 +18,6 @@ const getWellnessLabel = (score) => {
   if (score < 30) return { label: 'Needs Care',  emoji: '🌱', color: '#f59e0b', bg: '#fffbeb' };
   if (score < 60) return { label: 'Balanced',    emoji: '🌿', color: '#10b981', bg: '#f0fdf4' };
   return            { label: 'Thriving',         emoji: '🌸', color: '#EC4899', bg: '#FFF5F7' };
-};
-
-const getMoodLabel = (v) => {
-  if (v <= 2) return 'BAD';
-  if (v <= 5) return 'NICE';
-  if (v <= 7) return 'BALANCED';
-  return 'GOOD';
 };
 
 /* ─── Progress Ring ──────────────────────────────────────────────── */
@@ -240,16 +233,8 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [showBadge, setShowBadge] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-
-  // Wellness score (live)
-  const wellnessScore = calcWellnessScore({
-    moodLevel: log.moodLevel, painLevel: log.painLevel,
-    energyLevel: log.energyLevel, sleepHours: log.sleepHours,
-    waterIntake: log.waterIntake
-  });
-  const well = getWellnessLabel(wellnessScore);
 
   // Symptoms list based on stage
   const symptomsList = profile?.maternityStage === 'Postpartum'
@@ -272,6 +257,11 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
   }, []);
 
   const handleSave = async () => {
+    if (profile?.incognito) {
+      setSaveError('Ghost mode is active. This entry was not saved or shared.');
+      return;
+    }
+
     const finalLog = {
       id: Date.now().toString(),
       timestamp: Date.now(),
@@ -288,14 +278,21 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
       isOvulating: !!log.isOvulating,
       crampsLevel: log.crampsLevel || 0,
       notes: log.notes || '',
-      wellnessScore,
     };
 
     setSaving(true);
     setSaveError('');
+    const savedLocally = onSave?.(finalLog);
+    if (savedLocally === false) {
+      setSaving(false);
+      setSaveError('Could not save this entry on this device. Please check browser storage and try again.');
+      return;
+    }
+
     try {
       const backendPayload = mapLogToBackend({ ...finalLog, isSensitive: profile?.incognito });
       await logsAPI.create(backendPayload);
+      setSaveError('Saved on this device and synced to your account.');
     } catch (err) {
       if (err?.status === 409) {
         try {
@@ -305,25 +302,18 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
           const todayLog = logsArr.find(l => l.log_date?.startsWith(todayStr));
           if (todayLog?._id) {
             await logsAPI.update(todayLog._id, mapLogToBackend({ ...finalLog, isSensitive: profile?.incognito }));
+            setSaveError('Saved on this device and synced to your account.');
             setSaving(false);
-            setShowBadge(true);
-            onSave?.(finalLog);
             return;
           }
         } catch {}
       }
-      console.warn('⚠️ Log saved locally only:', err?.message);
-      setSaveError('Saved offline. Will sync when connected.');
+      console.warn('Unable to sync health log:', err?.message);
+      setSaveError('Saved on this device. It could not be synced to your account.');
     } finally {
       setSaving(false);
+      setIsSaved(true);
     }
-    setShowBadge(true);
-    onSave?.(finalLog);
-  };
-
-  const handleBadgeClose = () => {
-    setShowBadge(false);
-    onClose();
   };
 
   /* ── FLOW OPTIONS ── */
@@ -358,19 +348,10 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
             <div className="flex items-start gap-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Log Your Moment</h2>
-                <p className="text-xs text-slate-400 font-medium italic mt-1">Capturing your recovery pulse with clinical precision.</p>
+                <p className="text-xs text-slate-400 font-medium italic mt-1">Record your self-reported daily observations.</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Live wellness score pill */}
-              <div
-                className="flex items-center gap-2 px-3 py-1.5 rounded-2xl transition-all duration-500"
-                style={{ background: well.bg, border: `1.5px solid ${well.color}30` }}
-              >
-                <ProgressRing score={wellnessScore} size={24} stroke={3} />
-                <span className="text-xs font-black" style={{ color: well.color }}>{wellnessScore}</span>
-                <span className="text-[10px] font-bold text-slate-400 hidden sm:block">{well.label}</span>
-              </div>
               <button
                 onClick={onClose}
                 className="p-2 text-slate-300 hover:text-slate-600 rounded-xl hover:bg-slate-50 transition-all active:scale-90"
@@ -408,7 +389,6 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
                   onChange={v => setLog(p => ({ ...p, moodLevel: v }))}
                   leftLabel="Low"
                   rightLabel="Radiant"
-                  extraLabel={getMoodLabel(log.moodLevel)}
                   accentColor={accent}
                 />
 
@@ -434,20 +414,6 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
                   accentColor={log.energyLevel > 6 ? '#10b981' : accent}
                 />
 
-                {/* Live wellness score bar */}
-                <div className="p-4 rounded-2xl border border-slate-100" style={{ background: well.bg }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: well.color }}>Daily Wellness Score</span>
-                    <span className="text-lg font-black" style={{ color: well.color }}>{wellnessScore}<span className="text-xs font-bold text-slate-300">/100</span></span>
-                  </div>
-                  <div className="h-2 bg-white/60 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${wellnessScore}%`, background: `linear-gradient(90deg, ${well.color}88, ${well.color})` }}
-                    />
-                  </div>
-                  <p className="text-[10px] font-bold mt-1.5" style={{ color: well.color }}>{well.emoji} {well.label}</p>
-                </div>
               </div>
 
               {/* ════ RIGHT PANEL — HEALTH LOG ════ */}
@@ -582,7 +548,7 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
 
           {/* ── Save Error ── */}
           {saveError && (
-            <div className="mx-6 mb-2 px-4 py-2.5 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold rounded-xl flex items-center gap-2">
+            <div className={`mx-6 mb-2 px-4 py-2.5 border text-[11px] font-semibold rounded-xl flex items-center gap-2 ${isSaved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
               ⚠️ {saveError}
             </div>
           )}
@@ -593,11 +559,11 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
               onClick={onClose}
               className="flex-1 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-xs uppercase tracking-widest text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all active:scale-95"
             >
-              Discard
+              {isSaved ? 'Done' : 'Discard'}
             </button>
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || isSaved}
               className="flex-[2] py-4 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 relative overflow-hidden"
               style={{
                 background: `linear-gradient(135deg, #FF4D8D, #FF7AA8)`,
@@ -606,6 +572,8 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
             >
               {saving ? (
                 <><Loader2 size={14} className="animate-spin" /> Syncing...</>
+              ) : isSaved ? (
+                <>Saved</>
               ) : (
                 <>
                   <ShieldCheck size={14} />
@@ -617,14 +585,6 @@ const LogMomentModal = ({ profile, onClose, onSave }) => {
         </div>
       </div>
 
-      {/* ── Gamification Badge ── */}
-      {showBadge && (
-        <WellnessBadge
-          score={wellnessScore}
-          streak={profile?.streakCount || 0}
-          onClose={handleBadgeClose}
-        />
-      )}
     </>
   );
 };

@@ -52,6 +52,7 @@ const Journal = ({ profile, setProfile, onClose }) => {
 
   const handleSubmit = async () => {
     if (!entry.trim()) return;
+    if (profile.incognito) return;
 
     const newEntry = {
       id: Date.now().toString(),
@@ -192,6 +193,11 @@ const Journal = ({ profile, setProfile, onClose }) => {
                 placeholder="Start typing your heart out..."
                 className="w-full h-64 p-10 bg-slate-50 border border-slate-100 rounded-[3rem] font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:bg-white transition-all shadow-inner text-lg resize-none"
               />
+              {profile.incognito && (
+                <p className="mt-3 text-sm font-semibold text-purple-700 bg-purple-50 p-4 rounded-xl">
+                  Ghost mode is active. Journal entries are not saved or shared.
+                </p>
+              )}
               <div className="absolute bottom-6 right-6 flex gap-3">
                 <button 
                   onClick={handleNextPrompt}
@@ -202,9 +208,10 @@ const Journal = ({ profile, setProfile, onClose }) => {
                 </button>
                 <button 
                   onClick={handleSubmit}
-                  className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                  disabled={profile.incognito}
+                  className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
                 >
-                  Save Reflection <Send size={18} />
+                  {profile.incognito ? 'Saving disabled in Ghost Mode' : 'Save Reflection'} <Send size={18} />
                 </button>
               </div>
             </div>

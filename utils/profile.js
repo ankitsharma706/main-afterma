@@ -32,6 +32,7 @@ export const DEFAULT_PROFILE = {
     pace: 'gentle',
     preferredTime: 'morning',
     goals: ['improve strength', 'stabilize mood'],
+    dailyCommitmentMinutes: 15,
     isPaused: false,
     language: 'english',
   },
@@ -43,6 +44,7 @@ export const DEFAULT_PROFILE = {
     sosConfirmations: true,
   },
   periodLogs: [],
+  wellnessCheckIns: [],
 };
 
 const readStoredValue = (storage, key) => {
@@ -72,6 +74,11 @@ export const normalizeProfile = (profile = {}) => {
   const journeySettings = {
     ...DEFAULT_PROFILE.journeySettings,
     ...(safeProfile.journeySettings || {}),
+    dailyCommitmentMinutes: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].includes(
+      Number(safeProfile.journeySettings?.dailyCommitmentMinutes)
+    )
+      ? Number(safeProfile.journeySettings.dailyCommitmentMinutes)
+      : DEFAULT_PROFILE.journeySettings.dailyCommitmentMinutes,
     goals: Array.isArray(safeProfile.journeySettings?.goals)
       ? safeProfile.journeySettings.goals
       : DEFAULT_PROFILE.journeySettings.goals,
@@ -95,6 +102,9 @@ export const normalizeProfile = (profile = {}) => {
     completedActivities: Array.isArray(safeProfile.completedActivities) ? safeProfile.completedActivities : DEFAULT_PROFILE.completedActivities,
     badges: Array.isArray(safeProfile.badges) ? safeProfile.badges : DEFAULT_PROFILE.badges,
     periodLogs: Array.isArray(safeProfile.periodLogs) ? safeProfile.periodLogs : DEFAULT_PROFILE.periodLogs,
+    wellnessCheckIns: Array.isArray(safeProfile.wellnessCheckIns)
+      ? safeProfile.wellnessCheckIns
+      : DEFAULT_PROFILE.wellnessCheckIns,
     caregiver,
     journeySettings,
     notifications,

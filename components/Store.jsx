@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { COLORS, STORE_ITEMS } from '../constants';
+import { sumCartQuantity } from '../utils/persistence';
 
 const CATEGORIES = [
   'Postpartum Recovery', 
@@ -21,6 +22,7 @@ const CATEGORIES = [
 const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, onGoToCart }) => {
   const [activeCategory, setActiveCategory] = useState('Postpartum Recovery');
   const theme = COLORS?.[profile?.accent] || COLORS.PINK;
+  const cartCount = sumCartQuantity(cart);
 
   // Curated Recommendations logic from reference
   const recommendedItems = useMemo(() => {
@@ -72,7 +74,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
         <ShoppingBag size={24} />
         {cart.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-rose-500 text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white">
-            {(cart || []).length}
+            {cartCount}
           </span>
         )}
       </button>
@@ -109,7 +111,7 @@ const MomKart = ({ profile, cart, onAddToCart, onUpdateQuantity, onRemoveItem, o
             <span>Cart</span>
             {cart.length > 0 && (
               <span className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-emerald-600 text-[10px] font-black border-2 border-emerald-600">
-                {cart.length}
+                {cartCount}
               </span>
             )}
           </button>

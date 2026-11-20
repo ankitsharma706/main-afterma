@@ -1,23 +1,18 @@
 import { ArrowLeft, Minus, Plus, ShoppingBag, Truck, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { COLORS } from '../constants';
+import { calculateCartSummary } from '../utils/persistence';
 
-const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToPayment }) => {
+const Cart = ({ profile, cart, expressDelivery, onExpressDeliveryChange, onUpdateQuantity, onRemoveItem, onGoBack, onGoToPayment }) => {
 
   const theme = COLORS?.[profile?.accent] || COLORS.PINK;
 
-  const [expressDelivery, setExpressDelivery] = useState(false);
-
   const safeCart = cart || [];
 
-  const subtotal = useMemo(
-    () => safeCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [safeCart]
+  const { subtotal, gst, deliveryCharge, total } = useMemo(
+    () => calculateCartSummary(safeCart, expressDelivery),
+    [safeCart, expressDelivery]
   );
-
-  const gst = Math.round(subtotal * 0.18);
-  const deliveryCharge = expressDelivery ? 49 : 0;
-  const total = subtotal + gst + deliveryCharge;
 
   const itemCount = safeCart.reduce((sum, i) => sum + i.quantity, 0);
   return (
@@ -107,7 +102,7 @@ const Cart = ({ profile, cart, onUpdateQuantity, onRemoveItem, onGoBack, onGoToP
                     <Truck size={14} className="text-slate-400" />
                     <span className="text-sm font-bold text-slate-500">Express</span>
                     <button
-                      onClick={() => setExpressDelivery(p => !p)}
+                      onClick={() => onExpressDeliveryChange(!expressDelivery)}
                       className={`w-10 h-5 rounded-full relative transition-all duration-300 shrink-0 ${expressDelivery ? 'bg-emerald-500' : 'bg-slate-200'}`}
                     >
                       <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${expressDelivery ? 'left-5' : 'left-0.5'}`} />

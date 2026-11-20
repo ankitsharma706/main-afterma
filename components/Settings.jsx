@@ -25,7 +25,7 @@ import PersonalDataForm from './PersonalDataForm';
 const Settings = ({ profile, setProfile }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [localCommitment, setLocalCommitment] = useState(15);
+  const localCommitment = profile.journeySettings.dailyCommitmentMinutes;
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   const lang = profile.journeySettings.language || 'english';
@@ -49,6 +49,7 @@ const Settings = ({ profile, setProfile }) => {
           delivery_type:      latestProfile.deliveryType,
           preferences: {
               language:       latestProfile.journeySettings?.language,
+              daily_commitment_minutes: latestProfile.journeySettings?.dailyCommitmentMinutes,
           },
           family: {
               contact_name:   latestProfile.caregiver?.name,
@@ -219,7 +220,12 @@ const Settings = ({ profile, setProfile }) => {
                            type="range" 
                            min="5" max="60" step="5" 
                            value={localCommitment} 
-                           onChange={(e) => setLocalCommitment(parseInt(e.target.value))} 
+                           onChange={(e) => updateProfile({
+                             journeySettings: {
+                               ...profile.journeySettings,
+                               dailyCommitmentMinutes: Number(e.target.value),
+                             },
+                           })}
                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500 transition-all" 
                          />
                          <div className="absolute -top-1 left-0 w-full flex justify-between px-1 pointer-events-none">
@@ -369,7 +375,7 @@ const Settings = ({ profile, setProfile }) => {
                   <div className="flex items-center gap-6 p-8 bg-slate-900 rounded-[2.5rem] text-white overflow-hidden relative group">
                      <div className="relative z-10 space-y-1 flex-1">
                         <h4 className="text-lg font-bold tracking-tight">Ghost (Incognito) Mode</h4>
-                        <p className="text-xs text-slate-400 italic">Sessions logged in ghost mode won't show in shared dashboards.</p>
+                        <p className="text-xs text-slate-400 italic">Ghost mode blocks new activity, health, journal, and check-in saves and hides existing records from the caregiver view while active.</p>
                      </div>
                      <button 
                        onClick={() => updateProfile({ incognito: !profile.incognito })}

@@ -30,6 +30,13 @@ import { translations } from '../translations';
 import HealthReportModal from './HealthReportModal';
 import LactationLog from './LactationLog';
 
+const averageLoggedValue = (records, field) => {
+  const values = records
+    .map(record => Number(record[field]))
+    .filter(value => Number.isFinite(value));
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+};
+
 const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerciseLogs, setExerciseLogs, logs, onAddLog }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,10 +49,11 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   const [showReport, setShowReport] = useState(false);
 
   const [showTTCLogic, setShowTTCLogic] = useState(false);
-  const [cycleLength, setCycleLength] = useState(28);
+  const [cycleLength, setCycleLength] = useState('');
   const [lastPeriod, setLastPeriod] = useState('');
   const [ttcResult, setTtcResult] = useState(null);
   const [periodLogs, setPeriodLogs] = useState([]);
+  const [editingPeriodId, setEditingPeriodId] = useState(null);
   const [showCommitSuccess, setShowCommitSuccess] = useState(false);
 
   useEffect(() => {
@@ -60,7 +68,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
             symptoms: log.symptoms || [],
             notes: log.notes || ''
           }));
-          setPeriodLogs(mappedLogs.reverse());
+          setPeriodLogs(mappedLogs.sort((a, b) => a.timestamp - b.timestamp));
         }
       } catch (err) {
         console.warn('Could not load period logs', err);
@@ -106,17 +114,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
     .map(log => new Date(log.timestamp).toDateString());
 
   const today = new Date();
-  const lastPeriodLog = periodLogs.filter(l => l.periodFlow && l.periodFlow !== 'None').slice(-1)[0];
-  const lastPeriodDate = lastPeriodLog ? new Date(lastPeriodLog.timestamp) : new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14);
-  const cycleLen = cycleLength || 28;
-  const ovulationDay = new Date(lastPeriodDate);
-  ovulationDay.setDate(lastPeriodDate.getDate() + cycleLen - 14);
-  const ovulationEnd = new Date(ovulationDay);
-  ovulationEnd.setDate(ovulationDay.getDate() + 4);
-
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const ovulationStr = `${monthNames[ovulationDay.getMonth()]} ${ovulationDay.getDate()}-${ovulationEnd.getDate()}`;
-
 
   const handleStartActivity = (activity) => {
     // Navigate to the dedicated session page (full-page route)
@@ -126,10 +124,14 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
 
 
   const calculateTTC = () => {
-    if (!lastPeriod) return;
+    const enteredCycleLength = Number(cycleLength);
+    if (!lastPeriod || !Number.isFinite(enteredCycleLength) || enteredCycleLength < 1 || enteredCycleLength > 60) {
+      setTtcResult(null);
+      return;
+    }
     const lmp = new Date(lastPeriod);
     const ovulation = new Date(lmp);
-    ovulation.setDate(lmp.getDate() + (cycleLength - 14));
+    ovulation.setDate(lmp.getDate() + (enteredCycleLength - 14));
     const testDate = new Date(ovulation);
     testDate.setDate(ovulation.getDate() + 14);
     setTtcResult({ ovulation: ovulation.toLocaleDateString(), testDate: testDate.toLocaleDateString() });
@@ -140,34 +142,31 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
       patient: profile.name,
       stage: profile.maternityStage,
       summary: {
-        avgMood: ((logs || []).reduce((acc, l) => acc + l.moodLevel, 0) / ((logs || []).length || 1)).toFixed(1),
-        avgPain: (logs.reduce((acc, l) => acc + l.painLevel, 0) / (logs.length || 1)).toFixed(1),
-        totalKegels: logs.reduce((acc, l) => acc + l.kegelCount, 0),
+        avgMood: logs.length ? (logs.reduce((acc, l) => acc + Number(l.moodLevel || 0), 0) / logs.length).toFixed(1) : null,
+        avgPain: logs.length ? (logs.reduce((acc, l) => acc + Number(l.painLevel || 0), 0) / logs.length).toFixed(1) : null,
+        totalKegels: logs.reduce((acc, l) => acc + Number(l.kegelCount || 0), 0),
       },
       periodLogs: periodLogs.filter(l => l.periodFlow && l.periodFlow !== 'None').map(l => ({
         date: new Date(l.timestamp).toLocaleDateString(), flow: l.periodFlow,
       })),
-      symptoms: Array.from(new Set([...logs.flatMap(l => l.symptoms || []), ...periodLogs.flatMap(l => l.symptoms || [])]))
+      symptoms: Array.from(new Set([...logs.flatMap(l => l.symptoms || []), ...periodLogs.flatMap(l => l.symptoms || [])])),
+      note: 'Self-reported entries only. This export does not contain clinical assessments or predictions.',
     };
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `AfterMa_Clinical_Report_${(profile.name || 'user').replace(/\s+/g, '_')}.json`;
+    a.download = `AfterMa_Health_Observations_${(profile.name || 'user').replace(/\s+/g, '_')}.json`;
     a.click();
-    alert('Structured Clinical Report generated for OB-GYN review.');
+    URL.revokeObjectURL(url);
+    alert('Your self-reported health observations were exported.');
   };
 
   const handleCommitEntry = async () => {
-    const successQuotes = [
-      "Your consistency today is building a stronger, healthier tomorrow.",
-      "Tracking your cycle is a powerful act of self-care and medical awareness.",
-      "Every choice you make to track your health is a step toward profound self-wisdom.",
-      "Nurturing your body is the highest form of clinical and personal excellence.",
-      "Your data today helps create a clearer picture of your long-term wellness."
-    ];
-    const randomQuote = successQuotes[Math.floor(Math.random() * successQuotes.length)];
-    window._lastSuccessQuote = randomQuote;
+    if (profile.incognito) {
+      alert('Ghost mode is active. This entry was not saved or shared.');
+      return;
+    }
 
     try {
       if (!quickLog.date) { alert('Please select a date.'); return; }
@@ -185,16 +184,19 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
         water_intake: quickLog.waterIntake || null,
         cramps_level: quickLog.crampsLevel
       };
-      const res = await periodAPI.create(payload);
+      const res = editingPeriodId
+        ? await periodAPI.update(editingPeriodId, payload)
+        : await periodAPI.create(payload);
       const newBackendLog = res.data?.log || payload;
       const newMappedLog = {
-        id: newBackendLog._id || Date.now().toString(),
+        id: newBackendLog._id || editingPeriodId || Date.now().toString(),
         timestamp: new Date(quickLog.date).getTime(),
         periodFlow: quickLog.periodFlow,
         symptoms: quickLog.symptoms,
         notes: quickLog.notes
       };
-      setPeriodLogs(prev => [...prev, newMappedLog].sort((a, b) => a.timestamp - b.timestamp));
+      setPeriodLogs(prev => [...prev.filter(log => log.id !== editingPeriodId), newMappedLog].sort((a, b) => a.timestamp - b.timestamp));
+      setEditingPeriodId(null);
       setShowCommitSuccess(true);
       setQuickLog({
         date: new Date().toISOString().split('T')[0],
@@ -535,8 +537,24 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                 onClick={handleCommitEntry}
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
               >
-                <Edit3 size={17} /> Commit Entry
+                <Edit3 size={17} /> {editingPeriodId ? 'Update Entry' : 'Commit Entry'}
               </button>
+              {editingPeriodId && (
+                <button
+                  onClick={() => {
+                    setEditingPeriodId(null);
+                    setQuickLog({
+                      date: new Date().toISOString().split('T')[0],
+                      periodFlow: 'None', isOvulating: false, crampsLevel: 0, moodLevel: 5,
+                      painLevel: 0, energyLevel: 5, waterIntake: '',
+                      symptoms: [], notes: '', sleepPattern: '', ovulationWindow: false, medications: false
+                    });
+                  }}
+                  className="w-full py-3 text-slate-500 font-bold text-xs"
+                >
+                  Cancel editing
+                </button>
+              )}
 
               {/* ── PERIOD HISTORY ── */}
               <div className="pt-4">
@@ -567,6 +585,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-[13px] font-black text-slate-800 leading-none">{dateLabel}</div>
+                            {log.notes && <div className="text-[10px] text-slate-500 font-medium mt-1 truncate">{log.notes}</div>}
                             {log.symptoms?.length > 0 && (
                               <div className="text-[10px] text-slate-400 font-medium mt-1 truncate">
                                 {log.symptoms.slice(0, 3).join(' • ')}{log.symptoms.length > 3 ? ` +${log.symptoms.length - 3}` : ''}
@@ -576,6 +595,23 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                           <span className={`shrink-0 text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full border ${flowColor}`}>
                             {log.periodFlow || 'None'}
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingPeriodId(log.id);
+                              setQuickLog(prev => ({
+                                ...prev,
+                                date: new Date(log.timestamp).toISOString().split('T')[0],
+                                periodFlow: log.periodFlow || 'None',
+                                symptoms: log.symptoms || [],
+                                notes: log.notes || '',
+                              }));
+                            }}
+                            className="p-2 text-slate-400 hover:text-rose-500"
+                            aria-label="Edit saved period entry"
+                          >
+                            <Edit3 size={15} />
+                          </button>
                         </div>
                       );
                     })}
@@ -593,14 +629,14 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                   {['S','M','T','W','T','F','S'].map((d, i) => (
                     <span key={`${d}-${i}`} className="text-[10px] font-bold text-slate-300">{d}</span>
                   ))}
-                  {Array.from({ length: 31 }).map((_, i) => {
+                  {Array.from({ length: today.getDay() }).map((_, i) => <span key={`empty-${i}`} />)}
+                  {Array.from({ length: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() }).map((_, i) => {
                     const day = i + 1;
                     const dayDate = new Date(today.getFullYear(), today.getMonth(), day);
                     const isPeriod = periodActiveDates.includes(dayDate.toDateString());
-                    const isOvulWindow = dayDate >= ovulationDay && dayDate <= ovulationEnd;
                     const isToday = day === today.getDate();
                     return (
-                      <div key={i} className={`aspect-square flex items-center justify-center rounded-xl text-[11px] font-bold transition-all ${isPeriod ? 'bg-rose-500 text-white shadow-md' : isOvulWindow ? 'bg-amber-400 text-white shadow-sm' : isToday ? 'border-2 border-slate-900 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>
+                      <div key={day} className={`aspect-square flex items-center justify-center rounded-xl text-[11px] font-bold transition-all ${isPeriod ? 'bg-rose-500 text-white shadow-md' : isToday ? 'border-2 border-slate-900 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>
                         {day}
                       </div>
                     );
@@ -608,7 +644,6 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                 </div>
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded-full bg-rose-500" /><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Period Active</span></div>
-                  <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded-full bg-amber-400" /><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ovulation Window</span></div>
                 </div>
               </div>
 
@@ -617,14 +652,14 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
                 <h4 className="font-black text-slate-900 tracking-tight">Cycle Insights</h4>
                 <div className="space-y-3">
                   <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cycle Variance</p>
-                    <p className="text-2xl font-black text-slate-900">{profile.periodActiveDays || 6} Days</p>
-                    <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Clinical Stability</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Saved observations</p>
+                    <p className="text-2xl font-black text-slate-900">{periodLogs.length}</p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Your entries</p>
                   </div>
                   <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Next Ovulation</p>
-                    <p className="text-2xl font-black text-slate-900">{ovulationStr}</p>
-                    <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Hormonal Peak</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cycle length / ovulation</p>
+                    <p className="text-lg font-black text-slate-900">Unavailable</p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">No validated prediction is calculated</p>
                   </div>
                 </div>
               </div>
@@ -666,7 +701,7 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
             <div className="flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="space-y-2">
                 <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Health Summary</h3>
-                <p className="text-slate-400 font-medium italic">Clinical analytics and readiness indices for your recovery.</p>
+                <p className="text-slate-400 font-medium italic">Self-reported observations only; no clinical scores are calculated.</p>
               </div>
               <div className="flex gap-3">
                 <button id="btn-health-summary" onClick={() => setShowReport(true)} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 transition-all">
@@ -679,30 +714,13 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <MetricCard label="Hydration Ratio" value={((logs.reduce((acc, l) => acc + l.waterIntake, 0) / (logs.length || 1)) / 10 * 100).toFixed(0) + '%'} sub="Daily Adherence" icon={<Droplet size={18} />} trend="Optimal" />
-              <MetricCard label="Sleep Quality" value={((logs.reduce((acc, l) => acc + l.sleepHours, 0) / (logs.length || 1)) / 8 * 100).toFixed(0) + '%'} sub="Rest Efficiency" icon={<Moon size={18} />} trend="Improving" />
-              <MetricCard label="Pelvic Index" value={(logs.reduce((acc, l) => acc + l.kegelCount, 0) / (logs.length || 1)).toFixed(1)} sub="Muscle Tone" icon={<Gauge size={18} />} trend="Verified" />
-              <MetricCard label="Activity Load" value={logs.length} sub="Log Consistency" icon={<Activity size={18} />} trend="Balanced" />
+              <MetricCard label="Average water logged" value={averageLoggedValue(logs, 'waterIntake') === null ? 'Unavailable' : `${averageLoggedValue(logs, 'waterIntake').toFixed(1)} cups`} sub="Self-reported entries" icon={<Droplet size={18} />} />
+              <MetricCard label="Average sleep logged" value={averageLoggedValue(logs, 'sleepHours') === null ? 'Unavailable' : `${averageLoggedValue(logs, 'sleepHours').toFixed(1)} hrs`} sub="Self-reported entries" icon={<Moon size={18} />} />
+              <MetricCard label="Average mood rating" value={averageLoggedValue(logs, 'moodLevel') === null ? 'Unavailable' : `${averageLoggedValue(logs, 'moodLevel').toFixed(1)} / 10`} sub="Self-reported entries" icon={<Smile size={18} />} />
+              <MetricCard label="Daily check-ins" value={logs.length} sub="Saved entries" icon={<Activity size={18} />} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="p-10 bg-slate-50/50 border border-slate-100 rounded-[2.5rem] space-y-8">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Readiness Indices</h4>
-                <div className="space-y-6">
-                  <ReportProgressBar label="Tissue Restoration" value={82} color="#10B981" />
-                  <ReportProgressBar label="Pelvic Resilience" value={Math.round(progress)} color={theme.primary} />
-                  <ReportProgressBar label="Core Alignment" value={65} color="#8B5CF6" />
-                </div>
-              </div>
-              <div className="p-10 bg-slate-50/50 border border-slate-100 rounded-[2.5rem] space-y-8">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">Behavioral Patterns</h4>
-                <div className="space-y-6">
-                  <ReportProgressBar label="Hydration Adherence" value={90} color="#3B82F6" />
-                  <ReportProgressBar label="Rest Efficiency" value={70} color="#6366F1" />
-                  <ReportProgressBar label="Log Consistency" value={85} color="#EC4899" />
-                </div>
-              </div>
-            </div>
+            <p className="text-sm text-slate-500">Clinical recovery indices and cycle predictions are unavailable. Share the underlying observations with a qualified clinician if you need medical interpretation.</p>
           </div>
         </div>
       )}
@@ -714,12 +732,13 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
             <button onClick={() => setShowTTCLogic(false)} className="absolute top-8 right-8 p-2 text-slate-300 hover:text-slate-900"><X size={24} /></button>
             <div className="text-center space-y-3">
               <div className="p-4 bg-purple-50 text-purple-600 rounded-3xl w-fit mx-auto mb-4"><Baby size={32} /></div>
-              <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Cycle Restoration Analytics</h3>
+              <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Calendar Date Estimate</h3>
             </div>
+            <p className="text-sm text-slate-500">A rough calendar calculation based only on the date and cycle length you enter. It cannot predict ovulation or pregnancy and is not medical advice or contraception.</p>
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">Cycle Length (Days)</label>
-                <input type="number" value={cycleLength} onChange={e => setCycleLength(parseInt(e.target.value))} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-100" />
+                <input type="number" min="1" max="60" value={cycleLength} onChange={e => setCycleLength(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-100" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-4">Last Period Start Date</label>
@@ -730,11 +749,11 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
             {ttcResult && (
               <div className="p-8 bg-purple-50 rounded-[2rem] border border-purple-100 grid grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Ovulation Window</p>
+                  <p className="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Approximate calendar date</p>
                   <p className="text-lg font-bold text-slate-900">{ttcResult.ovulation}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Best Test Date</p>
+                  <p className="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Suggested test date estimate</p>
                   <p className="text-lg font-bold text-slate-900">{ttcResult.testDate}</p>
                 </div>
               </div>
@@ -753,28 +772,15 @@ const TabBtn = ({ label, icon, active, onClick }) => (
   </button>
 );
 
-const MetricCard = ({ label, value, sub, icon, trend }) => (
+const MetricCard = ({ label, value, sub, icon }) => (
   <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all group">
-    <div className="flex justify-between items-start mb-4">
+    <div className="flex items-start mb-4">
       <div className="p-2.5 bg-slate-50 rounded-xl text-slate-300 group-hover:text-slate-900 transition-colors shadow-inner">{icon}</div>
-      <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">{trend}</span>
     </div>
     <div className="space-y-1">
       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">{label}</p>
       <p className="text-xl font-bold text-slate-900 tracking-tight">{value}</p>
       <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{sub}</p>
-    </div>
-  </div>
-);
-
-const ReportProgressBar = ({ label, value, color }) => (
-  <div className="space-y-2.5">
-    <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">
-      <span>{label}</span>
-      <span style={{ color }}>{value}%</span>
-    </div>
-    <div className="h-2 w-full bg-white rounded-full border border-slate-100 overflow-hidden shadow-inner">
-      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${value}%`, backgroundColor: color }} />
     </div>
   </div>
 );

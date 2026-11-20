@@ -31,13 +31,23 @@ import { AUDIO_LIBRARY, COLORS, EPDS_QUESTIONS, HELPLINES, STABILIZATION_TASKS }
 import { getStructuredAIResponse } from '../services/geminiService';
 import { translations } from '../translations';
 
-const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
+const PRENATAL_REFLECTION_QUESTIONS = [{
+  id: 'prenatal-wellbeing',
+  section: 'Well-being',
+  question: 'How are you feeling about your well-being today?',
+  options: ['I feel supported', 'I would like to talk with someone', 'I am unsure', 'Prefer not to say'],
+}];
+
+const MentalWellness = ({ profile, onSaveCheckIn, messages, setMessages, onOpenJournal }) => {
   const lang = profile.journeySettings.language || 'english';
   const t = translations[lang];
+  const isPostpartum = profile.maternityStage === 'Postpartum';
+  const checkInQuestions = isPostpartum ? EPDS_QUESTIONS : PRENATAL_REFLECTION_QUESTIONS;
   const [showCheckin, setShowCheckin] = useState(false);
   const [chatInvolved, setChatInvolved] = useState([]); // Array of { role: 'assistant' | 'user', content: string, component?: JSX }
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
+  const [checkInError, setCheckInError] = useState('');
   const [showTriage, setShowTriage] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [playingMedia, setPlayingMedia] = useState(null);
@@ -77,27 +87,28 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
   };
 
   const startScreening = () => {
-    const firstQ = EPDS_QUESTIONS[0];
+    const firstQ = checkInQuestions[0];
     setChatInvolved([
       { role: 'assistant', content: isPostpartum ? "Hi mama, I'm your AfterMa Health Assistant. 🌸 I'm here to help you reflect on your emotional well-being over the past week." : "Hi there, I'm your Health Assistant. Let's check in on your bonding journey today." },
-      { role: 'assistant', content: "This comprehensive screening covers 18 questions across emotional health, anxiety, sleep, bonding, physical recovery, and safety. Take your time — there are no right or wrong answers.", isPersona: true },
-      { role: 'assistant', content: sectionIntros[firstQ.section], isSection: true, sectionName: firstQ.section },
+      { role: 'assistant', content: isPostpartum ? "This guided reflection is not a diagnosis or a validated clinical screening. You can stop at any time." : "This is a brief personal reflection, not a medical assessment. You can stop at any time.", isPersona: true },
+      ...(isPostpartum ? [{ role: 'assistant', content: sectionIntros[firstQ.section], isSection: true, sectionName: firstQ.section }] : []),
       { role: 'assistant', content: firstQ.question }
     ]);
     setShowCheckin(true);
     setCurrentQuestion(0);
     setAnswers([]);
+    setCheckInError('');
   };
 
   const handleAnswer = (index) => {
-    const question = EPDS_QUESTIONS[currentQuestion];
+    const question = checkInQuestions[currentQuestion];
     const answerText = question.options[index];
     
     const newChat = [...chatInvolved, { role: 'user', content: answerText }];
     const newAnswers = [...answers, index];
 
-    if (currentQuestion < EPDS_QUESTIONS.length - 1) {
-      const nextQ = EPDS_QUESTIONS[currentQuestion + 1];
+    if (currentQuestion < checkInQuestions.length - 1) {
+      const nextQ = checkInQuestions[currentQuestion + 1];
       // If next question is in a new section, inject a section transition
       if (nextQ.section !== question.section) {
         newChat.push({ role: 'assistant', content: sectionIntros[nextQ.section], isSection: true, sectionName: nextQ.section });
@@ -107,17 +118,38 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
       setCurrentQuestion(prev => prev + 1);
       setAnswers(newAnswers);
     } else {
-      setAnswers([]);
-      const epdsQuotes = [
-        "Self-reflection is the first step toward profound emotional healing.",
-        "Your feelings are valid, and your courage to express them is inspiring.",
-        "Nurturing your mind is just as important as nurturing your body.",
-        "You're doing excellent work in honoring your emotional journey."
-      ];
-      window._lastSuccessQuote = epdsQuotes[Math.floor(Math.random() * epdsQuotes.length)];
-      setShowSuccess(true);
-      setShowCheckin(false);
+      setChatInvolved(newChat);
+      setAnswers(newAnswers);
+      setCurrentQuestion(checkInQuestions.length);
     }
+  };
+
+  const submitReflection = () => {
+    if (profile.incognito) {
+      setCheckInError('Ghost mode is active. This reflection was not saved or shared.');
+      return;
+    }
+
+    const checkIn = {
+      id: Date.now().toString(),
+      completedAt: new Date().toISOString(),
+      stage: profile.maternityStage,
+      responses: checkInQuestions.map((question, index) => ({
+        question: question.question,
+        answer: question.options[answers[index]],
+      })),
+    };
+
+    if (typeof onSaveCheckIn !== 'function' || onSaveCheckIn(checkIn) !== true) {
+      setCheckInError('This reflection could not be saved. Please try again.');
+      return;
+    }
+
+    window._lastSuccessQuote = 'Your reflection was saved on this device.';
+    setShowCheckin(false);
+    setAnswers([]);
+    setCurrentQuestion(0);
+    setShowSuccess(true);
   };
 
   const startBoundaryCheck = async () => {
@@ -252,7 +284,6 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
     const s = Math.floor(timeInSeconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
-  const isPostpartum = profile.maternityStage === 'Postpartum';
 
   const suggestions = isPostpartum
     ? ['Postpartum Anxiety', 'Lactation Issues', 'Sleep Deprivation', 'Mood Swings']
@@ -391,11 +422,35 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4">
-            <MentalAction icon={<Heart className="text-rose-400" />} title={isPostpartum ? "EPDS Screening" : "Bonding Check-in"} subtitle="Guided Reflection" onClick={startScreening} />
+            <MentalAction icon={<Heart className="text-rose-400" />} title={isPostpartum ? "Wellness Reflection" : "Prenatal Check-in"} subtitle={isPostpartum ? "Guided, non-diagnostic reflection" : "Single-question reflection"} onClick={startScreening} />
             <MentalAction icon={<Stethoscope className="text-emerald-400" />} title="AI Triage" subtitle="Clinical Logic" onClick={() => setShowTriage(true)} />
             <MentalAction icon={<Sparkles className="text-amber-400" />} title="Grounding Loops" subtitle="Safe Audio" onClick={() => setShowMediaLibrary(true)} />
             <MentalAction icon={<Edit3 className="text-rose-400" />} title="Safe Journal" subtitle="Private Space" onClick={onOpenJournal} />
           </div>
+        </div>
+
+        <div className="bg-white/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
+          <h3 className="text-lg font-black text-slate-900">Saved reflections</h3>
+          {(profile.wellnessCheckIns || []).length === 0 ? (
+            <p className="text-sm text-slate-500">No reflections have been saved.</p>
+          ) : (
+            [...profile.wellnessCheckIns].reverse().slice(0, 5).map(reflection => (
+              <details key={reflection.id} className="border-t border-slate-100 pt-4">
+                <summary className="cursor-pointer text-sm font-bold text-slate-700">
+                  {new Date(reflection.completedAt).toLocaleString()} · {reflection.responses?.length || 0} response{reflection.responses?.length === 1 ? '' : 's'}
+                </summary>
+                <ul className="mt-3 space-y-3">
+                  {(reflection.responses || []).map((response, index) => (
+                    <li key={`${reflection.id}-${index}`} className="text-sm text-slate-600">
+                      <p className="font-semibold">{response.question}</p>
+                      <p className="text-slate-500">{response.answer}</p>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))
+          )}
+          <p className="text-xs text-slate-400">These reflections are not a diagnosis or clinical screening result.</p>
         </div>
 
         <div className="space-y-8">
@@ -822,26 +877,26 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto bg-white">
             <div className="max-w-2xl mx-auto px-6 lg:px-8 py-10 space-y-8">
-              {currentQuestion < EPDS_QUESTIONS.length ? (
+              {currentQuestion < checkInQuestions.length ? (
                 <div className="space-y-8 animate-in fade-in duration-500">
                   <div className="text-center space-y-4">
                     <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-slate-50 text-slate-400 rounded-full text-[10px] font-black uppercase tracking-[0.3em] border border-slate-100">
-                      STEP <span className="text-slate-900">{currentQuestion + 1}</span> / {EPDS_QUESTIONS.length}
+                      {isPostpartum ? 'REFLECTION' : 'CHECK-IN'} <span className="text-slate-900">{currentQuestion + 1}</span> / {checkInQuestions.length}
                     </div>
                     
                     <h2 className="text-lg font-black text-slate-900 tracking-tight leading-snug">
-                      {EPDS_QUESTIONS[currentQuestion].question}
+                      {checkInQuestions[currentQuestion].question}
                     </h2>
 
-                    {EPDS_QUESTIONS[currentQuestion].section && (
+                    {checkInQuestions[currentQuestion].section && (
                        <div className="inline-flex px-5 py-1 bg-rose-50 text-rose-500 rounded-full text-[10px] font-black uppercase tracking-[0.3em] border border-rose-100/50">
-                          {EPDS_QUESTIONS[currentQuestion].section}
+                          {checkInQuestions[currentQuestion].section}
                        </div>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
-                    {EPDS_QUESTIONS[currentQuestion].options.map((choice, idx) => (
+                    {checkInQuestions[currentQuestion].options.map((choice, idx) => (
                       <button 
                         key={idx} 
                         onClick={() => handleAnswer(idx)} 
@@ -871,15 +926,27 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
                       <ShieldCheck size={48} strokeWidth={1} />
                    </div>
                    <div className="space-y-3">
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">Assessment Complete</h2>
-                      <p className="text-sm text-slate-400 font-bold leading-relaxed max-w-md mx-auto">Your clinical reflection is held in safe sanctum.</p>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">Reflection Complete</h2>
+                      <p className="text-sm text-slate-400 font-bold leading-relaxed max-w-md mx-auto">
+                        {answers.length} response{answers.length === 1 ? '' : 's'} recorded for this session. This is not a clinical result.
+                      </p>
                    </div>
+                   {checkInError && <p role="status" className="text-sm font-semibold text-amber-700">{checkInError}</p>}
                    <button 
-                     onClick={() => { setShowSuccess(true); setShowCheckin(false); }} 
+                     onClick={() => {
+                       if (profile.incognito) {
+                         setShowCheckin(false);
+                         setAnswers([]);
+                         setCurrentQuestion(0);
+                       } else {
+                         submitReflection();
+                       }
+                     }}
                      className="px-10 py-4 bg-slate-900 text-white rounded-full font-black uppercase tracking-[0.3em] text-[11px] hover:scale-105 active:scale-95 transition-all shadow-xl"
                    >
-                     Submit to Sanctuary
+                     {profile.incognito ? 'Finish without saving' : 'Save reflection'}
                    </button>
+                   {profile.incognito && <p className="text-xs text-slate-500">Ghost mode is active; this response will not be saved or shared.</p>}
                 </div>
               )}
             </div>
@@ -887,7 +954,7 @@ const MentalWellness = ({ profile, messages, setMessages, onOpenJournal }) => {
 
           {/* Progress bar */}
           <div className="h-2 bg-slate-100 w-full shrink-0 relative">
-            <div className="absolute inset-y-0 left-0 bg-rose-500 transition-all duration-700 ease-out" style={{ width: `${((currentQuestion + 1) / EPDS_QUESTIONS.length) * 100}%` }} />
+            <div className="absolute inset-y-0 left-0 bg-rose-500 transition-all duration-700 ease-out" style={{ width: `${(Math.min(currentQuestion + 1, checkInQuestions.length) / checkInQuestions.length) * 100}%` }} />
           </div>
         </div>
       , document.body)}

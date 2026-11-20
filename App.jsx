@@ -41,6 +41,7 @@ import Footer from './components/Footer';
 import SEOHead from './components/seo/SEOHead';
 import SEOGuardrail from './components/seo/SEOGuardrail';
 import { buildWebSiteSchema, buildOrganizationSchema, buildWebApplicationSchema } from './services/seo/schemaBuilder';
+import { readStoredArray, readStoredValue, removeStoredValue, shouldCreateNotification, writeStoredValue } from './utils/persistence';
 
 // Resilient lazy imports for compliance and monetization views (protected against client-side ad-blockers)
 const Dashboard = lazy(() => import('./components/Dashboard').catch(() => ({ default: () => null })));
@@ -100,7 +101,7 @@ const App = () => {
 
   // const lastClickRef = useRef(0);
 
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState(() => readStoredArray('afterma_appointments_v1'));
   const [showLactationLog, setShowLactationLog] = useState(false);
   const [showLocationPage, setShowLocationPage] = useState(false);
   const [showExpertReport, setShowExpertReport] = useState(false);
@@ -113,7 +114,7 @@ const App = () => {
   const lang = profile?.journeySettings?.language || 'english';
   const t = translations[lang];
 
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState(() => readStoredArray('afterma_daily_logs_v1'));
   const [exerciseLogs, setExerciseLogs] = useState([]);
   const [triageMessages, setTriageMessages] = useState(() => {
     try {
@@ -124,8 +125,9 @@ const App = () => {
       return [];
     }
   });
-  const [cart, setCart] = useState([]);
-  const [orderSummary, setOrderSummary] = useState(null);
+  const [cart, setCart] = useState(() => readStoredArray('afterma_cart_v1'));
+  const [expressDelivery, setExpressDelivery] = useState(() => Boolean(readStoredValue('afterma_express_delivery_v1', false)));
+  const [orderSummary, setOrderSummary] = useState(() => readStoredValue('afterma_order_summary_v1', null));
   useEffect(() => {
     const save = setTimeout(() => {
       try {
@@ -142,6 +144,27 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem('afterma_triage_v4', JSON.stringify(triageMessages));
   }, [triageMessages]);
+
+  useEffect(() => {
+    writeStoredValue('afterma_cart_v1', cart);
+  }, [cart]);
+
+  useEffect(() => {
+    writeStoredValue('afterma_appointments_v1', appointments);
+  }, [appointments]);
+
+  useEffect(() => {
+    if (!profile.incognito) writeStoredValue('afterma_daily_logs_v1', logs);
+  }, [logs, profile.incognito]);
+
+  useEffect(() => {
+    writeStoredValue('afterma_express_delivery_v1', expressDelivery);
+  }, [expressDelivery]);
+
+  useEffect(() => {
+    if (orderSummary) writeStoredValue('afterma_order_summary_v1', orderSummary);
+    else removeStoredValue('afterma_order_summary_v1');
+  }, [orderSummary]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -202,7 +225,8 @@ const App = () => {
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isExpert = profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified';
 
-  const addNotification = (title, text) => {
+  const addNotification = (title, text, preference) => {
+    if (!shouldCreateNotification(profile, preference)) return;
     setNotifications(prev => [{ id: Date.now().toString(), title, text, time: 'Just now' }, ...prev]);
   };
 
@@ -268,6 +292,13 @@ const App = () => {
   const logout = () => {
     authAPI.logout(); // clears token + refresh token + user id from localStorage
     localStorage.removeItem('afterma_profile_v4'); // clear cached profile
+    ['afterma_cart_v1', 'afterma_appointments_v1', 'afterma_daily_logs_v1', 'afterma_express_delivery_v1', 'afterma_order_summary_v1']
+      .forEach(key => removeStoredValue(key));
+    setCart([]);
+    setAppointments([]);
+    setLogs([]);
+    setExpressDelivery(false);
+    setOrderSummary(null);
     setProfile({
       name: 'Guest', age: 28,
       deliveryDate: new Date().toISOString(), deliveryType: 'normal',
@@ -280,15 +311,15 @@ const App = () => {
         name: '', relationship: '', contact: '',
         permissions: { canViewMood: true, canViewPhysical: true, canViewMedicalHistory: false, canViewAppointments: true }
       },
-      journeySettings: { pace: 'gentle', preferredTime: 'morning', goals: ['improve strength', 'stabilize mood'], isPaused: false, language: 'english' },
+      journeySettings: { pace: 'gentle', preferredTime: 'morning', goals: ['improve strength', 'stabilize mood'], dailyCommitmentMinutes: 15, isPaused: false, language: 'english' },
       notifications: { exerciseReminders: true, hydrationAlerts: true, moodCheckins: true, careConnectUpdates: true, sosConfirmations: true },
-      periodLogs: [], journalEntries: [],
+      periodLogs: [], wellnessCheckIns: [], journalEntries: [],
     });
     setView('education');
   };
 
   const toggleActivity = (activityId) => {
-    if (profile.journeySettings.isPaused) return;
+    if (profile.journeySettings.isPaused || profile.incognito) return false;
     setProfile(prev => {
       const currentActivities = Array.isArray(prev.completedActivities) ? prev.completedActivities : [];
       const isCompleted = currentActivities.includes(activityId);
@@ -297,10 +328,11 @@ const App = () => {
         : [...currentActivities, activityId];
 
       if (!isCompleted) {
-        addNotification("Activity Logged", "Your progress has been recorded securely.");
+        addNotification("Activity Logged", "Your progress has been recorded.", 'exerciseReminders');
       }
       return { ...prev, completedActivities: newCompleted };
     });
+    return true;
   };
 
   const triggerSOS = () => {
@@ -330,9 +362,11 @@ const App = () => {
   };
 
   const handleSaveLog = (newLog) => {
-    setLogs(prev => [...prev, newLog]);
-    setShowLogModal(false);
-    addNotification("Health Logged", "Your daily metrics have been securely recorded.");
+    if (profile.incognito) return false;
+    const updatedLogs = [...logs, newLog];
+    if (!writeStoredValue('afterma_daily_logs_v1', updatedLogs)) return false;
+    setLogs(updatedLogs);
+    addNotification("Health Logged", "Your daily check-in was saved.", 'moodCheckins');
 
     // Streak logic
     const today = new Date().toISOString().split('T')[0];
@@ -343,6 +377,18 @@ const App = () => {
         lastLoginDate: today
       }));
     }
+    return true;
+  };
+
+  const handleSaveWellnessCheckIn = (checkIn) => {
+    if (profile.incognito) return false;
+    const updatedProfile = {
+      ...profile,
+      wellnessCheckIns: [...(profile.wellnessCheckIns || []), checkIn],
+    };
+    if (!writeStoredValue('afterma_profile_v4', updatedProfile)) return false;
+    setProfile(updatedProfile);
+    return true;
   };
 
   const filteredActivities = useMemo(() => {
@@ -518,14 +564,14 @@ const App = () => {
               <>
                 {currentView === 'dashboard' && profile.authenticated && (
                   <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading Dashboard...</div>}>
-                    <Dashboard profile={profile} logs={logs} onAddLog={() => navigate('/carejourney?tab=PeriodLog')} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />
+                    <Dashboard profile={profile} logs={logs} onAddLog={() => setShowLogModal(true)} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />
                   </Suspense>
                 )}
                 {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
                 {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
                 {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
                 {currentView === 'healthsummary' && profile.authenticated && <HealthReportModal profile={profile} onClose={() => setView('dashboard')} />}
-                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} messages={triageMessagesMemo} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
+                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} onSaveCheckIn={handleSaveWellnessCheckIn} messages={triageMessagesMemo} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
                 {currentView === 'education' && <Education profile={profile} />}
                 {currentView === 'recipes' && <SafeRecipes profile={profile} />}
                 {currentView === 'learning-center' && <ArticlePage profile={profile} />}
@@ -545,6 +591,8 @@ const App = () => {
                   <Cart
                     profile={profile}
                     cart={cart}
+                    expressDelivery={expressDelivery}
+                    onExpressDeliveryChange={setExpressDelivery}
                     onUpdateQuantity={updateQuantity}
                     onRemoveItem={removeFromCart}
                     onGoBack={() => setView('momkart')}
@@ -555,15 +603,20 @@ const App = () => {
                   <Payment
                     profile={profile}
                     cart={cart}
-                    orderSummary={orderSummary}
+                    expressDelivery={expressDelivery}
                     onGoBack={() => setView('momkart-cart')}
-                    onSuccess={() => { setCart([]); setOrderSummary(null); setView('momkart'); addNotification('Order Placed!', 'Your maternal care essentials are on their way.'); }}
+                    onSuccess={() => { setCart([]); setOrderSummary(null); setExpressDelivery(false); setView('momkart'); addNotification('Order Placed!', 'Your maternal care essentials are on their way.'); }}
                   />
                 )}
                 {currentView === 'aftermaplus' && <Membership profile={profile} setProfile={setProfile} />}
                 {currentView === 'settings' && profile.authenticated && <Settings profile={profile} setProfile={setProfile} />}
                 {currentView === 'careconnect' && profile.authenticated && <CareConnect profile={profile} setProfile={setProfile} appointments={appointments} setAppointments={setAppointments} setCircles={setCircles} circles={circles} addNotification={addNotification} />}
-                {currentView === 'caregiver' && profile.authenticated && <CaregiverView profile={profile} logs={logs} />}
+                {currentView === 'caregiver' && profile.authenticated && (
+                  <CaregiverView
+                    profile={profile.incognito ? { ...profile, completedActivities: [], periodLogs: [], wellnessCheckIns: [] } : profile}
+                    logs={profile.incognito ? [] : logs}
+                  />
+                )}
 
                 {/* Legal & Trust Compliance Views (Publicly Accessible) */}
                 <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading document...</div>}>

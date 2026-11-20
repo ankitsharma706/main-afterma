@@ -93,7 +93,6 @@ const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
   }, [lastLog, lang]);
 
   const chartData = useMemo(() => {
-    if (logs.length === 0) return [{ time: 'Today', mood: 5, pain: 2 }];
     return logs.slice(-7).map(l => ({
       time: new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       mood: l.moodLevel,
@@ -239,26 +238,32 @@ const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        <StatCard icon={<Droplet className="text-blue-500" />} label={t.dashboard.stats.hydration} value={`${lastLog?.waterIntake || 0}/10`} color="bg-blue-50/40" />
-        <StatCard icon={<Moon className="text-indigo-400" />} label={t.dashboard.stats.rest} value={`${lastLog?.sleepHours || 0}`} unit="hrs" color="bg-indigo-50/40" />
-        <StatCard icon={<Pill className="text-emerald-500" />} label={t.dashboard.stats.selfcare} value={lastLog?.medicationsTaken ? "Done" : "1 Task"} color="bg-emerald-50/40" />
-        <StatCard icon={<Activity className="text-rose-500" />} label={t.dashboard.stats.kegel} value={`${lastLog?.kegelCount || 0}`} unit="sets" color="bg-rose-50/40" />
+        <StatCard icon={<Droplet className="text-blue-500" />} label={t.dashboard.stats.hydration} value={lastLog ? `${lastLog.waterIntake} cups` : 'Unavailable'} color="bg-blue-50/40" />
+        <StatCard icon={<Moon className="text-indigo-400" />} label={t.dashboard.stats.rest} value={lastLog ? `${lastLog.sleepHours}` : 'Unavailable'} unit={lastLog ? 'hrs' : ''} color="bg-indigo-50/40" />
+        <StatCard icon={<Pill className="text-emerald-500" />} label={t.dashboard.stats.selfcare} value={lastLog ? (lastLog.medicationsTaken ? 'Done' : 'Not logged') : 'Unavailable'} color="bg-emerald-50/40" />
+        <StatCard icon={<Activity className="text-rose-500" />} label={t.dashboard.stats.kegel} value={lastLog ? `${lastLog.kegelCount}` : 'Unavailable'} unit={lastLog ? 'sets' : ''} color="bg-rose-50/40" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
         <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl p-8 lg:p-12 rounded-[2.5rem] shadow-[0_10px_50px_rgba(0,0,0,0.02)] border border-white/60">
           <div className="mb-8 lg:mb-12"><h3 className="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">{t.dashboard.healingPulse}</h3><p className="text-sm lg:text-base text-slate-400 font-medium opacity-80 mt-1">{t.dashboard.healingPulseSub}</p></div>
-          <div className="h-56 lg:h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs><linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={theme.primary} stopOpacity={0.2}/><stop offset="95%" stopColor={theme.primary} stopOpacity={0}/></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.5} />
-                <XAxis dataKey="time" hide /><YAxis hide domain={[0, 10]} />
-                <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }} />
-                <Area type="monotone" dataKey="mood" stroke={theme.primary} strokeWidth={4} fillOpacity={1} fill="url(#colorMood)" /><Line type="monotone" dataKey="pain" stroke="#94A3B8" strokeWidth={2} strokeDasharray="6 6" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {chartData.length ? (
+            <div className="h-56 lg:h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs><linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={theme.primary} stopOpacity={0.2}/><stop offset="95%" stopColor={theme.primary} stopOpacity={0}/></linearGradient></defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.5} />
+                  <XAxis dataKey="time" hide /><YAxis hide domain={[0, 10]} />
+                  <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }} />
+                  <Area type="monotone" dataKey="mood" stroke={theme.primary} strokeWidth={4} fillOpacity={1} fill="url(#colorMood)" /><Line type="monotone" dataKey="pain" stroke="#94A3B8" strokeWidth={2} strokeDasharray="6 6" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-56 lg:h-80 flex items-center justify-center text-sm font-medium text-slate-400">
+              No saved check-ins yet. Use “Log Your Moment” to add your observations.
+            </div>
+          )}
         </div>
 
         <div className="bg-white/70 backdrop-blur-xl p-8 lg:p-12 rounded-[2.5rem] shadow-sm border border-white/60 flex flex-col justify-between group">

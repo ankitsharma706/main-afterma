@@ -177,7 +177,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
   const handleVerificationComplete = (data) => {
     setProfile(prev => ({ ...prev, role: data.roleRequested, verification: data }));
     setShowVerification(false);
-    addNotification("Application Submitted", "Our clinical board is reviewing your credentials. We'll notify you soon.");
+    addNotification("Application Submitted", "Our clinical board is reviewing your credentials. We'll notify you soon.", 'careConnectUpdates');
   };
 
   const startVerification = (role) => {
@@ -213,7 +213,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
   const simulateApproval = () => {
     setProfile(prev => ({ ...prev, verification: { ...prev.verification, status: 'verified' } }));
-    addNotification("Account Verified", `Your status as a ${profile.role === 'expert' ? 'Healthcare Expert' : 'Community Creator'} is now active.`);
+    addNotification("Account Verified", `Your status as a ${profile.role === 'expert' ? 'Healthcare Expert' : 'Community Creator'} is now active.`, 'careConnectUpdates');
   };
 
   if (isVerifiedExpert) return <ExpertDashboard profile={profile} />;
@@ -231,7 +231,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
         await communitiesAPI.leave(id);
       } else {
         await communitiesAPI.join(id);
-        addNotification("Circle Joined", `Welcome to the ${circle.name} sisterhood.`);
+        addNotification("Circle Joined", `Welcome to the ${circle.name} sisterhood.`, 'careConnectUpdates');
       }
     } catch (err) {
       console.warn('Community join/leave error — rolling back:', err?.message);
@@ -242,7 +242,7 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
   },[circles]);
 
   const handleBook = (expert) => {
-    addNotification("Booking unavailable", `No confirmed booking service is connected for ${expert?.name || 'this specialist'}.`);
+    addNotification("Booking unavailable", `No confirmed booking service is connected for ${expert?.name || 'this specialist'}.`, 'careConnectUpdates');
   };
 
   const cancelAppointment = (id) => {

@@ -30,6 +30,7 @@ test('normalizeProfile preserves nested defaults when saved data is partial', ()
   assert.deepEqual(profile.journeySettings.goals, ['improve strength', 'stabilize mood']);
   assert.equal(profile.notifications.moodCheckins, false);
   assert.equal(profile.notifications.exerciseReminders, true);
+  assert.equal(profile.journeySettings.dailyCommitmentMinutes, 15);
   assert.deepEqual(profile.completedActivities, ['activity-1']);
   assert.equal(profile.caregiver.permissions.canViewMedicalHistory, false);
 });
