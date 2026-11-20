@@ -4,6 +4,11 @@ import ArticleContent from './ArticleContent';
 import ArticleHero from './ArticleHero';
 import ArticleMeta from './ArticleMeta';
 import RecipeContent from './RecipeContent';
+import SponsoredBanner from '../promotions/SponsoredBanner';
+import SEOHead from '../seo/SEOHead';
+import Breadcrumbs from '../seo/Breadcrumbs';
+import RelatedContent from '../seo/RelatedContent';
+import { buildArticleSchema } from '../../services/seo/schemaBuilder';
 
 /* ─── Build a unified article lookup from constants ─────────────────── */
 const buildArticleDatabase = () => {
@@ -119,11 +124,41 @@ const ArticlePage = ({ profile }) => {
 
   const isRecipe = article.type === 'recipe' || article.category === 'Safe Recipes';
 
+  const breadcrumbItems = [
+    { name: 'Home', path: '/' },
+    { name: isRecipe ? 'Safe Recipes' : 'Knowledge Center', path: isRecipe ? '/recipes' : '/education' },
+    { name: article.title },
+  ];
+
+  const articleSchema = buildArticleSchema({
+    title: article.title,
+    summary: article.summary,
+    url: `https://afterma.care/learning-center/${articleId}`,
+    image: article.image,
+    author: article.expert,
+    category: article.category,
+  });
+
   return (
     <article
       className="max-w-4xl mx-auto pb-24 animate-in slide-in-from-bottom-4 duration-500"
       aria-label={`Article: ${article.title}`}
     >
+      {/* Dynamic Canonical Metadata & Structured Data */}
+      <SEOHead
+        title={article.title}
+        description={article.summary}
+        pathname={`/learning-center/${articleId}`}
+        image={article.image}
+        type="article"
+        author={article.expert}
+        section={article.category}
+        schemas={[articleSchema]}
+      />
+
+      {/* Semantic Breadcrumbs with Synchronized BreadcrumbList Schema */}
+      <Breadcrumbs items={breadcrumbItems} className="mb-4" />
+
       {/* Hero */}
       <ArticleHero article={article} onBack={handleBack} isRecipe={isRecipe} />
 
@@ -141,6 +176,12 @@ const ArticlePage = ({ profile }) => {
       ) : (
         <ArticleContent article={article} />
       )}
+
+      {/* Editorial In-Article Compliant Ad Placement */}
+      <SponsoredBanner slot="article-bottom-slot" minHeight="120px" className="mt-12" />
+
+      {/* Contextual Internal Linking Engine */}
+      <RelatedContent currentId={articleId} category={article.category} />
     </article>
   );
 };

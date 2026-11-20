@@ -1,0 +1,59 @@
+# ==============================================================================
+# robots.txt for AfterMa Postpartum Healthcare & Wellness
+# Canonical: https://afterma.online/robots.txt
+# Generated: 2026-10-27T20:10:45.544Z
+# ==============================================================================
+
+# 1. Standard Crawlers (Googlebot, Bingbot, DuckDuckBot)
+User-agent: *
+Allow: /
+Allow: /education
+Allow: /recipes
+Allow: /community-wisdom
+Allow: /learning-center/
+Allow: /about
+Allow: /contact
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /disclaimer
+
+# Protect private health portals, auth states, checkout, and interactive tools
+Disallow: /dashboard*
+Disallow: /carejourney*
+Disallow: /care-journey/session*
+Disallow: /mood-check*
+Disallow: /healthlogs*
+Disallow: /lactationlogs*
+Disallow: /healthsummary*
+Disallow: /mentalwellness*
+Disallow: /momkart-cart*
+Disallow: /momkart-payment*
+Disallow: /settings*
+Disallow: /signin*
+Disallow: /api/
+Disallow: /*?*session=
+Disallow: /*?*token=
+
+# 2. Google AdSense Mediapartners Crawler
+# Must have access to verify editorial content and context
+User-agent: Mediapartners-Google
+Allow: /
+Allow: /education
+Allow: /recipes
+Allow: /learning-center/
+Allow: /community-wisdom
+Allow: /about
+Allow: /contact
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /disclaimer
+
+# 3. Google-Display-Ads-Bot
+User-agent: Google-Display-Ads-Bot
+Allow: /
+Allow: /education
+Allow: /recipes
+Allow: /learning-center/
+
+# 4. Sitemap Index Pointer
+Sitemap: https://afterma.online/sitemap.xml

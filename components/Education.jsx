@@ -6,7 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import { ARTICLES, GOVT_SCHEMES, TRUSTED_PICKS, VIDEO_LIBRARY } from '../constants';
 import { translations } from '../translations';
 import SurveyCommunityData from './SurveyCommunityData';
-import Footer from './Footer';
+import SponsoredBanner from './promotions/SponsoredBanner';
+import SEOHead from './seo/SEOHead';
+import Breadcrumbs from './seo/Breadcrumbs';
+import { buildFaqSchema } from '../services/seo/schemaBuilder';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Background Portal + Parallax
@@ -385,11 +388,39 @@ const Education = ({ profile }) => {
     );
   }
 
+  const educationFaqs = [
+    {
+      question: "What is the Fourth Trimester in postpartum recovery?",
+      answer: "The Fourth Trimester refers to the 12-week transitional period following childbirth where the mother undergoes hormonal, pelvic, and emotional recalibration while establishing lactation and infant bonding.",
+    },
+    {
+      question: "How soon can I begin postpartum pelvic floor rehabilitation?",
+      answer: "Gentle diaphragmatic breathing and pelvic floor awareness can typically begin within the first week postpartum, provided there are no surgical complications and your physician has cleared you.",
+    },
+    {
+      question: "What key nutrients support postpartum iron and hemoglobin recovery?",
+      answer: "Consuming iron-rich foods like spinach, lentils, dates, and beets paired with vitamin C enhances absorption and replenishes vitality lost during delivery.",
+    },
+  ];
+
   /* ── Main landing view ── */
   return (
     <div className="overflow-x-hidden w-full min-h-screen">
+      {/* Declarative SEO Head & Schema.org FAQPage */}
+      <SEOHead
+        title="Knowledge Center & Maternal Health Guides"
+        description="Explore verified Fourth Trimester health guides, C-section recovery techniques, nutrition protocols, and emotional wellness articles."
+        pathname="/education"
+        schemas={[buildFaqSchema(educationFaqs)]}
+      />
+
       {/* The background is rendered via portal directly into <body> */}
       <LearningCenterBackground />
+
+      {/* Breadcrumb Navigation */}
+      <div className="max-w-5xl mx-auto px-4 pt-4" style={{ position: 'relative', zIndex: 1 }}>
+        <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: 'Knowledge Center' }]} />
+      </div>
 
       {/* All content sits on z-index 1 above the portal */}
       <div
@@ -397,7 +428,7 @@ const Education = ({ profile }) => {
         style={{ position: 'relative', zIndex: 1 }}
       >
         {/* ── Hero Header ── */}
-        <div className="text-center space-y-6 pt-12">
+        <div className="text-center space-y-6 pt-8">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm mb-2">
             <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Premium Healthcare Education</span>
@@ -523,8 +554,10 @@ const Education = ({ profile }) => {
 
       </div>
 
-      {/* ─── AFTERMA FOOTER ─────────────────────────────────────────────── */}
-      <Footer />
+      {/* ─── COMPLIANT AD UNIT IN EDITORIAL CONTENT ────────────────────── */}
+      <div className="max-w-5xl mx-auto px-4">
+        <SponsoredBanner slot="education-bottom-slot" minHeight="120px" className="my-8" />
+      </div>
     </div>
   );
 };
