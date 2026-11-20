@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import jsPDF from 'jspdf';
 
 import {
-    Activity,
     Award,
     BarChart3,
     CheckCircle,
@@ -13,17 +12,13 @@ import {
     FileText,
     Gauge,
     Heart,
-    Moon,
     Play,
     Plus,
-    Ruler,
-    ShieldCheck,
-    Smile,
-    Sparkles,
     Target
 } from 'lucide-react';
 import { COLORS } from '../constants';
 import { translations } from '../translations';
+import { getActivitySummary } from '../utils/recoveryReport';
 
 const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity }) => {
   const lang = profile.journeySettings.language || 'english';
@@ -88,7 +83,7 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
       notes: periodForm.notes || ''
     };
     setProfile(prev => ({ ...prev, periodLogs: [newLog, ...(prev.periodLogs || [])] }));
-    alert("Health metrics updated. Your data is encrypted and safe.");
+    alert("Observation saved in this browser profile. It is not encrypted or sent to a care provider.");
   };
 
   const toggleSymptom = (s) => {
@@ -101,6 +96,8 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
 
   const generatePhysicalRecoveryPDF = () => {
     const doc = new jsPDF();
+    const activitySummary = getActivitySummary(activities, completedActivities);
+    const periodLogCount = Array.isArray(profile.periodLogs) ? profile.periodLogs.length : 0;
     
     // Header
     doc.setFontSize(22);
@@ -112,40 +109,22 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
     doc.text(`Generated for: ${profile.name || 'Guest'}`, 14, 32);
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 38);
     
-    // Recovery Phase Info
     doc.setFontSize(14);
     doc.setTextColor(15, 23, 42);
-    doc.text('Vitals & Status', 14, 50);
+    doc.text('Recorded Activity', 14, 50);
     doc.setFontSize(10);
     doc.setTextColor(71, 85, 105);
-    doc.text(`Overall Progress: ${Math.round(progress)}%`, 14, 58);
-    doc.text(`Maternity Stage: ${profile.maternityStage || 'N/A'}`, 14, 66);
-    
-    // Readiness Indices
-    doc.setFontSize(14);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Readiness Indices', 14, 80);
-    doc.setFontSize(10);
-    doc.setTextColor(71, 85, 105);
-    doc.text(`- Tissue Restoration: 82%`, 14, 88);
-    doc.text(`- Pelvic Resilience: ${Math.round(progress)}%`, 14, 94);
-    doc.text(`- Core Alignment: 65%`, 14, 100);
-
-    // Behavioral Patterns
-    doc.setFontSize(14);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Behavioral Patterns', 14, 114);
-    doc.setFontSize(10);
-    doc.setTextColor(71, 85, 105);
-    doc.text(`- Hydration Adherence: 95%`, 14, 122);
-    doc.text(`- Rest Efficiency: 78%`, 14, 128);
-    doc.text(`- Log Consistency: 88%`, 14, 134);
+    doc.text(`Care activities checked off: ${activitySummary.completed} of ${activitySummary.total}`, 14, 58);
+    doc.text(`Observations logged: ${periodLogCount}`, 14, 64);
+    doc.text(`Maternity Stage: ${profile.maternityStage || 'N/A'}`, 14, 70);
+    doc.text('Clinical measurements and health predictions are not collected or calculated by this app.', 14, 80, { maxWidth: 180 });
     
     doc.save('Physical_Recovery_Report.pdf');
   };
 
   const completedActivities = profile.completedActivities || [];
-  const progress = activities.length > 0 ? (completedActivities.length / activities.length) * 100 : 0;
+  const activitySummary = getActivitySummary(activities, completedActivities);
+  const progress = activitySummary.percentage ?? 0;
 
   return (
     <div className="space-y-10 animate-in max-w-6xl mx-auto pb-32">
@@ -189,8 +168,8 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
                  <Award size={32} style={{ color: theme.primary }} strokeWidth={2.5} />
                </div>
                <div className="space-y-1">
-                 <div className="text-5xl font-bold text-slate-900 tracking-tighter tabular-nums">{completedActivities.length * 10}</div>
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-80">Care Tokens</p>
+                 <div className="text-5xl font-bold text-slate-900 tracking-tighter tabular-nums">{activitySummary.completed}</div>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-80">Activities completed</p>
                </div>
             </div>
           </div>
@@ -209,11 +188,8 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
 
       {activeSubTab === 'Cycle' && (
         <div className="space-y-12 animate-in fade-in duration-500">
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <MetricCard label="Cycle Variance" value="±2 Days" sub="Clinical Stability" icon={<Ruler size={18} />} trend="Stable" />
-              <MetricCard label="Ovulation Window" value="May 12-16" sub="Hormonal Peak" icon={<Sparkles size={18} />} trend="Next Cycle" />
-              <MetricCard label="Mood Correlation" value="88%" sub="Hormonal Alignment" icon={<Smile size={18} />} trend="High" />
-              <MetricCard label="Recovery Index" value="7.8/10" sub="Structural Integrity" icon={<Gauge size={18} />} trend="+0.2 wk" />
+           <div className="bg-amber-50 border border-amber-100 rounded-[2rem] p-6 text-sm text-amber-900">
+             Cycle variance, ovulation timing, and hormone-related trends are unavailable. Entries below are personal observations only and are not analyzed or used to make predictions.
            </div>
 
            <div className="bg-white p-10 lg:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-12">
@@ -265,13 +241,6 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
 
       {activeSubTab === 'Report' && (
         <div className="space-y-12 animate-in fade-in duration-500">
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <MetricCard label="Hydration Ratio" value="1.2 L/m" sub="Mineral Balance" icon={<Droplet size={18} />} trend="Optimal" />
-              <MetricCard label="Sleep Quality" value="84%" sub="Rem Cycle" icon={<Moon size={18} />} trend="Improving" />
-              <MetricCard label="Pelvic Index" value="9.2/10" sub="Structural Strength" icon={<ShieldCheck size={18} />} trend="Verified" />
-              <MetricCard label="Activity Load" value="High" sub="Safe Load" icon={<Activity size={18} />} trend="Balanced" />
-           </div>
-
            <div className="bg-white p-10 lg:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-12">
               <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                 <div className="space-y-2">
@@ -287,20 +256,16 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                  <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-8">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Readiness Indices</h4>
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Care activity checklist</h4>
                     <div className="grid gap-6">
-                       <ReportProgressBar label="Tissue Restoration" value={82} color="#10B981" />
-                       <ReportProgressBar label="Pelvic Resilience" value={Math.round(progress)} color={theme.primary} />
-                       <ReportProgressBar label="Core Alignment" value={65} color="#8B5CF6" />
+                       {activitySummary.percentage === null
+                         ? <p className="text-sm text-slate-500">Unavailable: no activities are configured for this stage.</p>
+                         : <ReportProgressBar label={`${activitySummary.completed} of ${activitySummary.total} activities checked off`} value={activitySummary.percentage} color={theme.primary} />}
                     </div>
                  </div>
-                 <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-8">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Behavioral Patterns</h4>
-                    <div className="grid gap-6">
-                       <ReportProgressBar label="Hydration Adherence" value={95} color="#3B82F6" />
-                       <ReportProgressBar label="Rest Efficiency" value={78} color="#F59E0B" />
-                       <ReportProgressBar label="Log Consistency" value={88} color="#EC4899" />
-                    </div>
+                 <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] space-y-4">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Health measurements</h4>
+                    <p className="text-sm text-slate-500">Unavailable: this app does not collect clinical measurements or calculate readiness, recovery, hydration, sleep, or cycle metrics.</p>
                  </div>
               </div>
            </div>
@@ -326,20 +291,6 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
     </div>
   );
 };
-
-const MetricCard = ({ label, value, sub, icon, trend }) => (
-  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all group">
-     <div className="flex justify-between items-start mb-4">
-        <div className="p-2.5 bg-slate-50 rounded-xl text-slate-300 group-hover:text-slate-900 transition-colors shadow-inner">{icon}</div>
-        <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">{trend}</span>
-     </div>
-     <div className="space-y-1">
-        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">{label}</p>
-        <p className="text-xl font-bold text-slate-900 tracking-tight">{value}</p>
-        <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{sub}</p>
-     </div>
-  </div>
-);
 
 const SubTabBtn = ({ active, onClick, icon, label, theme }) => (
   <button onClick={onClick} className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2.5 active:scale-95 ${active ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}>{React.cloneElement(icon, { className: active ? 'text-white' : '' })}{label}</button>

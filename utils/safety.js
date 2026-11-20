@@ -16,3 +16,11 @@ export const isValidFutureDate = (value, now = new Date()) => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return candidate > today;
 };
+
+export const isValidTime = (value) => {
+  if (typeof value !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+    return false;
+  }
+
+  return true;
+};

@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { getProfileInitials, loadProfile, normalizeProfile } from '../utils/profile.js';
-import { isValidFutureDate } from '../utils/safety.js';
+import { isValidFutureDate, isValidTime } from '../utils/safety.js';
+import { getActivitySummary } from '../utils/recoveryReport.js';
 
 const createStorage = (entries = {}) => ({
   store: { ...entries },
@@ -57,4 +58,20 @@ test('isValidFutureDate rejects malformed, past, and impossible dates', () => {
   assert.equal(isValidFutureDate('2026-02-30', now), false);
   assert.equal(isValidFutureDate('11/21/2026', now), false);
   assert.equal(isValidFutureDate('', now), false);
+});
+
+test('rescheduling accepts only valid 24-hour times', () => {
+  assert.equal(isValidTime('09:30'), true);
+  assert.equal(isValidTime('23:59'), true);
+  assert.equal(isValidTime('24:00'), false);
+  assert.equal(isValidTime('9:30'), false);
+  assert.equal(isValidTime('tomorrow'), false);
+});
+
+test('recovery report activity summary is derived from configured completed activities', () => {
+  assert.deepEqual(
+    getActivitySummary([{ id: 'one' }, { id: 'two' }], ['one', 'unknown']),
+    { completed: 1, total: 2, percentage: 50 },
+  );
+  assert.deepEqual(getActivitySummary([], ['one']), { completed: 0, total: 0, percentage: null });
 });

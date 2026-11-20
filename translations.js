@@ -58,7 +58,7 @@ export const translations = {
     care: {
       title: "Care Connect",
       subtitle: "Your bridge to certified maternal expertise and peer support.",
-      helpline: "Emergency Helpline",
+      helpline: "Mental health support (not an emergency line)",
       tabs: {
         community: "Sisters Circles",
         experts: "Experts",
@@ -170,7 +170,7 @@ export const translations = {
     care: {
       title: "केयर कनेक्ट",
       subtitle: "प्रमाणित मातृ विशेषज्ञता और पीयर सपोर्ट का आपका सेतु।",
-      helpline: "आपातकालीन हेल्पलाइन",
+      helpline: "मानसिक स्वास्थ्य सहायता (आपातकालीन सेवा नहीं)",
       tabs: {
         community: "सिस्टर्स सर्कल्स",
         experts: "विशेषज्ञ",

@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from 'react';
 import { COLORS } from '../constants';
 import { expertAPI, sessionsAPI } from '../services/api';
+import { isValidFutureDate, isValidTime } from '../utils/safety';
 
 const ExpertDashboard = ({ profile, onViewReport }) => {
   const theme = COLORS[profile.accent] || COLORS.PINK;
@@ -84,6 +85,10 @@ const ExpertDashboard = ({ profile, onViewReport }) => {
     if (!newDate) return;
     const newTime = prompt('Enter new time (HH:MM):');
     if (!newTime) return;
+    if (!isValidFutureDate(newDate) || !isValidTime(newTime)) {
+      alert('Enter a valid future date and a time in 24-hour HH:MM format.');
+      return;
+    }
     try {
       const res = await sessionsAPI.reschedule(sessionId, { session_date: newDate, session_time: newTime });
       if (res?.data?.session) {
