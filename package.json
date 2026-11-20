@@ -8,7 +8,8 @@
     "seo:generate": "node scripts/generate-seo-assets.js",
     "build": "node scripts/generate-seo-assets.js && vite build",
     "preview": "vite preview",
-    "lint": "vite build --mode development"
+    "lint": "node --check utils/profile.js && node --check utils/safety.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@google/genai": "^1.41.0",

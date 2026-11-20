@@ -2,15 +2,13 @@
 import { Activity, Check, Crown, Heart, ShieldCheck, Star, Zap } from 'lucide-react';
 import { COLORS, PRICING } from '../constants';
 
-const Membership = ({ profile, setProfile }) => {
+const Membership = ({ profile }) => {
   const isPlus = profile.membershipPlan === 'plus';
   const theme = COLORS[profile.accent] || COLORS.PINK;
 
   const handleUpgrade = () => {
-    const confirm = window.confirm(`Ready to upgrade to AfterMa Plus for ₹${PRICING.plus}/mo? This includes secure data encryption and priority care.`);
-    if (confirm) {
-      setProfile(p => ({ ...p, membershipPlan: 'plus' }));
-      alert("Welcome to AfterMa Plus! Your premium benefits are now active.");
+    if (typeof window !== 'undefined') {
+      window.alert('Paid subscriptions are not available yet. No payment or membership change was made.');
     }
   };
 
@@ -100,7 +98,7 @@ const Membership = ({ profile, setProfile }) => {
                border: isPlus ? `2px solid ${theme.primary}` : 'none'
              }}
            >
-             {isPlus ? 'Active Plus Member' : 'Upgrade to Plus Now'}
+             {isPlus ? 'Active Plus Member' : 'Payments Unavailable'}
            </button>
         </div>
       </div>

@@ -4,7 +4,7 @@ export const translations = {
     common: {
       signIn: "Sign In",
       signOut: "Sign Out",
-      sos: "Double tap for SOS",
+      sos: "SOS Help",
       searchPlaceholder: "Safe Search...",
       welcome: "Namaste",
       close: "Close"

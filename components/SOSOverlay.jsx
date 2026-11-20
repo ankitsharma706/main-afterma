@@ -27,15 +27,15 @@ const SOSOverlay = ({ profile, onClose }) => {
              >
                 YES, I NEED HELP NOW
              </button>
-             <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Confirming will notify contacts and display helplines</p>
+             <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest">             Confirmation shows support options only; it does not send an SMS or notify anyone</p>
           </div>
         ) : (
           <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
              <div className="p-8 bg-red-50 rounded-[2rem] border border-red-100 flex items-center gap-6">
                 <AlertTriangle className="text-red-600 shrink-0" size={32} />
                 <div>
-                   <h4 className="font-bold text-red-900">Emergency Alert Active</h4>
-                   <p className="text-sm text-red-700">SMS alert sent to your emergency contact: <span className="font-black underline">{profile.emergencyContact || 'Not Set'}</span></p>
+                   <h4 className="font-bold text-red-900">No automatic alert was sent</h4>
+                   <p className="text-sm text-red-700">This app cannot notify your emergency contact or send SMS. Call a verified emergency service directly.</p>
                 </div>
              </div>
 

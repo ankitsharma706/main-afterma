@@ -241,40 +241,9 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
     }
   },[circles]);
 
-  // ── Book session (local + real API) ─────────────────────────────────────
-  const handleBook = useCallback(async (expert) => {
-    const sessionDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
-    const newAppt = {
-      id: Date.now().toString(),
-      specialistName: expert.name,
-      type: expert.role,
-      date: sessionDate,
-      time: '11:30 AM',
-      status: 'Upcoming',
-      price: expert.price,
-    };
-    setAppointments(prev => [...prev, newAppt]);
-    addNotification("Session Scheduled", `Confirmed appointment with ${expert.name}.`);
-    setActiveSubTab('MyBookings');
-    try {
-      if (expert._id) {
-        await fetch('/api/sessions/book', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: profile._id,
-            doctor_id: expert._id,
-            session_date: sessionDate,
-            session_time: '11:30 AM',
-            session_type: 'video',
-            session_fee: parseInt(String(expert.price).replace(/[^\d]/g, '')) || 1000
-          })
-        });
-      }
-    } catch (err) {
-      console.warn('Session booking API error (saved locally):', err?.message);
-    }
-  },[profile]);
+  const handleBook = (expert) => {
+    addNotification("Booking unavailable", `No confirmed booking service is connected for ${expert?.name || 'this specialist'}.`);
+  };
 
   const cancelAppointment = (id) => {
     if (window.confirm("Are you sure you want to cancel this healing session?")) {
@@ -813,12 +782,11 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
                         <span className="text-2xl font-bold text-slate-900 tracking-tight">{expert.price}</span>
                         <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-widest opacity-60">Session Fee</span>
                       </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleBook(expert); }} 
-                        className="px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 text-white" 
-                        style={{ backgroundColor: theme.primary }}
+                      <button
+                        disabled
+                        className="px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg text-slate-400 bg-slate-100 cursor-not-allowed"
                       >
-                        {t.care.experts.book}
+                        Booking unavailable
                       </button>
                     </div>
                   </div>
@@ -946,11 +914,10 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
                   <div className="pt-10">
                     <button 
-                      onClick={() => handleBook(selectedExpert)}
-                      className="w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-[0.25em] transition-all shadow-2xl hover:scale-[1.02] active:scale-95 text-white"
-                      style={{ backgroundColor: theme.primary }}
+                      disabled
+                      className="w-full py-6 rounded-[2rem] font-black text-sm uppercase tracking-[0.25em] text-slate-400 bg-slate-100 cursor-not-allowed"
                     >
-                      Instant Booking <ArrowRight size={18} className="inline ml-2" />
+                      Booking unavailable
                     </button>
                     <p className="text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-6">
                       * Pre-approved by AfterMa Healthcare Board

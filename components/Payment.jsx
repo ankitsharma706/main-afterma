@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, CreditCard, Landmark, Lock, ShieldCheck, Smartphone, Sparkles, Zap } from 'lucide-react';
+import { ArrowLeft, CreditCard, Landmark, Lock, ShieldCheck, Smartphone, Sparkles, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { COLORS } from '../constants';
 
@@ -10,49 +10,12 @@ const Payment = ({ profile, cart, orderSummary, onGoBack, onSuccess }) => {
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
   const [cardName, setCardName] = useState('');
-  const [paid, setPaid] = useState(false);
 
   const { total, subtotal, gst, deliveryCharge } = orderSummary;
 
   const handlePay = () => {
-    if (window.Razorpay) {
-      const options = {
-        key: 'rzp_test_your_key_here',
-        amount: total * 100,
-        currency: 'INR',
-        name: 'AfterMa Store',
-        description: 'Maternal Care Essentials',
-        handler: () => { setPaid(true); setTimeout(() => onSuccess(), 2000); },
-        prefill: { name: profile.name, contact: profile.caregiver?.contact || '9999999999' },
-        theme: { color: theme.primary },
-      };
-      new window.Razorpay(options).open();
-    } else {
-      // Simulated success fallback
-      setPaid(true);
-      setTimeout(() => onSuccess(), 2000);
-    }
+    window.alert('Online payment is not configured. No charge was made and your cart was preserved.');
   };
-
-  if (paid) {
-    return (
-      <div className="animate-in min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: '#f0fdf4' }}>
-        <div className="text-center space-y-8 max-w-sm">
-          <div className="w-28 h-28 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-emerald-200 animate-bounce-slow">
-            <CheckCircle2 size={56} className="text-white" />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Payment Successful!</h2>
-            <p className="text-slate-500 font-medium">Your maternal care essentials are on their way. Redirecting…</p>
-          </div>
-          <div className="p-6 bg-white rounded-3xl border border-emerald-100 shadow-sm space-y-2">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Paid</p>
-            <p className="text-4xl font-black text-emerald-600">₹{total}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="animate-in min-h-screen pb-32" style={{ backgroundColor: '#f8fafc' }}>
@@ -206,7 +169,7 @@ const Payment = ({ profile, cart, orderSummary, onGoBack, onSuccess }) => {
               style={{ backgroundColor: theme.primary }}
               className="w-full py-5 text-white rounded-2xl font-black text-sm shadow-xl hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              <Lock size={16} /> Pay ₹{total} Securely
+              <Lock size={16} /> Payment Unavailable
             </button>
           </div>
         </div>

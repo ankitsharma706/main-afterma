@@ -6,6 +6,7 @@ import CareConnect from './components/CareConnect';
 import CaregiverView from './components/CaregiverView';
 import CareJourney from './components/CareJourney';
 import Cart from './components/Cart';
+import { getProfileInitials, loadProfile } from './utils/profile';
 import Education from './components/Education';
 import ExpertAnalytics from './components/ExpertAnalytics';
 import ExpertDashboard from './components/ExpertDashboard';
@@ -52,54 +53,7 @@ const NotFoundView = lazy(() => import('./components/compliance/NotFoundView').c
 const PromotionManager = lazy(() => import('./components/promotions/PromotionManager').catch(() => ({ default: () => null })));
 
 const App = () => {
-  const [profile, setProfile] = useState(() => {
-    try {
-      const saved = localStorage.getItem('afterma_profile_v4');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to parse profile from localStorage", e);
-    }
-    return {
-      name: "Guest",
-      age: 28,
-      deliveryDate: new Date().toISOString(),
-      deliveryType: 'normal',
-      maternityStage: 'Postpartum',
-      authenticated: false,
-      role: 'mother',
-      accent: 'PINK',
-      incognito: false,
-      medicalHistory: "",
-      emergencyContact: "",
-      membershipPlan: 'free',
-      currentPhase: 'Month 1',
-      completedActivities: [],
-      streakCount: 0,
-      streakProtectionActive: false,
-      lastLoginDate: new Date().toISOString().split('T')[0],
-      badges: [],
-      caregiver: {
-        name: "", relationship: "", contact: "",
-        permissions: { canViewMood: true, canViewPhysical: true, canViewMedicalHistory: false, canViewAppointments: true }
-      },
-      journeySettings: {
-        pace: 'gentle',
-        preferredTime: 'morning',
-        goals: ['improve strength', 'stabilize mood'],
-        isPaused: false,
-        language: 'english'
-      },
-      notifications: {
-        exerciseReminders: true,
-        hydrationAlerts: true,
-        moodCheckins: true,
-        careConnectUpdates: true,
-        sosConfirmations: true
-      },
-      periodLogs: [],
-      journalEntries: []
-    };
-  });
+  const [profile, setProfile] = useState(() => loadProfile());
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,7 +78,6 @@ const App = () => {
   };
 
   const [showSOS, setShowSOS] = useState(false);
-  const [sosConfirming, setSosConfirming] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -146,7 +99,6 @@ const App = () => {
   }, []);
 
   // const lastClickRef = useRef(0);
-  const sosTimerRef = useRef(null);
 
   const [appointments, setAppointments] = useState([]);
   const [showLactationLog, setShowLactationLog] = useState(false);
@@ -158,7 +110,7 @@ const App = () => {
     { id: '3', name: 'Emotional Overwhelm', members: 56, description: 'A safe space to talk about the harder days.', isJoined: false },
   ]);
 
-  const lang = profile.journeySettings.language || 'english';
+  const lang = profile?.journeySettings?.language || 'english';
   const t = translations[lang];
 
   const [logs, setLogs] = useState([]);
@@ -176,7 +128,11 @@ const App = () => {
   const [orderSummary, setOrderSummary] = useState(null);
   useEffect(() => {
     const save = setTimeout(() => {
-      localStorage.setItem('afterma_profile_v4', JSON.stringify(profile));
+      try {
+        localStorage.setItem('afterma_profile_v4', JSON.stringify(profile));
+      } catch (error) {
+        console.warn('Unable to persist profile state:', error);
+      }
       document.documentElement.lang = lang === 'hindi' ? 'hi' : 'en';
     }, 300);
 
@@ -242,11 +198,6 @@ const App = () => {
   }, []); // run once on mount only
 
   // Cleanup SOS timer on unmount
-  useEffect(() => {
-    return () => {
-      if (sosTimerRef.current) clearTimeout(sosTimerRef.current);
-    };
-  }, []);
 
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isExpert = profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified';
@@ -339,10 +290,11 @@ const App = () => {
   const toggleActivity = (activityId) => {
     if (profile.journeySettings.isPaused) return;
     setProfile(prev => {
-      const isCompleted = prev.completedActivities.includes(activityId);
+      const currentActivities = Array.isArray(prev.completedActivities) ? prev.completedActivities : [];
+      const isCompleted = currentActivities.includes(activityId);
       const newCompleted = isCompleted
-        ? prev.completedActivities.filter(id => id !== activityId)
-        : [...prev.completedActivities, activityId];
+        ? currentActivities.filter(id => id !== activityId)
+        : [...currentActivities, activityId];
 
       if (!isCompleted) {
         addNotification("Activity Logged", "Your progress has been recorded securely.");
@@ -353,22 +305,9 @@ const App = () => {
 
   const triggerSOS = () => {
     setShowSOS(true);
-    setSosConfirming(false);
-    if (sosTimerRef.current) clearTimeout(sosTimerRef.current);
   };
 
-  // Improved SOS - double-tap with visual confirm state (from v3)
-  const handleSOSClick = () => {
-    if (!sosConfirming) {
-      setSosConfirming(true);
-      sosTimerRef.current = setTimeout(() => {
-        setSosConfirming(false);
-      }, 2000);
-    } else {
-      triggerSOS();
-    }
-  };
-
+  const handleSOSClick = () => triggerSOS();
   const addToCart = (item) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -526,12 +465,12 @@ const App = () => {
             <div className="relative group">
               <button
                 onClick={handleSOSClick}
-                className={`px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg ${sosConfirming ? 'bg-amber-500 text-black animate-pulse' : 'bg-[#eab308] text-black shadow-amber-200'}`}
+                className="px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all active:scale-95 shadow-lg bg-[#eab308] text-black shadow-amber-200"
               >
-                {sosConfirming ? 'Tap again to confirm SOS' : 'Double tap for SOS'}
+                SOS Help
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-slate-900 text-white text-[8px] font-bold uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
-                Your safety matters. Double tap to activate.
+                Open emergency support options
               </div>
             </div>
             {profile.authenticated ? (
@@ -541,7 +480,7 @@ const App = () => {
                   {notifications.length > 0 && <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-white`} style={{ backgroundColor: theme.primary }}></span>}
                 </button>
                 <button onClick={() => setView('settings')} style={{ backgroundColor: theme.primary }} className="h-8 w-8 lg:h-9 lg:w-9 rounded-full text-white flex items-center justify-center font-bold text-xs lg:text-sm shadow-md border border-white hover:scale-105 transition-transform overflow-hidden">
-                  {profile.profilePicture ? <img src={profile.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : profile.name[0]}
+                  {profile.profilePicture ? <img src={profile.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : getProfileInitials(profile.name)}
                 </button>
               </div>
             ) : (
