@@ -143,8 +143,8 @@ const Dashboard = ({ profile, logs, onAddLog, onOpenHistory }) => {
              <button onClick={onAddLog} className="bg-white/95 backdrop-blur-md px-8 py-4 rounded-[2rem] font-bold shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 text-slate-900 text-sm lg:text-base border border-white w-full">
                <Plus size={20} strokeWidth={3} /> {t.dashboard.logMoment}
              </button>
-             <button onClick={onOpenHistory} className="bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] font-bold shadow-sm hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 text-white text-sm lg:text-base border border-white/20 w-full hover:-translate-y-1">
-               <BarChart2 size={18} strokeWidth={2.5} /> Records History
+             <button onClick={onOpenHistory || undefined} disabled={!onOpenHistory} className="bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] font-bold shadow-sm hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center gap-3 text-white text-sm lg:text-base border border-white/20 w-full hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed">
+               <BarChart2 size={18} strokeWidth={2.5} /> {onOpenHistory ? 'Records History' : 'History hidden in Ghost Mode'}
              </button>
           </div>
         </div>

@@ -42,6 +42,7 @@ import SEOHead from './components/seo/SEOHead';
 import SEOGuardrail from './components/seo/SEOGuardrail';
 import { buildWebSiteSchema, buildOrganizationSchema, buildWebApplicationSchema } from './services/seo/schemaBuilder';
 import { readStoredArray, readStoredValue, removeStoredValue, shouldCreateNotification, writeStoredValue } from './utils/persistence';
+import { getGhostSafeLogs, getGhostSafeProfile } from './utils/ghostMode';
 
 // Resilient lazy imports for compliance and monetization views (protected against client-side ad-blockers)
 const Dashboard = lazy(() => import('./components/Dashboard').catch(() => ({ default: () => null })));
@@ -142,8 +143,8 @@ const App = () => {
   }, [profile, lang]);
 
   useEffect(() => {
-    localStorage.setItem('afterma_triage_v4', JSON.stringify(triageMessages));
-  }, [triageMessages]);
+    if (!profile.incognito) writeStoredValue('afterma_triage_v4', triageMessages);
+  }, [triageMessages, profile.incognito]);
 
   useEffect(() => {
     writeStoredValue('afterma_cart_v1', cart);
@@ -224,9 +225,13 @@ const App = () => {
 
   const theme = COLORS[profile.accent] || COLORS.PINK;
   const isExpert = profile.authenticated && profile.role === 'expert' && profile.verification?.status === 'verified';
+  const visibleProfile = getGhostSafeProfile(profile);
+  const visibleLogs = getGhostSafeLogs(logs, profile);
+  const visibleExerciseLogs = getGhostSafeLogs(exerciseLogs, profile);
+  const visibleTriageMessages = getGhostSafeLogs(triageMessages, profile);
 
   const addNotification = (title, text, preference) => {
-    if (!shouldCreateNotification(profile, preference)) return;
+    if (profile.incognito || !shouldCreateNotification(profile, preference)) return;
     setNotifications(prev => [{ id: Date.now().toString(), title, text, time: 'Just now' }, ...prev]);
   };
 
@@ -415,7 +420,6 @@ const App = () => {
         return true;
       });
   }, [profile.deliveryType, profile.journeySettings.pace, profile.maternityStage]);
-  const triageMessagesMemo = useMemo(() => triageMessages, [triageMessages]);
   const globalSchemas = useMemo(() => [
     buildWebSiteSchema(),
     buildOrganizationSchema(),
@@ -564,14 +568,14 @@ const App = () => {
               <>
                 {currentView === 'dashboard' && profile.authenticated && (
                   <Suspense fallback={<div className="py-12 text-center text-slate-400 font-medium">Loading Dashboard...</div>}>
-                    <Dashboard profile={profile} logs={logs} onAddLog={() => setShowLogModal(true)} onOpenHistory={() => setShowHistoryModal(true)} setView={setView} />
+                    <Dashboard profile={visibleProfile} logs={visibleLogs} onAddLog={() => setShowLogModal(true)} onOpenHistory={profile.incognito ? null : () => setShowHistoryModal(true)} setView={setView} />
                   </Suspense>
                 )}
-                {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={profile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={exerciseLogs} setExerciseLogs={setExerciseLogs} logs={logs} onAddLog={() => setShowLogModal(true)} />}
+                {currentView === 'carejourney' && profile.authenticated && <CareJourney profile={visibleProfile} setProfile={setProfile} onToggleActivity={toggleActivity} activities={filteredActivities} exerciseLogs={visibleExerciseLogs} setExerciseLogs={setExerciseLogs} logs={visibleLogs} onAddLog={() => setShowLogModal(true)} />}
                 {currentView === 'healthlogs' && profile.authenticated && <HealthLogs profile={profile} />}
                 {currentView === 'lactationlogs' && profile.authenticated && <LactationLog profile={profile} onClose={() => setView('dashboard')} />}
                 {currentView === 'healthsummary' && profile.authenticated && <HealthReportModal profile={profile} onClose={() => setView('dashboard')} />}
-                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={profile} onSaveCheckIn={handleSaveWellnessCheckIn} messages={triageMessagesMemo} setMessages={setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
+                {currentView === 'mentalwellness' && profile.authenticated && <MentalWellness profile={visibleProfile} onSaveCheckIn={handleSaveWellnessCheckIn} messages={visibleTriageMessages} setMessages={profile.incognito ? () => {} : setTriageMessages} onOpenJournal={() => setShowJournal(true)} />}
                 {currentView === 'education' && <Education profile={profile} />}
                 {currentView === 'recipes' && <SafeRecipes profile={profile} />}
                 {currentView === 'learning-center' && <ArticlePage profile={profile} />}
@@ -612,10 +616,7 @@ const App = () => {
                 {currentView === 'settings' && profile.authenticated && <Settings profile={profile} setProfile={setProfile} />}
                 {currentView === 'careconnect' && profile.authenticated && <CareConnect profile={profile} setProfile={setProfile} appointments={appointments} setAppointments={setAppointments} setCircles={setCircles} circles={circles} addNotification={addNotification} />}
                 {currentView === 'caregiver' && profile.authenticated && (
-                  <CaregiverView
-                    profile={profile.incognito ? { ...profile, completedActivities: [], periodLogs: [], wellnessCheckIns: [] } : profile}
-                    logs={profile.incognito ? [] : logs}
-                  />
+                  <CaregiverView profile={visibleProfile} logs={visibleLogs} />
                 )}
 
                 {/* Legal & Trust Compliance Views (Publicly Accessible) */}
@@ -648,8 +649,8 @@ const App = () => {
       </main>
       {showSOS && <SOSOverlay profile={profile} onClose={() => setShowSOS(false)} />}
       {showLogModal && <LogMomentModal profile={profile} onClose={() => setShowLogModal(false)} onSave={handleSaveLog} />}
-      {showHistoryModal && <RecordsHistoryModal profile={profile} logs={logs} onClose={() => setShowHistoryModal(false)} />}
-      {showJournal && <Journal profile={profile} setProfile={setProfile} onClose={() => setShowJournal(false)} />}
+      {showHistoryModal && !profile.incognito && <RecordsHistoryModal profile={profile} logs={logs} onClose={() => setShowHistoryModal(false)} />}
+      {showJournal && <Journal profile={visibleProfile} setProfile={setProfile} onClose={() => setShowJournal(false)} />}
       {showLactationLog && <LactationLog profile={profile} onClose={() => setShowLactationLog(false)} />}
       {showLocationPage && <LocationPage profile={profile} onClose={() => setShowLocationPage(false)} />}
       {showExpertReport && <HealthReportModal profile={profile} onClose={() => setShowExpertReport(false)} />}

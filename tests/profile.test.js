@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { getProfileInitials, loadProfile, normalizeProfile } from '../utils/profile.js';
 import { isValidFutureDate, isValidTime } from '../utils/safety.js';
 import { getActivitySummary } from '../utils/recoveryReport.js';
+import { removePeriodLog, upsertPeriodLog } from '../utils/periodLogs.js';
+import { getGhostSafeLogs, getGhostSafeProfile } from '../utils/ghostMode.js';
 
 const createStorage = (entries = {}) => ({
   store: { ...entries },
@@ -74,4 +76,38 @@ test('recovery report activity summary is derived from configured completed acti
     { completed: 1, total: 2, percentage: 50 },
   );
   assert.deepEqual(getActivitySummary([], ['one']), { completed: 0, total: 0, percentage: null });
+});
+
+test('period observations can be created, corrected, and deleted without losing other entries', () => {
+  const existing = [{ id: 'one', notes: 'old' }, { id: 'two', notes: 'keep' }];
+  const corrected = upsertPeriodLog(existing, { id: 'one', notes: 'updated' });
+
+  assert.deepEqual(corrected, [{ id: 'one', notes: 'updated' }, { id: 'two', notes: 'keep' }]);
+  assert.deepEqual(upsertPeriodLog(corrected, { id: 'three' }), [
+    { id: 'three' },
+    { id: 'one', notes: 'updated' },
+    { id: 'two', notes: 'keep' },
+  ]);
+  assert.deepEqual(removePeriodLog(corrected, 'one'), [{ id: 'two', notes: 'keep' }]);
+});
+
+test('ghost mode hides saved activity across in-app views without mutating stored profile data', () => {
+  const profile = {
+    incognito: true,
+    completedActivities: ['activity-1'],
+    periodLogs: [{ id: 'period-1' }],
+    wellnessCheckIns: [{ id: 'checkin-1' }],
+    journalEntries: [{ id: 'journal-1' }],
+  };
+
+  assert.deepEqual(getGhostSafeProfile(profile), {
+    ...profile,
+    completedActivities: [],
+    periodLogs: [],
+    wellnessCheckIns: [],
+    journalEntries: [],
+  });
+  assert.deepEqual(getGhostSafeLogs([{ id: 'log-1' }], profile), []);
+  assert.equal(profile.periodLogs.length, 1);
+  assert.deepEqual(getGhostSafeProfile({ incognito: false, journalEntries: [{ id: 'saved' }] }).journalEntries, [{ id: 'saved' }]);
 });

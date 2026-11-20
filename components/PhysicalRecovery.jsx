@@ -18,7 +18,9 @@ import {
 } from 'lucide-react';
 import { COLORS } from '../constants';
 import { translations } from '../translations';
+import { removePeriodLog, upsertPeriodLog } from '../utils/periodLogs';
 import { getActivitySummary } from '../utils/recoveryReport';
+import { getGhostSafeProfile } from '../utils/ghostMode';
 
 const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity }) => {
   const lang = profile.journeySettings.language || 'english';
@@ -33,8 +35,10 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
     mood: 'Balanced',
     notes: ''
   });
+  const [editingPeriodId, setEditingPeriodId] = useState(null);
 
   const isPostpartum = profile.maternityStage === 'Postpartum';
+  const visibleProfile = getGhostSafeProfile(profile);
   const theme = COLORS[profile.accent] || COLORS.PINK;
 
   const [isTagSticky, setIsTagSticky] = useState(false);
@@ -74,16 +78,42 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
   }, [profile.maternityStage, t]);
 
   const handlePeriodLog = () => {
+    if (profile.incognito) {
+      alert('Ghost mode is active. This observation was not saved or shared.');
+      return;
+    }
+
     const newLog = {
-      id: Date.now().toString(),
+      id: editingPeriodId || Date.now().toString(),
       date: periodForm.date || new Date().toISOString().split('T')[0],
       flow: periodForm.flow || 'None',
       symptoms: periodForm.symptoms || [],
       mood: periodForm.mood || 'Balanced',
       notes: periodForm.notes || ''
     };
-    setProfile(prev => ({ ...prev, periodLogs: [newLog, ...(prev.periodLogs || [])] }));
+    setProfile(prev => ({
+      ...prev,
+      periodLogs: upsertPeriodLog(prev.periodLogs, newLog),
+    }));
+    setEditingPeriodId(null);
     alert("Observation saved in this browser profile. It is not encrypted or sent to a care provider.");
+  };
+
+  const editPeriodLog = (log) => {
+    setPeriodForm({
+      date: log.date || '',
+      flow: log.flow || 'Medium',
+      symptoms: Array.isArray(log.symptoms) ? log.symptoms : [],
+      mood: log.mood || 'Balanced',
+      notes: log.notes || '',
+    });
+    setEditingPeriodId(log.id);
+  };
+
+  const deletePeriodLog = (id) => {
+    if (profile.incognito) return;
+    setProfile(prev => ({ ...prev, periodLogs: removePeriodLog(prev.periodLogs, id) }));
+    if (editingPeriodId === id) setEditingPeriodId(null);
   };
 
   const toggleSymptom = (s) => {
@@ -96,8 +126,8 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
 
   const generatePhysicalRecoveryPDF = () => {
     const doc = new jsPDF();
-    const activitySummary = getActivitySummary(activities, completedActivities);
-    const periodLogCount = Array.isArray(profile.periodLogs) ? profile.periodLogs.length : 0;
+    const activitySummary = getActivitySummary(activities, visibleProfile.completedActivities);
+    const periodLogCount = Array.isArray(visibleProfile.periodLogs) ? visibleProfile.periodLogs.length : 0;
     
     // Header
     doc.setFontSize(22);
@@ -122,7 +152,7 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
     doc.save('Physical_Recovery_Report.pdf');
   };
 
-  const completedActivities = profile.completedActivities || [];
+  const completedActivities = visibleProfile.completedActivities || [];
   const activitySummary = getActivitySummary(activities, completedActivities);
   const progress = activitySummary.percentage ?? 0;
 
@@ -201,8 +231,9 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
                   </h2>
                 </div>
                 <button onClick={handlePeriodLog} style={{ backgroundColor: theme.primary }} className="w-full md:w-auto px-8 py-3 rounded-xl text-white font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                  <Plus size={14} /> Commit Entry
+                  <Plus size={14} /> {editingPeriodId ? 'Update Entry' : 'Commit Entry'}
                 </button>
+                {editingPeriodId && <button onClick={() => setEditingPeriodId(null)} className="w-full md:w-auto px-5 py-3 rounded-xl text-slate-500 font-bold text-xs uppercase tracking-widest hover:bg-slate-50">Cancel edit</button>}
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-4">
                  <div className="space-y-8">
@@ -233,6 +264,23 @@ const PhysicalRecovery = ({ profile, setProfile, activities, onToggleActivity })
                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Medical Notes</label>
                        <textarea placeholder="Describe physical sensations or concerns..." value={periodForm.notes} onChange={e => setPeriodForm(f => ({...f, notes: e.target.value}))} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-medium text-slate-800 outline-none min-h-[140px] resize-none" />
                     </div>
+                    <section aria-labelledby="period-observations-heading" className="border-t border-slate-100 pt-8 space-y-4">
+                      <h3 id="period-observations-heading" className="text-sm font-bold text-slate-700">Saved observations ({Array.isArray(visibleProfile.periodLogs) ? visibleProfile.periodLogs.length : 0})</h3>
+                      {visibleProfile.periodLogs?.length ? visibleProfile.periodLogs.map(log => (
+                        <article key={log.id} className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold text-slate-800">{log.date ? new Date(`${log.date}T00:00:00`).toLocaleDateString() : 'Date unavailable'} · {log.flow || 'Flow not recorded'}</p>
+                            {log.symptoms?.length > 0 && <p className="text-xs text-slate-500">Symptoms: {log.symptoms.join(', ')}</p>}
+                            {log.mood && <p className="text-xs text-slate-500">Mood: {log.mood}</p>}
+                            {log.notes && <p className="text-xs text-slate-500 whitespace-pre-wrap">{log.notes}</p>}
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <button onClick={() => editPeriodLog(log)} className="px-3 py-2 text-xs font-bold text-slate-700 bg-white rounded-lg border border-slate-200">Edit</button>
+                            <button onClick={() => deletePeriodLog(log.id)} className="px-3 py-2 text-xs font-bold text-rose-700 bg-white rounded-lg border border-rose-200">Delete</button>
+                          </div>
+                        </article>
+                      )) : <p className="text-sm text-slate-500">No saved observations yet.</p>}
+                    </section>
                  </div>
               </div>
            </div>

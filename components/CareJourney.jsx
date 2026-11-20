@@ -57,10 +57,11 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
   const [showCommitSuccess, setShowCommitSuccess] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const fetchPeriodLogs = async () => {
       try {
         const res = await periodAPI.getMyLogs();
-        if (res.data?.logs) {
+        if (active && res.data?.logs) {
           const mappedLogs = res.data.logs.map(log => ({
             id: log._id,
             timestamp: new Date(log.cycle_start).getTime(),
@@ -71,11 +72,13 @@ const CareJourney = ({ profile, setProfile, onToggleActivity, activities, exerci
           setPeriodLogs(mappedLogs.sort((a, b) => a.timestamp - b.timestamp));
         }
       } catch (err) {
-        console.warn('Could not load period logs', err);
+        if (active) console.warn('Could not load period logs', err);
       }
     };
-    if (profile.authenticated) fetchPeriodLogs();
-  }, [profile.authenticated]);
+    if (profile.authenticated && !profile.incognito) fetchPeriodLogs();
+    else setPeriodLogs([]);
+    return () => { active = false; };
+  }, [profile.authenticated, profile.incognito]);
 
   useEffect(() => {
     let timer;

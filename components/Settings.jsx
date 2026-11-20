@@ -375,7 +375,7 @@ const Settings = ({ profile, setProfile }) => {
                   <div className="flex items-center gap-6 p-8 bg-slate-900 rounded-[2.5rem] text-white overflow-hidden relative group">
                      <div className="relative z-10 space-y-1 flex-1">
                         <h4 className="text-lg font-bold tracking-tight">Ghost (Incognito) Mode</h4>
-                        <p className="text-xs text-slate-400 italic">Ghost mode blocks new activity, health, journal, and check-in saves and hides existing records from the caregiver view while active.</p>
+                        <p className="text-xs text-slate-400 italic">Ghost mode hides saved activity from in-app views and blocks new activity, health, journal, and check-in saves while active. Existing data remains stored on this device.</p>
                      </div>
                      <button 
                        onClick={() => updateProfile({ incognito: !profile.incognito })}
