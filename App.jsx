@@ -177,7 +177,7 @@ const App = () => {
       const token = localStorage.getItem('afterma_token');
       if (!token) return; // already logged in or no token
       try {
-        const userData = await authAPI.getMe();
+        const userData = await authAPI.me();
         if (userData?._id || userData?.email) {
           const role = userData.role === 'doctor' ? 'expert' : 'mother';
           setProfile(prev => ({
@@ -296,6 +296,8 @@ const App = () => {
 
   const logout = () => {
     authAPI.logout(); // clears token + refresh token + user id from localStorage
+    localStorage.removeItem('afterma_auth_token');
+    localStorage.removeItem('afterma_user');
     localStorage.removeItem('afterma_profile_v4'); // clear cached profile
     ['afterma_cart_v1', 'afterma_appointments_v1', 'afterma_daily_logs_v1', 'afterma_express_delivery_v1', 'afterma_order_summary_v1']
       .forEach(key => removeStoredValue(key));

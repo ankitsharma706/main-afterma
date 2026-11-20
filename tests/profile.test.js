@@ -48,6 +48,20 @@ test('loadProfile ignores malformed localStorage payloads and returns fallback v
   assert.equal(profile.journeySettings.pace, 'gentle');
 });
 
+test('loadProfile never restores authentication from editable browser profile data', () => {
+  const profile = loadProfile(createStorage({
+    afterma_profile_v4: JSON.stringify({
+      authenticated: true,
+      name: 'Aditi Sharma',
+      periodLogs: [{ id: 'period-1' }],
+    }),
+  }));
+
+  assert.equal(profile.authenticated, false);
+  assert.equal(profile.name, 'Aditi Sharma');
+  assert.deepEqual(profile.periodLogs, [{ id: 'period-1' }]);
+});
+
 test('getProfileInitials returns safe initials for empty or multi-word names', () => {
   assert.equal(getProfileInitials('Aditi Sharma'), 'AS');
   assert.equal(getProfileInitials('  '), 'G');

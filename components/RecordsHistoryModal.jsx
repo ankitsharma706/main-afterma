@@ -64,7 +64,7 @@ const RecordsHistoryModal = ({ profile, logs, onClose }) => {
             <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-none">Health Records</h2>
             <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
               <ShieldCheck size={16} strokeWidth={2.5} />
-              <span className="italic opacity-90 text-xs">End-to-end private. Synced from your backend.</span>
+              <span className="italic opacity-90 text-xs">Records load from the configured account service; local profile entries may also remain in this browser.</span>
             </div>
           </div>
           <button onClick={onClose} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all shrink-0"><X size={22} /></button>
@@ -228,7 +228,7 @@ const RecordsHistoryModal = ({ profile, logs, onClose }) => {
             <div className="w-8 h-8 rounded-full border border-amber-200 flex items-center justify-center text-amber-500 bg-amber-50 shrink-0">
               <Info size={14} />
             </div>
-            <p>Data is encrypted and stored securely. Never shared without explicit consent.</p>
+            <p>This screen does not guarantee encryption or server-side sharing controls. Avoid entering sensitive details unless you understand how the configured account service handles them.</p>
           </div>
         </div>
 

@@ -121,7 +121,7 @@ export const normalizeProfile = (profile = {}) => {
 
 export const loadProfile = (storage = (typeof window !== 'undefined' ? window.localStorage : undefined)) => {
   const storedProfile = readStoredValue(storage, 'afterma_profile_v4');
-  return normalizeProfile(storedProfile);
+  return { ...normalizeProfile(storedProfile), authenticated: false };
 };
 
 export const getProfileInitials = (name) => {

@@ -1,8 +1,8 @@
 
-import { ArrowLeft, Eye, EyeOff, Heart, Loader2, Mail, Phone, ShieldCheck, Stethoscope, X } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Heart, Loader2, Mail, Phone, Stethoscope, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { COLORS } from '../constants';
-import { authAPI } from '../services/api.js';
+import { authAPI, getToken, removeToken } from '../services/api.js';
 
 /* ─── SVG Brand Icons ─────────────────────────────────────── */
 const GoogleIcon = () => (
@@ -33,20 +33,21 @@ const EmailForm = ({ onBack, onLogin, mode, role, theme }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
     setLoading(true);
     try {
-      let user;
+      removeToken();
       if (mode === 'signup') {
-        // register() saves token and returns user directly
-        user = await authAPI.register({ email, password, confirmPassword, full_name: name, role: role === 'expert' ? 'doctor' : 'user' });
-        // If register doesn't return user (some setups), login manually
-        if (!user) user = await authAPI.login({ email, password });
+        await authAPI.register({ email: email.trim(), password, confirmPassword, full_name: name.trim(), role: role === 'expert' ? 'doctor' : 'user' });
       } else {
-        // login() saves token and returns user directly
-        user = await authAPI.login({ email, password, role: role === 'expert' ? 'doctor' : 'user' });
+        await authAPI.login({ email: email.trim(), password, role: role === 'expert' ? 'doctor' : 'user' });
       }
-      // Fallback: fetch user profile if not returned
-      if (!user) user = await authAPI.getMe();
+      if (!getToken()) throw new Error('The backend did not establish an authenticated session.');
+      const user = await authAPI.me();
+      if (!user?._id && !user?.email) throw new Error('The backend could not validate this session.');
       onLogin(role, user);
     } catch (err) {
       setError(err?.message || 'Authentication failed. Please check your credentials.');
@@ -96,6 +97,9 @@ const EmailForm = ({ onBack, onLogin, mode, role, theme }) => {
             onChange={e => setPassword(e.target.value)}
             placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
             required
+            minLength={mode === 'signup' ? 8 : undefined}
+            pattern={mode === 'signup' ? '(?=.*[A-Z])(?=.*[0-9]).{8,}' : undefined}
+            title={mode === 'signup' ? 'Use at least 8 characters, including an uppercase letter and a number.' : undefined}
             className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all pr-12 text-sm"
           />
           <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
@@ -113,7 +117,7 @@ const EmailForm = ({ onBack, onLogin, mode, role, theme }) => {
         )}
         {mode === 'signin' && (
           <div className="text-right">
-            <span className="text-xs font-semibold cursor-pointer hover:brightness-90 transition-all" style={{ color: theme.primary }}>Forgot password?</span>
+            <span className="text-xs text-slate-400">Password reset unavailable</span>
           </div>
         )}
         <button
@@ -252,6 +256,7 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
   const [role, setRole] = useState('mother');
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   const theme = profile ? (COLORS[profile.accent] || COLORS.PINK) : COLORS.PINK;
 
@@ -259,17 +264,19 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
   useEffect(() => {
     const initGoogle = () => {
       try {
-        const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-        if (!CLIENT_ID || !window.google?.accounts?.id) return;
+        if (!googleClientId || !window.google?.accounts?.id) return;
 
         window.google.accounts.id.initialize({
-          client_id: CLIENT_ID,
+          client_id: googleClientId,
           callback: async (response) => {
             setGoogleLoading(true);
             setGoogleError('');
             try {
-              const user = await authAPI.loginWithGoogle(response.credential);
-              const userData = user || await authAPI.getMe();
+              removeToken();
+              await authAPI.loginWithGoogle(response.credential);
+              if (!getToken()) throw new Error('The backend did not establish an authenticated session.');
+              const userData = await authAPI.me();
+              if (!userData?._id && !userData?.email) throw new Error('The backend could not validate this session.');
               onLogin(role, userData);
             } catch (err) {
               setGoogleError(err?.message || 'Google sign-in failed. Please try Email or Phone.');
@@ -294,7 +301,7 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
       }
     };
 
-    if (view === 'main') {
+    if (view === 'main' && googleClientId) {
       if (!document.getElementById('google-gsi-script')) {
         const script = document.createElement('script');
         script.id = 'google-gsi-script';
@@ -308,12 +315,12 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
         setTimeout(initGoogle, 100);
       }
     }
-  }, [view, role, onLogin]);
+  }, [view, role, onLogin, googleClientId]);
 
-  const ProviderBtn = ({ icon, label, onClick, loading: btnLoading, className = '' }) => (
+  const ProviderBtn = ({ icon, label, onClick, loading: btnLoading, disabled = false, className = '' }) => (
     <button
       onClick={onClick}
-      disabled={btnLoading}
+      disabled={btnLoading || disabled}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white font-semibold text-slate-700 text-sm transition-all active:scale-[0.98] hover:shadow-md hover:bg-slate-50 border border-slate-200 disabled:opacity-60 ${className}`}
     >
       <span className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -414,8 +421,8 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
                 />
                 <ProviderBtn
                   icon={<Phone size={18} className="text-slate-600" />}
-                  label={mode === 'signin' ? 'Continue with Phone' : 'Sign up with Phone'}
-                  onClick={() => setView('phone')}
+                  label="Phone sign-in unavailable"
+                  disabled
                 />
               </div>
 
@@ -434,30 +441,31 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
                   </div>
                 )}
                 
-                <div className="relative w-full rounded-xl overflow-hidden group">
-                  <ProviderBtn
-                    icon={<GoogleIcon />}
-                    label="Continue with Google"
-                    onClick={() => {
-                        if (!window.google?.accounts?.id) {
-                          setGoogleError('Google Sign-In is still loading. Please try again in a moment.');
-                        }
-                    }}
-                    loading={googleLoading}
-                    className="group-hover:shadow-md group-hover:bg-slate-50"
-                  />
-                  {/* Invisible official Google Sign In button captures click properly */}
-                  <div 
-                    id="google-btn-wrapper" 
-                    className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer opacity-[0.01]"
-                    style={{ transform: 'scale(1.1)' }}
-                  ></div>
-                </div>
+                {googleClientId ? (
+                  <div className="relative w-full rounded-xl overflow-hidden group">
+                    <ProviderBtn
+                      icon={<GoogleIcon />}
+                      label="Continue with Google"
+                      onClick={() => {
+                          if (!window.google?.accounts?.id) {
+                            setGoogleError('Google Sign-In is still loading. Please try again in a moment.');
+                          }
+                      }}
+                      loading={googleLoading}
+                      className="group-hover:shadow-md group-hover:bg-slate-50"
+                    />
+                    <div
+                      id="google-btn-wrapper"
+                      className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer opacity-[0.01]"
+                      style={{ transform: 'scale(1.1)' }}
+                    />
+                  </div>
+                ) : <ProviderBtn icon={<GoogleIcon />} label="Google Sign-In unavailable" disabled />}
 
                 <ProviderBtn
                   icon={<AppleIcon />}
-                  label="Continue with Apple"
-                  onClick={() => alert('Apple Sign-In coming soon. Please use Email or Phone.')}
+                  label="Apple Sign-In unavailable"
+                  disabled
                 />
               </div>
 
@@ -489,11 +497,9 @@ const SignIn = ({ profile, onLogin, onClose, onOpenLocation }) => {
                 </button>
               </p>
 
-              {/* Security note */}
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <ShieldCheck size={13} className="text-emerald-500" />
-                <span className="text-[11px] font-semibold text-slate-400">Secure & encrypted</span>
-              </div>
+              <p role="note" className="text-[11px] text-slate-500 text-center pt-1">
+                Account access depends on the configured backend. Health data may remain in browser storage, which this app does not encrypt.
+              </p>
             </div>
           )}
 

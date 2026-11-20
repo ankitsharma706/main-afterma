@@ -20,6 +20,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { COLORS } from '../constants';
 import { getUserId, userAPI } from '../services/api';
 import { translations } from '../translations';
+import { writeStoredValue } from '../utils/persistence';
 import PersonalDataForm from './PersonalDataForm';
 
 const Settings = ({ profile, setProfile }) => {
@@ -69,18 +70,30 @@ const Settings = ({ profile, setProfile }) => {
     }, 1500);
   };
 
+  const saveLocalProfile = (nextProfile) => {
+    if (!writeStoredValue('afterma_profile_v4', nextProfile)) {
+      setSaveStatus('error');
+      return false;
+    }
+
+    setSaveStatus('saved');
+    return true;
+  };
+
   // Cleanup timer on unmount
   useEffect(() => () => clearTimeout(syncTimerRef.current), []);
 
   const updateProfile = (fields) => {
     const next = { ...profile, ...fields };
     setProfile(next);
+    saveLocalProfile(next);
     scheduleBackendSync(next);
   };
 
   const updateCaregiver = (fields) => {
     const next = { ...profile, caregiver: { ...profile.caregiver, ...fields } };
     setProfile(next);
+    saveLocalProfile(next);
     scheduleBackendSync(next);
   };
 
@@ -93,12 +106,14 @@ const Settings = ({ profile, setProfile }) => {
       } 
     };
     setProfile(next);
+    saveLocalProfile(next);
     scheduleBackendSync(next);
   };
 
   const updateNotifications = (fields) => {
     const next = { ...profile, notifications: { ...profile.notifications, ...fields } };
     setProfile(next);
+    saveLocalProfile(next);
     scheduleBackendSync(next);
   };
 
@@ -325,6 +340,7 @@ const Settings = ({ profile, setProfile }) => {
                <div className="pb-8 border-b border-slate-50 space-y-1.5">
                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight capitalize">Privacy &amp; Caregiver</h3>
                  <p className="text-sm font-medium text-slate-400 opacity-80 leading-relaxed italic">Manage access for your designated caregiver and emergency settings.</p>
+                 <p className="text-xs text-amber-800 bg-amber-50 rounded-xl p-4">This frontend stores profile and some health entries in browser storage without application-level encryption. Local caregiver preferences are not server-side access controls.</p>
                </div>
                
                <div className="space-y-8">
