@@ -363,6 +363,7 @@ const Settings = ({ profile, setProfile }) => {
 
                      <div className="space-y-4">
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Permissions &amp; Shared Access</p>
+                        <p className="text-xs text-slate-500">These settings control what appears in this local caregiver view. They are not secure account or server-side access controls.</p>
                         <div className="grid gap-3">
                            <PermissionItem label="Allow Mood Log Access" active={profile.caregiver.permissions.canViewMood} onToggle={() => updateCaregiverPermissions({ canViewMood: !profile.caregiver.permissions.canViewMood })} />
                            <PermissionItem label="Allow Physical Recovery Viewing" active={profile.caregiver.permissions.canViewPhysical} onToggle={() => updateCaregiverPermissions({ canViewPhysical: !profile.caregiver.permissions.canViewPhysical })} />

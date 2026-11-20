@@ -241,40 +241,6 @@ const VideoCard = ({ video, onPlay }) => (
   </div>
 );
 
-/* ─── Generic Resource Card ──────────────────────────────────────────── */
-const GenericCard = ({ index, activeSection, onNavigate }) => (
-  <div
-    className={`${GLASS} p-8 rounded-[3rem] hover:shadow-xl transition-all group cursor-pointer space-y-6 ${activeSection === 'guides' ? 'hover:border-pink-200' : activeSection === 'tips' ? 'hover:border-rose-200' : 'hover:border-emerald-200'}`}
-    onClick={() => onNavigate(`${activeSection}-${index}`)}
-    role="article"
-    tabIndex={0}
-    onKeyDown={e => e.key === 'Enter' && onNavigate(`${activeSection}-${index}`)}
-    aria-label={`Open article: Essential ${activeSection === 'guides' ? 'Guide' : activeSection === 'tips' ? 'Tips' : 'Safety'} Vol. ${index + 1}`}
-  >
-    <div className="aspect-video bg-slate-100 rounded-[2rem] overflow-hidden relative border border-slate-100">
-      <img src={`https://picsum.photos/seed/${activeSection}-${index}/600/400`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Resource" />
-    </div>
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeSection === 'guides' ? 'bg-pink-50 text-pink-600' : activeSection === 'tips' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>Expert Verified</span>
-        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{index + 2}m read</span>
-      </div>
-      <h4 className="text-xl font-black text-slate-900 leading-tight">
-        Essential {activeSection === 'guides' ? 'Guide to' : activeSection === 'tips' ? 'Tips for' : 'Safety in'} Postpartum Care Vol. {index + 1}
-      </h4>
-      <p className="text-xs text-slate-500 font-medium leading-relaxed italic line-clamp-2">
-        "A comprehensive clinical overview of recovery milestones and emotional stabilization techniques."
-      </p>
-    </div>
-    <button
-      className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeSection === 'guides' ? 'bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white' : activeSection === 'tips' ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'}`}
-      onClick={e => { e.stopPropagation(); onNavigate(`${activeSection}-${index}`); }}
-    >
-      Open Resource <ChevronRight size={14} />
-    </button>
-  </div>
-);
-
 /* ─── QuickLink ──────────────────────────────────────────────────────── */
 const QuickLink = ({ icon, label, onClick, active, color }) => {
   const colorClasses = {
@@ -284,13 +250,15 @@ const QuickLink = ({ icon, label, onClick, active, color }) => {
     emerald: 'text-emerald-500 bg-white/70 border-emerald-100 hover:border-emerald-300 hover:bg-emerald-50/70 shadow-emerald-100/50',
   };
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`p-5 lg:p-6 rounded-[2rem] text-center shadow-sm hover:shadow-md border backdrop-blur-md transition-all duration-300 cursor-pointer group flex flex-col items-center justify-center gap-3 ${active ? 'ring-2 ring-offset-2 ring-current scale-[1.02]' : ''} ${colorClasses[color] || 'bg-white/70 border-white/60'}`}
     >
       <div className="group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300">{icon}</div>
       <span className="font-extrabold text-[11px] uppercase tracking-widest">{label}</span>
-    </div>
+    </button>
   );
 };
 
@@ -302,6 +270,7 @@ const Education = ({ profile }) => {
 
   const [activeSection, setActiveSection] = useState(null);
   const [playingVideo, setPlayingVideo] = useState(null);
+  const [selectedScheme, setSelectedScheme] = useState(null);
 
   const scrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -374,8 +343,18 @@ const Education = ({ profile }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
                 {activeSection === 'videos'
                   ? VIDEO_LIBRARY.map(vid => <VideoCard key={vid.id} video={vid} onPlay={setPlayingVideo} />)
-                  : Array.from({ length: 6 }).map((_, i) => (
-                    <GenericCard key={i} index={i} activeSection={activeSection} onNavigate={id => navigate(`/learning-center/${id}`)} />
+                  : ARTICLES.map(article => (
+                    <button
+                      type="button"
+                      key={article.id}
+                      onClick={() => navigate(`/learning-center/${article.id}`)}
+                      className={`${GLASS} p-8 rounded-[3rem] hover:shadow-xl transition-all text-left space-y-5`}
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{article.category}</span>
+                      <h4 className="text-xl font-bold text-slate-900">{article.title}</h4>
+                      <p className="text-sm text-slate-600 leading-relaxed">{article.summary}</p>
+                      <span className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700">Read article <ChevronRight size={14} /></span>
+                    </button>
                   ))
                 }
               </div>
@@ -464,8 +443,8 @@ const Education = ({ profile }) => {
               <h2 className="text-3xl font-black text-slate-800">{t.education.newsletterTitle}</h2>
               <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">{t.education.newsletterSub}</p>
             </div>
-            <button className="flex items-center gap-2 text-pink-500 font-black text-xs uppercase tracking-widest hover:underline transition-all">
-              {t.education.archive} <ArrowRight size={14} />
+            <button disabled aria-label="Resource archive is unavailable" className="flex items-center gap-2 text-slate-400 font-black text-xs uppercase tracking-widest cursor-not-allowed">
+              Archive unavailable <ArrowRight size={14} />
             </button>
           </div>
           <div
@@ -486,8 +465,8 @@ const Education = ({ profile }) => {
                   <h4 className="text-lg font-black text-gray-900">{pick.brand}: {pick.product}</h4>
                   <p className="text-xs text-slate-500 font-medium leading-relaxed italic">"Because {pick.reason.toLowerCase()} is essential for your peace of mind and delicate care."</p>
                 </div>
-                <button className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-300 group-hover:text-pink-500 transition-colors">
-                  Learn More <ArrowRight size={12} />
+                <button disabled aria-label={`${pick.product}: product link unavailable`} className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed">
+                  Product link unavailable <ArrowRight size={12} />
                 </button>
               </div>
             ))}
@@ -510,7 +489,7 @@ const Education = ({ profile }) => {
                     <p className="text-[10px] font-black text-blue-700">{scheme.benefit}</p>
                   </div>
                 </div>
-                <button className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
+                <button onClick={() => setSelectedScheme(scheme)} className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
                   Details <ExternalLink size={12} />
                 </button>
               </div>
@@ -558,6 +537,22 @@ const Education = ({ profile }) => {
       <div className="max-w-5xl mx-auto px-4">
         <SponsoredBanner slot="education-bottom-slot" minHeight="120px" className="my-8" />
       </div>
+      {selectedScheme && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="scheme-title">
+          <div className="max-w-lg w-full bg-white rounded-3xl p-8 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="scheme-title" className="text-xl font-bold text-slate-900">{selectedScheme.title}</h2>
+                <p className="text-sm text-slate-600">{selectedScheme.fullName}</p>
+              </div>
+              <button onClick={() => setSelectedScheme(null)} aria-label="Close scheme details" className="p-2 text-slate-500 hover:bg-slate-100 rounded-full"><X size={18} /></button>
+            </div>
+            <p><strong>Summary:</strong> {selectedScheme.benefit}</p>
+            <p><strong>Listed eligibility:</strong> {selectedScheme.eligibility}</p>
+            <p className="text-sm text-amber-800 bg-amber-50 rounded-xl p-4">This is general information only. Eligibility is not evaluated here; verify current terms with the official program.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

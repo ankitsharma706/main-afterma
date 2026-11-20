@@ -6,6 +6,7 @@ import { isValidFutureDate, isValidTime } from '../utils/safety.js';
 import { getActivitySummary } from '../utils/recoveryReport.js';
 import { removePeriodLog, upsertPeriodLog } from '../utils/periodLogs.js';
 import { getGhostSafeLogs, getGhostSafeProfile } from '../utils/ghostMode.js';
+import { getExternalHref, getTelephoneHref } from '../utils/links.js';
 
 const createStorage = (entries = {}) => ({
   store: { ...entries },
@@ -110,4 +111,13 @@ test('ghost mode hides saved activity across in-app views without mutating store
   assert.deepEqual(getGhostSafeLogs([{ id: 'log-1' }], profile), []);
   assert.equal(profile.periodLogs.length, 1);
   assert.deepEqual(getGhostSafeProfile({ incognito: false, journalEntries: [{ id: 'saved' }] }).journalEntries, [{ id: 'saved' }]);
+});
+
+test('support links accept HTTPS destinations and valid phone contacts only', () => {
+  assert.equal(getExternalHref('sangath.in'), 'https://sangath.in/');
+  assert.equal(getExternalHref('https://example.org/help'), 'https://example.org/help');
+  assert.equal(getExternalHref('javascript:alert(1)'), null);
+  assert.equal(getExternalHref('#'), null);
+  assert.equal(getTelephoneHref('080-2555-5555'), 'tel:080-2555-5555');
+  assert.equal(getTelephoneHref('Verified'), null);
 });

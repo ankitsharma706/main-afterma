@@ -616,7 +616,7 @@ const App = () => {
                 {currentView === 'settings' && profile.authenticated && <Settings profile={profile} setProfile={setProfile} />}
                 {currentView === 'careconnect' && profile.authenticated && <CareConnect profile={profile} setProfile={setProfile} appointments={appointments} setAppointments={setAppointments} setCircles={setCircles} circles={circles} addNotification={addNotification} />}
                 {currentView === 'caregiver' && profile.authenticated && (
-                  <CaregiverView profile={visibleProfile} logs={visibleLogs} />
+                  <CaregiverView profile={visibleProfile} logs={visibleLogs} appointments={getGhostSafeLogs(appointments, profile)} />
                 )}
 
                 {/* Legal & Trust Compliance Views (Publicly Accessible) */}

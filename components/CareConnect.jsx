@@ -25,9 +25,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { COLORS, COMMUNITY_QUESTIONS, EXPERT_DATA, HELPLINES, INSURANCE_PLANS, NGO_DATA } from '../constants';
+import { COLORS, COMMUNITY_QUESTIONS, EXPERT_DATA, HELPLINES, NGO_DATA } from '../constants';
 import { communitiesAPI, doctorsAPI, insuranceAPI, ngoAPI } from '../services/api';
 import { translations } from '../translations';
+import { getExternalHref, getTelephoneHref } from '../utils/links';
 import ExpertDashboard from './ExpertDashboard';
 import VerificationFlow from './VerificationFlow';
 
@@ -150,18 +151,22 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
         const res = await insuranceAPI.getAll();
         const plans = res?.data?.plans || res?.plans || (Array.isArray(res?.data) ? res.data : []);
         if (Array.isArray(plans) && plans.length > 0) {
-          setLiveInsurance(plans.map(p => ({
-            bank: p.bank || p.provider || p.name || 'Insurance Partner',
-            logo: (p.bank || p.provider || p.name || 'A')[0],
-            plan: p.plan_name || 'Standard Plan',
-            eligibility: p.eligibility || 'All New Mothers',
-            approval: p.approval_rate || '95%',
-            processing: p.processing_time || '48 hrs',
-            count: p.client_count || '10k+',
-            range: p.coverage_range || '₹5L - ₹50L',
-            highlights: p.features || ['Maternity Coverage', 'Cashless Claims', 'Newborn Care'],
-            theme: p.theme_color || 'BLUE'
-          })));
+          setLiveInsurance(plans.map(p => {
+            const name = p.bank || p.provider || p.name || 'Insurance Partner';
+            return {
+              bank: name,
+              logo: name[0],
+              plan: p.plan_name || null,
+              eligibility: p.eligibility || null,
+              approval: p.approval_rate || null,
+              processing: p.processing_time || null,
+              count: p.client_count || null,
+              range: p.coverage_range || null,
+              highlights: Array.isArray(p.features) ? p.features : [],
+              website: p.website || p.url || null,
+              theme: p.theme_color || 'BLUE'
+            };
+          }));
         }
       } catch (err) {
         console.warn('Insurance fetch failed:', err?.message);
@@ -931,7 +936,10 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
 
         {activeSubTab === 'NGOs' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-500">
-            {(liveNgos.length ? liveNgos : NGO_DATA).map(ngo => (
+            {(liveNgos.length ? liveNgos : NGO_DATA).map(ngo => {
+              const supportUrl = getExternalHref(ngo.link || ngo.website);
+              const phoneUrl = getTelephoneHref(ngo.contact);
+              return (
               <div key={ngo.name} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col justify-between group hover:translate-y-[-6px] h-full">
                 <div className="space-y-8">
                   <div className="p-5 bg-pink-50/50 text-pink-500 rounded-[1.75rem] w-fit border border-pink-100 shadow-inner"><Heart size={28} strokeWidth={2.5} /></div>
@@ -943,20 +951,29 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
                 <div className="pt-10 mt-10 border-t border-slate-50 space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Verified Direct Line</span>
-                    <span className="text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-md text-xs border border-emerald-100/30">{ngo.contact}</span>
+                    {phoneUrl
+                      ? <a href={phoneUrl} className="text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-md text-xs border border-emerald-100/30">{ngo.contact}</a>
+                      : <span className="text-slate-500 font-bold bg-slate-50 px-3 py-1 rounded-md text-xs border border-slate-100">{ngo.contact || 'Contact unavailable'}</span>}
                   </div>
-                  <button className="w-full py-4 bg-slate-900 text-white rounded-full font-bold text-[11px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-3">
-                    Access Support <ExternalLink size={14} />
-                  </button>
+                  {supportUrl
+                    ? <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="w-full py-4 bg-slate-900 text-white rounded-full font-bold text-[11px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-3">
+                        Visit support organization <ExternalLink size={14} />
+                      </a>
+                    : <p className="text-center text-xs text-slate-500">Support website unavailable. Use the listed phone contact if provided.</p>}
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )}
 
         {activeSubTab === 'Insurance' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 animate-in fade-in duration-500">
-            {(liveInsurance.length ? liveInsurance : INSURANCE_PLANS).map((plan) => {
+            {liveInsurance.length === 0 && (
+              <div className="col-span-full rounded-3xl border border-slate-200 bg-white p-8 text-slate-600">
+                Insurance information is unavailable because no insurer catalog is connected. This app cannot evaluate eligibility; confirm coverage directly with an insurer.
+              </div>
+            )}
+            {liveInsurance.map((plan) => {
               const pTheme = COLORS[plan.theme] || theme;
               return (
                 <div key={plan.bank} className="bg-white p-10 lg:p-12 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col group h-full relative overflow-hidden">
@@ -970,13 +987,13 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
                        </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 mb-10">
-                    <MetricBox icon={<TrendingUp size={14} className="text-emerald-500" />} val={plan.approval} label="Approval" />
-                    <MetricBox icon={<Clock size={14} className="text-blue-500" />} val={plan.processing} label="Processing" />
-                    <MetricBox icon={<Users size={14} className="text-purple-500" />} val={plan.count} label="Clients" />
-                  </div>
+                  {(plan.approval || plan.processing || plan.count) && <div className="grid grid-cols-3 gap-3 mb-10">
+                    {plan.approval && <MetricBox icon={<TrendingUp size={14} className="text-emerald-500" />} val={plan.approval} label="Approval" />}
+                    {plan.processing && <MetricBox icon={<Clock size={14} className="text-blue-500" />} val={plan.processing} label="Processing" />}
+                    {plan.count && <MetricBox icon={<Users size={14} className="text-purple-500" />} val={plan.count} label="Clients" />}
+                  </div>}
                   <div className="space-y-4 mb-10 flex-1">
-                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest px-1">Coverage Analytics ({plan.range})</p>
+                    {plan.range && <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest px-1">Reported coverage range: {plan.range}</p>}
                     <div className="grid grid-cols-1 gap-2.5">
                       {plan.highlights.map((h, i) => (
                         <div key={i} className="flex items-center gap-3 px-5 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl">
@@ -986,9 +1003,10 @@ const CareConnect = ({ profile, setProfile, appointments, setAppointments, circl
                       ))}
                     </div>
                   </div>
-                  <button className="w-full py-5 bg-slate-900 text-white rounded-full font-bold text-[11px] uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3">
-                    Evaluate Eligibility <ShieldCheck size={18} />
-                  </button>
+                  <p className="text-sm text-slate-600">Eligibility cannot be evaluated in this app. Contact the insurer directly to verify current terms.</p>
+                  {getExternalHref(plan.website)
+                    ? <a href={getExternalHref(plan.website)} target="_blank" rel="noopener noreferrer" className="w-full py-4 bg-slate-900 text-white rounded-full font-bold text-[11px] uppercase tracking-widest text-center">Visit insurer website <ExternalLink size={14} className="inline ml-2" /></a>
+                    : <p className="text-xs text-slate-500">Insurer website unavailable.</p>}
                 </div>
               );
             })}
